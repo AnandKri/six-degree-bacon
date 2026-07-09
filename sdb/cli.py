@@ -19,11 +19,12 @@ from pathlib import Path
 from sdb.constants import MAX_HOPS_DEFAULT, MIN_HOPS_DEFAULT, TOP_DEFAULT
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
-from sdb.graph.loader import load_seed
+from sdb.graph.loader import load_cooccurrence, load_seed
 from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED
 from sdb.schema.models import DiscoveryResult, Source
 
 _DEFAULT_SEED = Path("data/seed.json")
+_DEFAULT_COOCCURRENCE = Path("data/cooccurrence.json")
 _WRAP_WIDTH = 66
 _UNICODE_PROBE = "⇢→█░⚠"
 
@@ -102,6 +103,12 @@ def main(argv: list[str] | None = None) -> int:
     discover_parser.add_argument(
         "--seed", type=Path, default=_DEFAULT_SEED, help="Path to the seed graph JSON."
     )
+    discover_parser.add_argument(
+        "--cooccurrence",
+        type=Path,
+        default=_DEFAULT_COOCCURRENCE,
+        help="Path to the Wikipedia-link co-occurrence JSON (endpoint-surprise term).",
+    )
     discover_parser.add_argument("--top", type=int, default=TOP_DEFAULT, help="Number of results.")
     discover_parser.add_argument("--min-hops", type=int, default=MIN_HOPS_DEFAULT)
     discover_parser.add_argument("--max-hops", type=int, default=MAX_HOPS_DEFAULT)
@@ -109,10 +116,35 @@ def main(argv: list[str] | None = None) -> int:
         "--json", action="store_true", dest="as_json", help="Emit JSON instead of a card."
     )
 
+    harvest_parser = subparsers.add_parser(
+        "harvest", help="Harvest a k-hop Wikidata neighbourhood to a local snapshot."
+    )
+    harvest_parser.add_argument("qid", help="Wikidata QID to start from (e.g. Q2277).")
+    harvest_parser.add_argument("--hops", type=int, default=2, help="Expansion rounds (default 2).")
+    harvest_parser.add_argument(
+        "--max-neighbors", type=int, default=None, help="Per-node cap on curated edges."
+    )
+    harvest_parser.add_argument(
+        "--out", type=Path, default=None, help="Snapshot path (default data/harvest/<qid>.json)."
+    )
+
+    cooc_parser = subparsers.add_parser(
+        "build-cooccurrence", help="Harvest Wikipedia-link co-occurrence for a seed graph."
+    )
+    cooc_parser.add_argument(
+        "--seed", type=Path, default=_DEFAULT_SEED, help="Seed graph to build co-occurrence for."
+    )
+    cooc_parser.add_argument(
+        "--out", type=Path, default=_DEFAULT_COOCCURRENCE, help="Output co-occurrence JSON path."
+    )
+
     args = parser.parse_args(argv)
-    if args.command == "discover":
-        return _run_discover(args)
-    return 1
+    dispatch = {
+        "discover": _run_discover,
+        "harvest": _run_harvest,
+        "build-cooccurrence": _run_build_cooccurrence,
+    }
+    return dispatch[args.command](args)
 
 
 def _run_discover(args: argparse.Namespace) -> int:
@@ -124,7 +156,8 @@ def _run_discover(args: argparse.Namespace) -> int:
         print(f"seed file not found: {args.seed}", file=sys.stderr)
         return 2
 
-    graph = KnowledgeGraph.from_seed(seed)
+    cooccurrence = load_cooccurrence(args.cooccurrence) if args.cooccurrence.exists() else None
+    graph = KnowledgeGraph.from_seed(seed, cooccurrence)
     try:
         results = discover(
             graph, topic, min_hops=args.min_hops, max_hops=args.max_hops, top=args.top
@@ -149,6 +182,43 @@ def _run_discover(args: argparse.Namespace) -> int:
     for index, result in enumerate(results, 1):
         _emit(_render_card(graph, result, index, glyphs))
         _emit("")
+    return 0
+
+
+def _run_harvest(args: argparse.Namespace) -> int:
+    """Harvest a k-hop Wikidata neighbourhood and pin it to a local snapshot."""
+    from sdb.harvest.client import WikidataClient
+    from sdb.harvest.harvester import harvest
+    from sdb.harvest.snapshot import DEFAULT_HARVEST_DIR, save_snapshot
+
+    out = args.out or DEFAULT_HARVEST_DIR / f"{args.qid.lower()}.json"
+    print(f"Harvesting {args.qid} ({args.hops} hops) from Wikidata ...", file=sys.stderr)
+    seed = harvest(WikidataClient(), args.qid, args.hops, max_neighbors=args.max_neighbors)
+    written = save_snapshot(seed, out)
+    print(f"Wrote {len(seed.nodes)} nodes, {len(seed.statements)} statements to {written}")
+    return 0
+
+
+def _run_build_cooccurrence(args: argparse.Namespace) -> int:
+    """Harvest Wikipedia-link co-occurrence for a seed graph and write the JSON matrix."""
+    from sdb.harvest.cooccurrence import LiveWikipediaClient, build_cooccurrence
+
+    try:
+        seed = load_seed(args.seed)
+    except FileNotFoundError:
+        print(f"seed file not found: {args.seed}", file=sys.stderr)
+        return 2
+
+    print(f"Building co-occurrence for {len(seed.nodes)} nodes from Wikipedia ...", file=sys.stderr)
+    matrix = build_cooccurrence(seed.nodes, LiveWikipediaClient())
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "_comment": "Wikipedia-link co-occurrence for the endpoint-surprise term; see "
+        "docs/confidence-rubric.md. Regenerate with `sdb build-cooccurrence`.",
+        "links": matrix,
+    }
+    args.out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    print(f"Wrote co-occurrence for {len(matrix)} nodes to {args.out}")
     return 0
 
 

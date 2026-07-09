@@ -30,6 +30,19 @@ def test_planted_path_discoverable(seed_graph: KnowledgeGraph) -> None:
     assert by_endpoint["Great Wall of China"].path.length == 6
 
 
+def test_endpoint_surprise_demotes_obvious_destination(seed_graph: KnowledgeGraph) -> None:
+    # The endpoint-surprise term (ADR 0003) must stop the obvious Rome->Latin pairing winning:
+    # Latin is linked from the Roman Empire article, so unlinked endpoints now outrank it.
+    results = discover(seed_graph, "Roman Empire", top=5)
+    endpoints = [seed_graph.node(r.path.node_ids[-1]).label for r in results]
+    assert endpoints[0] != "Latin"
+    winner_unexpectedness = seed_graph.endpoint_unexpectedness(
+        results[0].path.node_ids[0], results[0].path.node_ids[-1]
+    )
+    latin_unexpectedness = seed_graph.endpoint_unexpectedness("roman_empire", "latin")
+    assert winner_unexpectedness > latin_unexpectedness
+
+
 def test_narrative_faithfulness(seed_graph: KnowledgeGraph) -> None:
     # Every node label on a discovered path must appear in its TIL text.
     results = discover(seed_graph, "Roman Empire", top=5)

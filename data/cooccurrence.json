@@ -1,0 +1,28 @@
+{
+  "_comment": "Wikipedia-link co-occurrence for the seed graph: links[X] lists the seed nodes whose English Wikipedia article X's article links to (namespace-0 links, redirects followed). This is the 'real co-occurrence' signal behind the endpoint-surprise term (docs/confidence-rubric.md): an endpoint linked from the start is an expected destination; an unlinked one is surprising. Harvested deterministically by `sdb.harvest.cooccurrence.build_cooccurrence` (see `sdb build-cooccurrence`). Regenerate deliberately and record why in an ADR when the seed graph changes.",
+  "links": {
+    "roman_empire": ["augustus", "byzantine_empire", "christianity", "constantine_the_great", "constantinople", "hadrian", "han_dynasty", "julius_caesar", "latin", "qin_dynasty", "roman_republic", "romance_languages", "rome", "silk_road"],
+    "roman_republic": ["augustus", "byzantine_empire", "constantinople", "julius_caesar", "latin", "roman_empire", "romance_languages", "rome", "silk_road"],
+    "hadrian": ["augustus", "byzantine_empire", "constantine_the_great", "roman_empire", "roman_republic", "rome"],
+    "julius_caesar": ["augustus", "byzantine_empire", "constantinople", "latin", "roman_empire", "roman_republic", "romance_languages", "rome"],
+    "augustus": ["byzantine_empire", "constantine_the_great", "constantinople", "hadrian", "julius_caesar", "latin", "qin_dynasty", "roman_empire", "roman_republic", "rome"],
+    "constantine_the_great": ["augustus", "byzantine_empire", "christianity", "constantinople", "hadrian", "latin", "roman_empire"],
+    "byzantine_empire": ["christianity", "constantine_the_great", "constantinople", "han_dynasty", "julius_caesar", "latin", "qin_dynasty", "roman_empire", "roman_republic", "romance_languages", "rome", "silk_road"],
+    "constantinople": ["byzantine_empire", "constantine_the_great", "latin", "persia", "roman_empire"],
+    "christianity": ["byzantine_empire", "constantine_the_great", "constantinople", "han_dynasty", "latin", "persia", "roman_empire", "rome", "troy", "zoroastrianism"],
+    "zoroastrianism": ["china", "christianity", "constantine_the_great", "han_dynasty", "roman_empire"],
+    "persia": ["china", "christianity", "roman_empire", "silk_road", "zoroastrianism"],
+    "silk_road": ["byzantine_empire", "christianity", "constantinople", "han_dynasty", "qin_dynasty", "roman_empire", "roman_republic"],
+    "great_wall_of_china": ["china", "han_dynasty", "qin_dynasty"],
+    "qin_shi_huang": ["chang_an", "great_wall_of_china", "qin_dynasty", "romulus"],
+    "qin_dynasty": ["byzantine_empire", "chang_an", "china", "han_dynasty", "qin_shi_huang", "roman_empire", "silk_road"],
+    "han_dynasty": ["byzantine_empire", "chang_an", "china", "constantinople", "persia", "qin_dynasty", "roman_empire", "silk_road", "zoroastrianism"],
+    "chang_an": ["china", "han_dynasty", "qin_dynasty", "qin_shi_huang"],
+    "china": ["chang_an", "christianity", "great_wall_of_china", "han_dynasty", "qin_dynasty", "qin_shi_huang"],
+    "romulus": ["christianity"],
+    "troy": ["constantine_the_great", "roman_empire", "rome"],
+    "rome": ["augustus", "byzantine_empire", "china", "christianity", "constantine_the_great", "constantinople", "julius_caesar", "latin", "roman_empire", "roman_republic"],
+    "latin": ["byzantine_empire", "constantinople", "julius_caesar", "roman_empire", "roman_republic", "romance_languages", "rome"],
+    "romance_languages": ["constantinople", "latin", "roman_empire", "rome", "zoroastrianism"]
+  }
+}

@@ -94,6 +94,7 @@ surprise = W_RARITY·Σ rarity
          + W_DOMAIN·domain_jumps
          + W_TEMPORAL·normalized_temporal_gap
          + W_LENGTH·length_bonus
+         + W_ENDPOINT·endpoint_unexpectedness
          − W_HUB·hub_penalty
 ```
 
@@ -103,22 +104,55 @@ surprise = W_RARITY·Σ rarity
 | `domain_jumps` | number of consecutive nodes whose `domain` differs | `W_DOMAIN = 2.0` |
 | `normalized_temporal_gap` | `Σ |midpoint_yearₐ − midpoint_year_b| / 1000` | `W_TEMPORAL = 1.5` |
 | `length_bonus` | `max(0, hops − 2)` | `W_LENGTH = 0.5` |
+| `endpoint_unexpectedness` | `−log2 P(endpoint | start)` — an *unexpected destination* (see below) | `W_ENDPOINT = 4.0` |
 | `hub_penalty` | for each **intermediate** node, `max(0, degree − 6) / 6` | `W_HUB = 0.75` |
+
+### Endpoint unexpectedness (rewarding unexpected *destinations*)
+
+The other terms reward a wild *route*; this one rewards a wild *destination*, so a scenic path that
+merely lands somewhere obvious (Rome → Latin) no longer wins over one that lands somewhere genuinely
+far-flung. It is estimated from **real Wikipedia-link co-occurrence** — deterministic, offline, and
+hand-checkable from a committed table ([`data/cooccurrence.json`](../data/cooccurrence.json)).
+
+Define the **link strength** between two nodes as the number of link *directions* between their
+English Wikipedia articles (0, 1, or 2 — one point each way an article links to the other). Then, for
+a start node with `N` nodes in the graph and Laplace smoothing `α = COOCCURRENCE_ALPHA = 0.5`:
+
+```
+P(endpoint | start) = ( strength(start, endpoint) + α ) / Σₑ ( strength(start, e) + α )
+endpoint_unexpectedness = −log2 P(endpoint | start)
+```
+
+A destination whose article co-occurs with the start (high strength) is *expected* → low term; an
+unlinked one is *surprising* → high term. Without co-occurrence data the term is `0`, so the engine
+still runs on the seed graph alone. The denominator sums over the other `N − 1` nodes, so it reduces
+to `α·(N − 1) + (start's out-links + in-links among graph nodes)`.
+
+#### Worked example (matches `tests/test_cooccurrence.py`)
+
+A 4-node graph where only `a` and `b` are mutually linked (`strength(a,b) = 2`), and `a`, `c` share
+no link (`strength(a,c) = 0`). The denominator is `0.5·3 + (1 out-link + 1 in-link) = 3.5`:
+
+```
+P(b | a) = (2 + 0.5) / 3.5 = 0.714  →  endpoint_unexpectedness(a→b) = −log2 0.714 = 0.49  (obvious)
+P(c | a) = (0 + 0.5) / 3.5 = 0.143  →  endpoint_unexpectedness(a→c) = −log2 0.143 = 2.81  (surprising)
+```
 
 ### Worked example (matches `tests/test_surprise.py`)
 
 A 2-hop path whose two edges each use a predicate that occurs once in a 4-edge graph
 (`rarity = −log2(1/4) = 2.0` each), crossing a domain at each step (2 jumps), with midpoint-year gaps
-summing to 400 years, no hub intermediates:
+summing to 400 years, no hub intermediates, and **no co-occurrence data** (endpoint term `= 0`):
 
 ```
-Σ rarity            = 2.0 + 2.0            = 4.0
-domain_jumps        = 2
-normalized_gap      = 400 / 1000          = 0.4
-length_bonus        = max(0, 2 − 2)       = 0
-hub_penalty         = 0
+Σ rarity                = 2.0 + 2.0            = 4.0
+domain_jumps            = 2
+normalized_gap          = 400 / 1000          = 0.4
+length_bonus            = max(0, 2 − 2)       = 0
+endpoint_unexpectedness = 0                   (no co-occurrence data)
+hub_penalty             = 0
 
-surprise = 1.0·4.0 + 2.0·2 + 1.5·0.4 + 0.5·0 − 0.75·0 = 8.6
+surprise = 1.0·4.0 + 2.0·2 + 1.5·0.4 + 0.5·0 + 4.0·0 − 0.75·0 = 8.6
 ```
 
 ---

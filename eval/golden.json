@@ -1,10 +1,17 @@
 {
-  "_comment": "Ranker-regression expectations over data/seed.json. These are CHARACTERIZATION values (what the deterministic engine currently produces), not hand-picked winners. Update deliberately when the seed graph or scoring rubric changes, and record why in an ADR. Note: endpoint-familiarity (e.g. Rome<->Latin is 'obvious' even via a wild chain) is a known Phase-1 surprise-tuning opportunity.",
+  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. These are CHARACTERIZATION values (what the deterministic engine currently produces), not hand-picked winners. Update deliberately when the seed graph, co-occurrence, or scoring rubric changes, and record why in an ADR. Phase-1 note: the endpoint-surprise term (-log2 P(endpoint | start) from Wikipedia-link co-occurrence, ADR 0003) now demotes 'obvious' destinations — 'Roman Empire' no longer tops out at Latin (an obvious pairing) but at Chang'an, the Silk Road's eastern terminus in China.",
   "cases": [
     {
       "topic": "Roman Empire",
       "top": 1,
-      "expected_endpoint": "Latin",
+      "expected_endpoint": "Chang'an",
+      "expected_hops": 6,
+      "expected_possibly": true
+    },
+    {
+      "topic": "Christianity",
+      "top": 1,
+      "expected_endpoint": "Proto-Indo-European",
       "expected_hops": 6,
       "expected_possibly": true
     }

@@ -14,17 +14,23 @@ Two north stars:
    evaluated, fully provenanced. **Correctness never depends on an LLM.** Every score is reproducible
    by hand from `docs/confidence-rubric.md`.
 
-## Status: Phase 0 complete
+## Status: Phase 1 complete
 
-A local-first, **zero-LLM**, fully deterministic engine over a small curated graph. Committed and
-pushed to `origin` (`https://github.com/AnandKri/six-degree-bacon`). All checks green.
+A local-first, **zero-LLM**, fully deterministic engine over a curated graph, now with (1) a
+**Wikidata SPARQL harvester** that ingests a k-hop neighbourhood into the `Statement` model with
+deterministic rank/reference→reliability mapping and pinned local snapshots, and (2) an
+**endpoint-surprise term** — `−log P(endpoint | start)` from real Wikipedia-link co-occurrence — so
+*unexpected destinations* win (Rome no longer tops out at the obvious "Latin"). Still zero-LLM,
+deterministic, reproducible by hand. All checks green (ruff, format, mypy, 45 tests).
 
 ## How to run
 
 ```sh
 uv sync --extra dev                     # create .venv + install (writes uv.lock)
-uv run sdb discover "Roman Empire"      # a sourced TIL card
+uv run sdb discover "Roman Empire"      # a sourced TIL card (now: Chang'an, not Latin)
 uv run sdb discover "Silk Road" --top 3 --json
+uv run sdb harvest Q2277 --hops 2       # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
+uv run sdb build-cooccurrence           # refresh data/cooccurrence.json from Wikipedia links
 uv run ruff check . && uv run ruff format --check . && uv run mypy sdb && uv run pytest
 ```
 
@@ -45,23 +51,33 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `sdb/graph/` — `build.py` (`KnowledgeGraph`: networkx graph + cached degree/rarity/counts + topic
   lookup) and `loader.py`.
 - `sdb/engine/` — `traversal.py` (exhaustive simple-path enumeration), `surprise.py`
-  (information-theoretic), `confidence.py` (source rubric → noisy-OR corroboration → link quality →
-  validators → weakest-link path trust), `narrate.py` (template TIL + `Possibly:` flag),
-  `pipeline.py` (`discover()`).
-- `sdb/cli.py` — the CLI. `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
+  (information-theoretic + **endpoint-unexpectedness** from co-occurrence), `confidence.py` (source
+  rubric → noisy-OR corroboration → link quality → validators → weakest-link path trust),
+  `narrate.py` (template TIL + `Possibly:` flag), `pipeline.py` (`discover()`).
+- `sdb/harvest/` — Phase-1 ingestion (all deterministic given a snapshot): `client.py`
+  (`SparqlClient` protocol + live `WikidataClient` + offline `FakeSparqlClient`), `mapping.py`
+  (Wikidata rank/reference → `Source`, `P31` → `Domain`, PID → `Predicate`), `harvester.py` (k-hop
+  BFS → `SeedData`), `cooccurrence.py` (Wikipedia-link co-occurrence harvest), `snapshot.py` (pin to
+  `data/harvest/`, git-ignored).
+- `sdb/cli.py` — the CLI (`discover`, `harvest`, `build-cooccurrence`). `sdb/viz.py` — optional
+  matplotlib path drawing (`viz` extra).
 - `data/seed.json` — curated 33-node / 40-statement graph across 8 domains, full provenance.
-- `docs/adr/` — decisions. `docs/confidence-rubric.md` — the rubric, with worked examples the tests
-  reproduce. `docs/reference/` — the original idea sketch (git-ignored, local only).
-- `tests/` — 27 tests incl. human-vs-code confidence (0.75) and surprise (8.6) golden cases;
-  `eval/golden.json` — ranker regression (characterization values).
+  `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
+- `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester). `docs/confidence-rubric.md` — the
+  rubric, with worked examples the tests reproduce. `docs/reference/` — the original idea sketch
+  (git-ignored, local only).
+- `tests/` — 45 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+  2.81) golden cases, plus harvester/mapping/co-occurrence; `eval/golden.json` — ranker regression
+  (characterization values).
 
 ## Scoring in one paragraph
 
 **Trust** (is it true?): per-source reliability rubric → `1 − ∏(1 − rᵢ)` corroboration → × link
 quality → × validator penalties; path trust = product of edge confidences. **Surprise** (is it
-interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap + length −
-hub penalty. Results rank by **surprise**, with **trust** as tie-break + a hard floor. Below 0.5 trust
-→ `Possibly:`.
+interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap + length +
+**endpoint unexpectedness** (`−log2 P(endpoint | start)` from Wikipedia-link co-occurrence) − hub
+penalty. Results rank by **surprise**, with **trust** as tie-break + a hard floor. Below 0.5 trust →
+`Possibly:`.
 
 ## Conventions (strict — see git history)
 
@@ -70,17 +86,20 @@ hub penalty. Results rank by **surprise**, with **trust** as tie-break + a hard 
 constants, `test_<module>.py`, ADRs `NNNN-kebab.md`. Type hints + docstrings on public APIs. Ruff +
 mypy + pytest must stay green (CI enforces it).
 
-## Next: Phase 1 (per the saved plan)
+## Phase 1 — done (see ADR 0003, 0004)
 
-1. **Wikidata SPARQL harvester**: from a topic QID, pull a k-hop neighbourhood over the curated
-   predicate set into the `Statement` model, mapping Wikidata rank/reference-count → source
-   reliability deterministically. **Pin harvests to local JSON snapshots** (reproducible; goes under
-   `data/harvest/`, git-ignored).
-2. **Endpoint-surprise fix** (known Phase-0 gap): the current ranker rewards *path-internal* surprise,
-   so an obvious destination like Rome→Latin can top the list despite a wild-looking chain. Add a
-   deterministic `−log P(endpoint | start)` term estimated from **real co-occurrence** (Wikipedia
-   links / Wikidata) so *unexpected destinations* win. Noted in `eval/golden.json`.
-3. Keep it **zero-LLM and deterministic**; tune surprise weights against `eval/`.
+1. ✅ **Wikidata SPARQL harvester** (`sdb/harvest/`): k-hop neighbourhood → `Statement` model,
+   deterministic rank/reference→reliability mapping, pinned `data/harvest/` snapshots, stdlib-only
+   client behind a protocol (offline `FakeSparqlClient` for tests).
+2. ✅ **Endpoint-surprise fix**: `−log2 P(endpoint | start)` from real Wikipedia-link co-occurrence
+   (`data/cooccurrence.json`), `W_ENDPOINT = 4.0` tuned against `eval/`. Rome now tops out at
+   Chang'an, not Latin; regression-locked in `eval/golden.json` + `tests/test_eval_golden.py`.
+3. ✅ Stayed **zero-LLM and deterministic**; every score still reproducible by hand.
 
-Everything paid/heavy (Neo4j, a web UI, an optional free/local LLM narrator) stays a documented
-graduation for later phases, behind an interface — adopt only when earned.
+## Next: Phase 2 candidates (only when earned)
+
+- A **guided/seeded walk** to replace exhaustive enumeration once harvested graphs outgrow it
+  (ADR 0001), and richer node enrichment (dates, better `P31`→`Domain`) on the harvest path.
+- Higher-fidelity endpoint co-occurrence (backlink corpora) behind the existing `WikipediaClient`
+  seam. Neo4j (scale / NL→Cypher), a web UI, an optional free/local LLM narrator remain documented
+  graduations behind an interface — adopt only when earned.

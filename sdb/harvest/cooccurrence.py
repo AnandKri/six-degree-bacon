@@ -1,0 +1,147 @@
+"""Harvest Wikipedia-link co-occurrence: which seed nodes each node's article links to.
+
+This is the *real co-occurrence* signal behind the endpoint-surprise term (see
+:mod:`sdb.engine.surprise`). If Wikipedia's article for *A* links to *B*, the two are an expected
+pairing; the absence of a link marks *B* as a surprising destination from *A*. The harvested matrix
+is committed to ``data/cooccurrence.json`` and read deterministically offline thereafter.
+"""
+
+from __future__ import annotations
+
+import json
+import urllib.parse
+import urllib.request
+from collections.abc import Iterable, Sequence
+from typing import Any, Protocol, runtime_checkable
+
+from sdb.schema.models import Node
+
+_WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
+_WIKIDATA_API = "https://www.wikidata.org/w/api.php"
+_USER_AGENT = "six-degree-bacon/0.1 (https://github.com/AnandKri/six-degree-bacon)"
+_TIMEOUT_SECONDS = 60
+_MAX_CONTINUATIONS = 10
+
+
+@runtime_checkable
+class WikipediaClient(Protocol):
+    """Resolves entities to article titles and reports links between articles."""
+
+    def titles_for(self, qids: Sequence[str]) -> dict[str, str]:
+        """Return the English Wikipedia title for each QID that has one."""
+        ...
+
+    def outbound_links(self, title: str, candidates: Sequence[str]) -> frozenset[str]:
+        """Return which of ``candidates`` the article ``title`` links to (namespace-0 links)."""
+        ...
+
+
+def build_cooccurrence(nodes: Iterable[Node], client: WikipediaClient) -> dict[str, list[str]]:
+    """Build the node→linked-nodes co-occurrence matrix restricted to the given nodes.
+
+    A node's Wikipedia title comes from its Wikidata sitelink when a ``wikidata_qid`` is present,
+    otherwise from its label. Nodes whose article cannot be resolved are simply absent (and thus
+    treated as maximally surprising destinations by the scorer). Output lists are sorted for a
+    stable, diff-friendly committed file.
+    """
+    node_list = list(nodes)
+    title_of = _resolve_titles(node_list, client)
+    id_of_title = {title.casefold(): node_id for node_id, title in title_of.items()}
+    candidate_titles = sorted(set(title_of.values()))
+
+    matrix: dict[str, list[str]] = {}
+    for node in node_list:
+        title = title_of.get(node.id)
+        if title is None:
+            continue
+        linked_ids = {
+            id_of_title[link.casefold()]
+            for link in client.outbound_links(title, candidate_titles)
+            if link.casefold() in id_of_title
+        }
+        linked_ids.discard(node.id)
+        if linked_ids:
+            matrix[node.id] = sorted(linked_ids)
+    return matrix
+
+
+def _resolve_titles(nodes: Sequence[Node], client: WikipediaClient) -> dict[str, str]:
+    """Resolve each node id to an article title (Wikidata sitelink first, else the label)."""
+    qid_to_node = {node.wikidata_qid: node.id for node in nodes if node.wikidata_qid is not None}
+    title_by_qid = client.titles_for(sorted(qid_to_node)) if qid_to_node else {}
+
+    title_of: dict[str, str] = {}
+    for node in nodes:
+        if node.wikidata_qid is not None and node.wikidata_qid in title_by_qid:
+            title_of[node.id] = title_by_qid[node.wikidata_qid]
+        else:
+            title_of[node.id] = node.label
+    return title_of
+
+
+class LiveWikipediaClient:
+    """A :class:`WikipediaClient` backed by the live Wikipedia and Wikidata APIs."""
+
+    def __init__(self, *, user_agent: str = _USER_AGENT, timeout: int = _TIMEOUT_SECONDS) -> None:
+        """Configure the ``User-Agent`` sent to both APIs and the per-request timeout."""
+        self._headers = {"User-Agent": user_agent}
+        self._timeout = timeout
+
+    def _get(self, base: str, params: dict[str, str]) -> dict[str, Any]:
+        """Issue a GET to a MediaWiki API and return the parsed JSON."""
+        url = f"{base}?{urllib.parse.urlencode(params)}"
+        request = urllib.request.Request(url, headers=self._headers)
+        with urllib.request.urlopen(request, timeout=self._timeout) as response:
+            payload: dict[str, Any] = json.load(response)
+        return payload
+
+    def titles_for(self, qids: Sequence[str]) -> dict[str, str]:
+        """Fetch the ``enwiki`` sitelink title for each QID via ``wbgetentities``."""
+        titles: dict[str, str] = {}
+        batch = list(dict.fromkeys(qids))
+        for start in range(0, len(batch), 50):  # wbgetentities accepts up to 50 ids per call
+            chunk = batch[start : start + 50]
+            payload = self._get(
+                _WIKIDATA_API,
+                {
+                    "action": "wbgetentities",
+                    "format": "json",
+                    "props": "sitelinks",
+                    "sitefilter": "enwiki",
+                    "ids": "|".join(chunk),
+                },
+            )
+            for qid, entity in payload.get("entities", {}).items():
+                sitelink = entity.get("sitelinks", {}).get("enwiki")
+                if sitelink is not None:
+                    titles[qid] = sitelink["title"]
+        return titles
+
+    def outbound_links(self, title: str, candidates: Sequence[str]) -> frozenset[str]:
+        """Return the subset of ``candidates`` that ``title`` links to (following redirects)."""
+        if not candidates:
+            return frozenset()
+        found: set[str] = set()
+        plcontinue: str | None = None
+        for _ in range(_MAX_CONTINUATIONS):
+            params = {
+                "action": "query",
+                "format": "json",
+                "prop": "links",
+                "titles": title,
+                "plnamespace": "0",
+                "pltitles": "|".join(candidates),
+                "pllimit": "max",
+                "redirects": "1",
+            }
+            if plcontinue is not None:
+                params["plcontinue"] = plcontinue
+            payload = self._get(_WIKIPEDIA_API, params)
+            for page in payload.get("query", {}).get("pages", {}).values():
+                for link in page.get("links", []):
+                    found.add(link["title"])
+            cont = payload.get("continue")
+            if cont is None:
+                break
+            plcontinue = cont.get("plcontinue")
+        return frozenset(found)

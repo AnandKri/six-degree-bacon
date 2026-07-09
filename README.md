@@ -5,9 +5,12 @@
 > across domains (myth → religion → trade → history) until it lands somewhere genuinely surprising,
 > and present it as a "TIL".
 
-This repository is **Phase 0**: a local-first, **zero-LLM**, fully deterministic engine over a small
-curated knowledge graph. Every number it shows — a **trust** score and a **surprise** score — is a
-deterministic function of measurable evidence that a human can reproduce by hand from
+This repository is at **Phase 1**: a local-first, **zero-LLM**, fully deterministic engine over a
+curated knowledge graph, now with a **Wikidata harvester** (ingest a k-hop neighbourhood into the
+same statement model, with deterministic rank/reference→reliability mapping and pinned snapshots) and
+an **endpoint-surprise term** that rewards *unexpected destinations* using real Wikipedia-link
+co-occurrence. Every number it shows — a **trust** score and a **surprise** score — is a deterministic
+function of measurable evidence that a human can reproduce by hand from
 [`docs/confidence-rubric.md`](docs/confidence-rubric.md). Correctness never depends on an LLM.
 
 ## What it does
@@ -18,7 +21,8 @@ topic ─▶ graph (networkx) ─▶ traverse ─▶ score surprise ─▶ rank 
 
 - **Traverse** — enumerate candidate multi-hop paths from the topic node.
 - **Surprise** (information-theoretic, deterministic) — rewards rare edges, cross-domain jumps,
-  temporal leaps, and length; penalizes routing through hubs.
+  temporal leaps, length, and **unexpected destinations** (`−log2 P(endpoint | start)` from real
+  Wikipedia-link co-occurrence); penalizes routing through hubs.
 - **Trust** (deterministic) — per-source reliability rubric → multi-source corroboration (noisy-OR) →
   entity-link quality → validation penalties → weakest-link path trust.
 - **Narrate** — a template composes the TIL, citing sources and prefixing `Possibly:` when trust is
@@ -31,6 +35,8 @@ Requires Python 3.12+ and [`uv`](https://docs.astral.sh/uv/).
 ```sh
 uv sync --extra dev          # create .venv + install (writes uv.lock)
 uv run sdb discover "Roman Empire"
+uv run sdb harvest Q2277 --hops 2        # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
+uv run sdb build-cooccurrence            # refresh data/cooccurrence.json from Wikipedia links
 uv run pytest                # run the test suite
 ```
 
@@ -41,14 +47,17 @@ On Unix / CI you can use the `Makefile` instead: `make install`, `make check`, `
 ```
 sdb/
   schema/     enums (Domain, Predicate, SourceType, …) + Pydantic models (Node, Statement, …)
-  graph/      build a networkx graph + cache derived features (degree, rarity, counts)
+  graph/      build a networkx graph + cache derived features (degree, rarity, co-occurrence)
   engine/     traversal · surprise · confidence · narrate · pipeline   (pure, deterministic)
+  harvest/    Phase-1 ingestion: Wikidata SPARQL client · rank/ref mapping · k-hop harvester ·
+              Wikipedia-link co-occurrence · pinned snapshots   (deterministic given a snapshot)
   constants.py  the scoring rubric — the single source of truth for every weight and threshold
-  cli.py      `sdb discover "<topic>"`
-data/seed.json  the curated Phase-0 graph, with a planted cross-domain surprising path + sources
+  cli.py      `sdb discover "<topic>"` · `sdb harvest <QID>` · `sdb build-cooccurrence`
+data/seed.json         the curated graph, with a planted cross-domain surprising path + sources
+data/cooccurrence.json committed Wikipedia-link co-occurrence for the endpoint-surprise term
 docs/         ADRs and the confidence rubric (the original idea sketch is kept locally, untracked)
 eval/         golden expectations (ranker regression)
-tests/        unit tests, incl. the human-vs-code confidence & surprise checks
+tests/        unit tests, incl. the human-vs-code confidence, surprise & endpoint checks
 ```
 
 ## Design decisions

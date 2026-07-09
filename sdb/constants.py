@@ -42,12 +42,14 @@ TRUST_FLOOR = 0.15
 #            + W_DOMAIN * domain_jumps
 #            + W_TEMPORAL * normalized_temporal_gap
 #            + W_LENGTH * length_bonus
+#            + W_ENDPOINT * endpoint_unexpectedness
 #            - W_HUB * hub_penalty
 # ---------------------------------------------------------------------------
 W_RARITY = 1.0
 W_DOMAIN = 2.0
 W_TEMPORAL = 1.5
 W_LENGTH = 0.5
+W_ENDPOINT = 4.0
 W_HUB = 0.75
 
 # Total temporal gap (in years) is divided by this before weighting.
@@ -55,6 +57,16 @@ TEMPORAL_NORM_YEARS = 1000.0
 
 # Nodes with degree above this are "hubs": penalized in surprise when used as intermediates.
 HUB_DEGREE_THRESHOLD = 6
+
+# ---------------------------------------------------------------------------
+# Endpoint surprise — rewards *unexpected destinations*
+#   endpoint_unexpectedness = -log2 P(endpoint | start)
+# P(endpoint | start) is estimated from real Wikipedia-link co-occurrence (data/cooccurrence.json):
+# an endpoint whose article is linked from the start's article is an expected destination (low
+# surprise); an unlinked one is surprising. COOCCURRENCE_ALPHA is Laplace smoothing on the
+# conditional, and also sets the term's dynamic range — smaller alpha widens the obvious/surprising
+# gap. Without co-occurrence data the term is 0 (the engine still runs on seed.json alone).
+COOCCURRENCE_ALPHA = 0.5
 
 # ---------------------------------------------------------------------------
 # Traversal defaults

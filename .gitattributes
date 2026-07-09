@@ -1,0 +1,8 @@
+# Normalize line endings to LF in the repository for cross-platform consistency
+# (Windows working copies may still check out CRLF locally, but the repo stays LF).
+* text=auto eol=lf
+
+# Binary assets — never normalize.
+*.xlsx binary
+*.png binary
+*.ico binary

@@ -1,0 +1,12 @@
+{
+  "_comment": "Ranker-regression expectations over data/seed.json. These are CHARACTERIZATION values (what the deterministic engine currently produces), not hand-picked winners. Update deliberately when the seed graph or scoring rubric changes, and record why in an ADR. Note: endpoint-familiarity (e.g. Rome<->Latin is 'obvious' even via a wild chain) is a known Phase-1 surprise-tuning opportunity.",
+  "cases": [
+    {
+      "topic": "Roman Empire",
+      "top": 1,
+      "expected_endpoint": "Latin",
+      "expected_hops": 6,
+      "expected_possibly": true
+    }
+  ]
+}

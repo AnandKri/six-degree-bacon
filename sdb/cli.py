@@ -2,6 +2,9 @@
 
 Renders each discovered path as a plain-text "TIL card" showing the chain, the templated narrative,
 the deterministic trust and surprise scores, and the provenance behind every hop.
+
+The card uses box/arrow glyphs when the terminal can encode them and falls back to ASCII otherwise,
+so it never crashes on a legacy console (e.g. Windows cp1252).
 """
 
 from __future__ import annotations
@@ -10,6 +13,7 @@ import argparse
 import json
 import sys
 import textwrap
+from dataclasses import dataclass
 from pathlib import Path
 
 from sdb.constants import MAX_HOPS_DEFAULT, MIN_HOPS_DEFAULT, TOP_DEFAULT
@@ -21,6 +25,64 @@ from sdb.schema.models import DiscoveryResult, Source
 
 _DEFAULT_SEED = Path("data/seed.json")
 _WRAP_WIDTH = 66
+_UNICODE_PROBE = "⇢→█░⚠"
+
+
+@dataclass(frozen=True)
+class _Glyphs:
+    """The decorative characters used in a card (Unicode or ASCII variant)."""
+
+    arrow: str
+    step: str
+    bar_full: str
+    bar_empty: str
+    warn: str
+
+
+_UNICODE_GLYPHS = _Glyphs(arrow="⇢", step="→", bar_full="█", bar_empty="░", warn="⚠")
+_ASCII_GLYPHS = _Glyphs(arrow="->", step="->", bar_full="#", bar_empty="-", warn="(!)")
+
+# Nicer than "?" when degrading typographic punctuation to a pure-ASCII console.
+# Keyed by Unicode code point (int) so the source stays pure-ASCII and unambiguous.
+_ASCII_TRANSLITERATIONS: dict[int, str] = {
+    0x2014: "-",  # em dash
+    0x2013: "-",  # en dash
+    0x2019: "'",  # right single quote
+    0x2018: "'",  # left single quote
+    0x201C: '"',  # left double quote
+    0x201D: '"',  # right double quote
+    0x2026: "...",  # ellipsis
+}
+
+
+def _stdout_encoding() -> str:
+    """The encoding stdout will use (falling back to UTF-8 if it can't be determined)."""
+    return getattr(sys.stdout, "encoding", None) or "utf-8"
+
+
+def _supports_unicode() -> bool:
+    """Whether the terminal can encode the card's Unicode decorations."""
+    try:
+        _UNICODE_PROBE.encode(_stdout_encoding())
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
+
+
+def _glyphs() -> _Glyphs:
+    """Pick the Unicode glyphs if the terminal supports them, else the ASCII fallback."""
+    return _UNICODE_GLYPHS if _supports_unicode() else _ASCII_GLYPHS
+
+
+def _emit(text: str) -> None:
+    """Print ``text``, replacing any characters the terminal cannot encode (never crashes)."""
+    encoding = _stdout_encoding()
+    try:
+        text.encode(encoding)
+    except (LookupError, UnicodeEncodeError):
+        text = text.translate(_ASCII_TRANSLITERATIONS)
+        text = text.encode(encoding, errors="replace").decode(encoding)
+    print(text)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -79,33 +141,40 @@ def _run_discover(args: argparse.Namespace) -> int:
 
     if args.as_json:
         payload = [_result_to_dict(graph, result, i) for i, result in enumerate(results, 1)]
-        print(json.dumps(payload, indent=2, ensure_ascii=False))
+        _emit(json.dumps(payload, indent=2))  # ensure_ascii=True -> always console-safe
         return 0
 
-    print(f"\nSix Degree Bacon — {topic}\n" + "=" * _WRAP_WIDTH)
+    glyphs = _glyphs()
+    _emit(f"\nSix Degree Bacon - {topic}\n" + "=" * _WRAP_WIDTH)
     for index, result in enumerate(results, 1):
-        print(_render_card(graph, result, index))
-        print()
+        _emit(_render_card(graph, result, index, glyphs))
+        _emit("")
     return 0
 
 
-def _render_card(graph: KnowledgeGraph, result: DiscoveryResult, index: int) -> str:
+def _render_card(
+    graph: KnowledgeGraph, result: DiscoveryResult, index: int, glyphs: _Glyphs
+) -> str:
     """Render a single discovery result as a plain-text card."""
     start = graph.node(result.path.node_ids[0]).label
     end = graph.node(result.path.node_ids[-1]).label
 
-    lines: list[str] = [f"#{index}  {start}  ⇢  {end}   ({result.path.length} hops)", ""]
+    lines: list[str] = [
+        f"#{index}  {start}  {glyphs.arrow}  {end}   ({result.path.length} hops)",
+        "",
+    ]
     lines.append(f"   {start}")
     for hop in result.path.hops:
         phrases = PREDICATE_PHRASE_REVERSED if hop.is_reversed else PREDICATE_PHRASE
-        lines.append(f"     → ({phrases[hop.statement.predicate]}) {graph.node(hop.to_id).label}")
+        phrase = phrases[hop.statement.predicate]
+        lines.append(f"     {glyphs.step} ({phrase}) {graph.node(hop.to_id).label}")
     lines.append("")
 
     lines.extend(f"   {line}" for line in textwrap.wrap(result.til, width=_WRAP_WIDTH))
     lines.append("")
 
-    possibly_tag = "   ⚠ low confidence" if result.possibly else ""
-    lines.append(f"   trust    {_bar(result.trust)}  {result.trust:.2f}{possibly_tag}")
+    possibly_tag = f"   {glyphs.warn} low confidence" if result.possibly else ""
+    lines.append(f"   trust    {_bar(result.trust, glyphs)}  {result.trust:.2f}{possibly_tag}")
     lines.append(f"   surprise {result.surprise:.2f}")
     lines.append("")
 
@@ -116,10 +185,10 @@ def _render_card(graph: KnowledgeGraph, result: DiscoveryResult, index: int) -> 
     return "\n".join(lines)
 
 
-def _bar(value: float, width: int = 10) -> str:
+def _bar(value: float, glyphs: _Glyphs, width: int = 10) -> str:
     """Render a 0..1 value as a small filled bar."""
     filled = round(max(0.0, min(1.0, value)) * width)
-    return "█" * filled + "░" * (width - filled)
+    return glyphs.bar_full * filled + glyphs.bar_empty * (width - filled)
 
 
 def _unique_sources(result: DiscoveryResult) -> list[Source]:

@@ -32,7 +32,17 @@ WIKIDATA_RANK_MULTIPLIER: dict[WikidataRank, float] = {
 PENALTY_DATE_DISORDER = 0.50  # a node has start_year > end_year
 PENALTY_TEMPORAL_IMPLAUSIBLE = 0.40  # e.g. "A follows B" but A predates B
 
-# Path trust below POSSIBLY_THRESHOLD is flagged "Possibly:"; below TRUST_FLOOR it is dropped.
+# ---------------------------------------------------------------------------
+# Ranking — the "wow" score
+#   wow = surprise * trust
+# Results rank by this composite, so a genuinely-surprising *and* well-evidenced connection beats a
+# long, flimsy one. Because trust decays multiplicatively along a chain, the product naturally
+# favours tight, trustworthy paths without hard-capping hops ("longest *meaningful* path" = longest
+# path that stays trustworthy).
+# ---------------------------------------------------------------------------
+# Default evidence gate: only paths with trust >= POSSIBLY_THRESHOLD are surfaced (a genuine "wow
+# with evidence" bar). `--include-possibly` lowers the gate to TRUST_FLOOR and flags sub-threshold
+# paths "Possibly:". Below TRUST_FLOOR a path is never shown.
 POSSIBLY_THRESHOLD = 0.50
 TRUST_FLOOR = 0.15
 
@@ -41,14 +51,13 @@ TRUST_FLOOR = 0.15
 #   surprise = W_RARITY * sum_rarity
 #            + W_DOMAIN * domain_jumps
 #            + W_TEMPORAL * normalized_temporal_gap
-#            + W_LENGTH * length_bonus
 #            + W_ENDPOINT * endpoint_unexpectedness
 #            - W_HUB * hub_penalty
+# Length is deliberately *not* rewarded: trust (in the wow score) already prefers shorter chains.
 # ---------------------------------------------------------------------------
 W_RARITY = 1.0
 W_DOMAIN = 2.0
 W_TEMPORAL = 1.5
-W_LENGTH = 0.5
 W_ENDPOINT = 4.0
 W_HUB = 0.75
 

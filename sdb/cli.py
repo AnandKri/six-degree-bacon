@@ -16,7 +16,13 @@ import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 
-from sdb.constants import MAX_HOPS_DEFAULT, MIN_HOPS_DEFAULT, TOP_DEFAULT
+from sdb.constants import (
+    MAX_HOPS_DEFAULT,
+    MIN_HOPS_DEFAULT,
+    POSSIBLY_THRESHOLD,
+    TOP_DEFAULT,
+    TRUST_FLOOR,
+)
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
 from sdb.graph.loader import load_cooccurrence, load_seed
@@ -121,6 +127,11 @@ def main(argv: list[str] | None = None) -> int:
     discover_parser.add_argument("--min-hops", type=int, default=MIN_HOPS_DEFAULT)
     discover_parser.add_argument("--max-hops", type=int, default=MAX_HOPS_DEFAULT)
     discover_parser.add_argument(
+        "--include-possibly",
+        action="store_true",
+        help="Include speculative low-trust 'Possibly:' paths, not only confident ones.",
+    )
+    discover_parser.add_argument(
         "--json", action="store_true", dest="as_json", help="Emit JSON instead of a card."
     )
 
@@ -184,9 +195,15 @@ def _run_discover(args: argparse.Namespace) -> int:
 
     cooccurrence = load_cooccurrence(args.cooccurrence) if args.cooccurrence.exists() else None
     graph = KnowledgeGraph.from_seed(seed, cooccurrence)
+    min_trust = TRUST_FLOOR if args.include_possibly else POSSIBLY_THRESHOLD
     try:
         results = discover(
-            graph, topic, min_hops=args.min_hops, max_hops=args.max_hops, top=args.top
+            graph,
+            topic,
+            min_hops=args.min_hops,
+            max_hops=args.max_hops,
+            top=args.top,
+            min_trust=min_trust,
         )
     except TopicNotFoundError as error:
         print(f"Topic not found: {topic!r}", file=sys.stderr)
@@ -195,7 +212,9 @@ def _run_discover(args: argparse.Namespace) -> int:
         return 2
 
     if not results:
-        print(f"No sufficiently-trusted surprising path found for {topic!r}.", file=sys.stderr)
+        print(f"No confident surprising connection found for {topic!r}.", file=sys.stderr)
+        if not args.include_possibly:
+            print("Try --include-possibly for speculative paths.", file=sys.stderr)
         return 1
 
     if args.as_json:
@@ -270,8 +289,8 @@ def _render_card(
     lines.append("")
 
     possibly_tag = f"   {glyphs.warn} low confidence" if result.possibly else ""
+    lines.append(f"   wow      {result.score:.1f}   (surprise {result.surprise:.1f} x trust)")
     lines.append(f"   trust    {_bar(result.trust, glyphs)}  {result.trust:.2f}{possibly_tag}")
-    lines.append(f"   surprise {result.surprise:.2f}")
     lines.append("")
 
     lines.append("   sources:")
@@ -305,6 +324,7 @@ def _result_to_dict(
         "topic": graph.node(result.path.node_ids[0]).label,
         "endpoint": graph.node(result.path.node_ids[-1]).label,
         "hops": result.path.length,
+        "score": round(result.score, 4),
         "trust": round(result.trust, 4),
         "surprise": round(result.surprise, 4),
         "possibly": result.possibly,

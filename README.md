@@ -21,10 +21,13 @@ topic ─▶ graph (networkx) ─▶ traverse ─▶ score surprise ─▶ rank 
 
 - **Traverse** — enumerate candidate multi-hop paths from the topic node.
 - **Surprise** (information-theoretic, deterministic) — rewards rare edges, cross-domain jumps,
-  temporal leaps, length, and **unexpected destinations** (`−log2 P(endpoint | start)` from real
-  Wikipedia-link co-occurrence); penalizes routing through hubs.
+  temporal leaps, and **unexpected destinations** (`−log2 P(endpoint | start)` from real
+  Wikipedia-link co-occurrence); penalizes routing through hubs. Length is *not* rewarded.
 - **Trust** (deterministic) — per-source reliability rubric → multi-source corroboration (noisy-OR) →
   entity-link quality → validation penalties → weakest-link path trust.
+- **Rank** — by the **wow score `surprise × trust`**, gated at `trust ≥ 0.50` by default, so tight,
+  well-evidenced connections win over long low-trust rambles (`--include-possibly` to see speculative
+  paths, or an honest "nothing confident" when none qualify).
 - **Narrate** — a template composes the TIL, citing sources and prefixing `Possibly:` when trust is
   low. (A free/local LLM narrator is an optional later upgrade; the template stays the fallback.)
 

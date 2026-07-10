@@ -20,16 +20,19 @@ A local-first, **zero-LLM**, fully deterministic engine over a curated graph, no
 **Wikidata SPARQL harvester** that ingests a k-hop neighbourhood into the `Statement` model with
 deterministic rank/reference→reliability mapping and pinned local snapshots, and (2) an
 **endpoint-surprise term** — `−log P(endpoint | start)` from real Wikipedia-link co-occurrence — so
-*unexpected destinations* win (Rome no longer tops out at the obvious "Latin"). A Phase-2 increment
-adds **harvest→curated merge** (`discover --harvest`): QID node-unification + independent-source
-corroboration, plus a wider harvest predicate/domain vocabulary. Still zero-LLM, deterministic,
-reproducible by hand. All checks green (ruff, format, mypy, 51 tests).
+*unexpected destinations* win (Rome no longer tops out at the obvious "Latin"). Phase-2 increments add
+**harvest→curated merge** (`discover --harvest`, QID unification + corroboration), harvest
+noise-filtering, and a **wow-score rebalance** — results now rank by `surprise × trust` and are gated
+on evidence, so tight, well-sourced connections win (Rome → Mithra in 4 sourced hops) over long
+low-trust rambles. Still zero-LLM, deterministic, reproducible by hand. All checks green (ruff,
+format, mypy, 54 tests).
 
 ## How to run
 
 ```sh
 uv sync --extra dev                     # create .venv + install (writes uv.lock)
-uv run sdb discover "Roman Empire"      # a sourced TIL card (now: Chang'an, not Latin)
+uv run sdb discover "Roman Empire"      # a confident, sourced TIL card (now: Rome -> Mithra, 4 hops)
+uv run sdb discover "Trojan War" --include-possibly   # speculative paths when none clear the gate
 uv run sdb discover "Silk Road" --top 3 --json
 uv run sdb harvest Q2277 --hops 2       # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
 uv run sdb discover "Roman Empire" --harvest data/harvest/q2277.json   # overlay a harvest, merged
@@ -67,21 +70,22 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
 - `data/seed.json` — curated 33-node / 40-statement graph across 8 domains, full provenance.
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
-- `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration).
-  `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
-  `docs/reference/` — the original idea sketch (git-ignored, local only).
-- `tests/` — 51 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
-  2.81) golden cases, plus harvester/mapping/co-occurrence/merge; `eval/golden.json` — ranker
-  regression (characterization values).
+- `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
+  0006 wow-score ranking; 0007 improbable-adjacency archetype *proposed*). `docs/confidence-rubric.md`
+  — the rubric, with worked examples the tests reproduce. `docs/reference/` — the original idea
+  sketch (git-ignored, local only).
+- `tests/` — 54 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+  2.81) golden cases, plus harvester/mapping/co-occurrence/merge and wow-score ranking;
+  `eval/golden.json` — ranker regression (characterization values).
 
 ## Scoring in one paragraph
 
 **Trust** (is it true?): per-source reliability rubric → `1 − ∏(1 − rᵢ)` corroboration → × link
 quality → × validator penalties; path trust = product of edge confidences. **Surprise** (is it
-interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap + length +
+interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap +
 **endpoint unexpectedness** (`−log2 P(endpoint | start)` from Wikipedia-link co-occurrence) − hub
-penalty. Results rank by **surprise**, with **trust** as tie-break + a hard floor. Below 0.5 trust →
-`Possibly:`.
+penalty (length is *not* rewarded). Results rank by the **wow score `surprise × trust`** and are
+gated at `trust ≥ 0.50` by default (`--include-possibly` lowers the gate and flags `Possibly:`).
 
 ## Conventions (strict — see git history)
 
@@ -102,6 +106,10 @@ mypy + pytest must stay green (CI enforces it).
 
 ## Phase 2 — in progress
 
+- ✅ **Wow-score rebalance** (ADR 0006): rank by `surprise × trust`, gate at `trust ≥ 0.50` by default
+  (`--include-possibly` to see speculative), and drop the length reward. Tight, well-evidenced
+  connections now win (Rome → Mithra, 4 hops, trust 0.84; Zoroastrianism → Qin Shi Huang) over long
+  low-trust rambles; topics with no confident connection honestly return nothing.
 - ✅ **Harvest→curated merge** (ADR 0005): `discover --harvest <snapshot>` overlays a harvest onto
   the tracked seed — QID node-unification + independent-source corroboration (noisy-OR, with a guard
   so a Wikidata harvest never double-counts a fact already citing Wikidata). Measured win is
@@ -115,6 +123,9 @@ mypy + pytest must stay green (CI enforces it).
 - **Known finding (ADR 0005):** corroboration is correct but near-dormant on this seed, which is
   already Wikidata-sourced wherever Wikidata agrees. Its value needs a **genuinely independent second
   source** (DBpedia / Wikipedia-text extraction) — a documented graduation, built only when earned.
+- **Proposed — "improbable adjacency" archetype (ADR 0007):** surface *short* (1–3 hop) improbable
+  links (e.g. "Jai Singh had Euclid translated into Sanskrit") as a first-class "wow", by lowering
+  `MIN_HOPS_DEFAULT` and rewarding surprise *density* (per-hop) alongside the "journey" archetype.
 - Still open: a **guided/seeded walk** to replace exhaustive enumeration at scale (ADR 0001);
   richer node enrichment (fewer `culture`-fallback domains); higher-fidelity endpoint co-occurrence.
   Neo4j, a web UI, an optional free/local LLM narrator remain graduations — adopt only when earned.

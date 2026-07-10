@@ -10,8 +10,17 @@ Two independent scores accompany every result:
 - **Trust** — *is this chain true?*
 - **Surprise** — *is this chain interesting?*
 
-They are deliberately separate: results are ranked by **surprise**, with **trust** as a tie-break and
-a hard floor.
+They are computed separately, then combined into the **wow score** that ranks results:
+
+```
+wow = surprise × trust
+```
+
+A connection wins only when it is *both* genuinely surprising *and* well-evidenced. Because trust
+decays multiplicatively along a chain, the product naturally prefers tight, trustworthy paths — so
+"longest *meaningful* path" becomes "longest path that stays trustworthy." By default only paths with
+`trust ≥ POSSIBLY_THRESHOLD (0.50)` are surfaced (the "wow with evidence" gate); `--include-possibly`
+lowers the gate to `TRUST_FLOOR (0.15)` and flags sub-threshold paths `Possibly:`.
 
 ---
 
@@ -71,8 +80,9 @@ statement_confidence = clamp01( corroborated × link_quality × ∏(1 − penalt
 path_trust = ∏ edge_confidence          # a chain is only as strong as its least-trusted edge
 ```
 
-- `path_trust < TRUST_FLOOR (0.15)` → the path is dropped.
-- `path_trust < POSSIBLY_THRESHOLD (0.50)` → the TIL is prefixed `Possibly:` and flagged low-confidence.
+- `path_trust < POSSIBLY_THRESHOLD (0.50)` → dropped by default (the "wow with evidence" gate); with
+  `--include-possibly` it is kept, its TIL prefixed `Possibly:` and flagged low-confidence.
+- `path_trust < TRUST_FLOOR (0.15)` → never shown, even with `--include-possibly`.
 
 ### Worked example (matches `tests/test_confidence.py`)
 
@@ -93,7 +103,6 @@ Computed from a path's features with documented weights:
 surprise = W_RARITY·Σ rarity
          + W_DOMAIN·domain_jumps
          + W_TEMPORAL·normalized_temporal_gap
-         + W_LENGTH·length_bonus
          + W_ENDPOINT·endpoint_unexpectedness
          − W_HUB·hub_penalty
 ```
@@ -103,9 +112,11 @@ surprise = W_RARITY·Σ rarity
 | `rarity` (per edge) | `−log2( count(predicate) / total_edges )` — self-information; rarer ⇒ more surprising | `W_RARITY = 1.0` |
 | `domain_jumps` | number of consecutive nodes whose `domain` differs | `W_DOMAIN = 2.0` |
 | `normalized_temporal_gap` | `Σ |midpoint_yearₐ − midpoint_year_b| / 1000` | `W_TEMPORAL = 1.5` |
-| `length_bonus` | `max(0, hops − 2)` | `W_LENGTH = 0.5` |
 | `endpoint_unexpectedness` | `−log2 P(endpoint | start)` — an *unexpected destination* (see below) | `W_ENDPOINT = 4.0` |
 | `hub_penalty` | for each **intermediate** node, `max(0, degree − 6) / 6` | `W_HUB = 0.75` |
+
+Length is deliberately **not** rewarded: paying paths for extra hops just produced long, low-trust
+rambles, and the wow score (`surprise × trust`) already prefers tight, trustworthy chains.
 
 ### Endpoint unexpectedness (rewarding unexpected *destinations*)
 
@@ -148,12 +159,13 @@ summing to 400 years, no hub intermediates, and **no co-occurrence data** (endpo
 Σ rarity                = 2.0 + 2.0            = 4.0
 domain_jumps            = 2
 normalized_gap          = 400 / 1000          = 0.4
-length_bonus            = max(0, 2 − 2)       = 0
 endpoint_unexpectedness = 0                   (no co-occurrence data)
 hub_penalty             = 0
 
-surprise = 1.0·4.0 + 2.0·2 + 1.5·0.4 + 0.5·0 + 4.0·0 − 0.75·0 = 8.6
+surprise = 1.0·4.0 + 2.0·2 + 1.5·0.4 + 4.0·0 − 0.75·0 = 8.6
 ```
+
+Its wow score would be `surprise × trust`; e.g. at `trust = 0.75`, `wow = 8.6 × 0.75 = 6.45`.
 
 ---
 

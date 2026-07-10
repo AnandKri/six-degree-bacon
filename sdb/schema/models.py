@@ -119,12 +119,17 @@ class Path(BaseModel):
 
 
 class DiscoveryResult(BaseModel):
-    """A ranked result: a path with its deterministic scores and a templated TIL."""
+    """A ranked result: a path with its deterministic scores and a templated TIL.
+
+    ``score`` is the composite "wow" ranking key, ``surprise x trust`` — high only when a connection
+    is both genuinely surprising and well-evidenced.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     path: Path
     trust: float
     surprise: float
+    score: float
     til: str
     possibly: bool

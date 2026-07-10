@@ -1,9 +1,10 @@
 """Deterministic, information-theoretic *surprise* scoring for a path.
 
 surprise = W_RARITY·Σ rarity + W_DOMAIN·domain_jumps + W_TEMPORAL·temporal_gap
-           + W_LENGTH·length_bonus + W_ENDPOINT·endpoint_unexpectedness - W_HUB·hub_penalty
+           + W_ENDPOINT·endpoint_unexpectedness - W_HUB·hub_penalty
 
-All weights live in :mod:`sdb.constants`; the formula is reproducible by hand.
+Length is not rewarded here — trust (in the wow score, ``surprise x trust``) already prefers shorter
+chains. All weights live in :mod:`sdb.constants`; the formula is reproducible by hand.
 """
 
 from __future__ import annotations
@@ -16,7 +17,6 @@ from sdb.constants import (
     W_DOMAIN,
     W_ENDPOINT,
     W_HUB,
-    W_LENGTH,
     W_RARITY,
     W_TEMPORAL,
 )
@@ -32,7 +32,6 @@ class SurpriseScore:
     sum_rarity: float
     domain_jumps: int
     temporal_gap: float  # normalized (years / TEMPORAL_NORM_YEARS)
-    length_bonus: int
     endpoint_unexpectedness: float  # -log2 P(endpoint | start) from co-occurrence; 0 without data
     hub_penalty: float
 
@@ -42,14 +41,12 @@ def score_surprise(graph: KnowledgeGraph, path: Path) -> SurpriseScore:
     sum_rarity = sum(graph.rarity(hop.statement.predicate) for hop in path.hops)
     domain_jumps = _domain_jumps(graph, path)
     temporal_gap = _temporal_gap(graph, path)
-    length_bonus = max(0, path.length - 2)
     endpoint_unexpectedness = graph.endpoint_unexpectedness(path.node_ids[0], path.node_ids[-1])
     hub_penalty = _hub_penalty(graph, path)
     total = (
         W_RARITY * sum_rarity
         + W_DOMAIN * domain_jumps
         + W_TEMPORAL * temporal_gap
-        + W_LENGTH * length_bonus
         + W_ENDPOINT * endpoint_unexpectedness
         - W_HUB * hub_penalty
     )
@@ -58,7 +55,6 @@ def score_surprise(graph: KnowledgeGraph, path: Path) -> SurpriseScore:
         sum_rarity=sum_rarity,
         domain_jumps=domain_jumps,
         temporal_gap=temporal_gap,
-        length_bonus=length_bonus,
         endpoint_unexpectedness=endpoint_unexpectedness,
         hub_penalty=hub_penalty,
     )

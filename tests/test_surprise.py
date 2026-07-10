@@ -60,6 +60,5 @@ def test_surprise_matches_hand_calc() -> None:
     assert score.sum_rarity == pytest.approx(4.0)
     assert score.domain_jumps == 2
     assert score.temporal_gap == pytest.approx(0.4)
-    assert score.length_bonus == 0
     assert score.hub_penalty == pytest.approx(0.0)
     assert score.total == pytest.approx(8.6)  # see docs/confidence-rubric.md

@@ -103,7 +103,6 @@ def test_score_surprise_includes_weighted_endpoint_term() -> None:
         score.sum_rarity
         + 2.0 * score.domain_jumps
         + 1.5 * score.temporal_gap
-        + 0.5 * score.length_bonus
         + W_ENDPOINT * score.endpoint_unexpectedness
         - 0.75 * score.hub_penalty
     )

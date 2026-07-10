@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from sdb.constants import TRUST_FLOOR
 from sdb.engine.pipeline import discover
 from sdb.graph.build import KnowledgeGraph
 
@@ -23,8 +24,8 @@ def test_golden_top_results(seed_graph: KnowledgeGraph) -> None:
 
 
 def test_planted_path_discoverable(seed_graph: KnowledgeGraph) -> None:
-    # The deliberately-planted 6-hop Rome -> China chain must remain discoverable.
-    results = discover(seed_graph, "Roman Empire", top=20)
+    # The planted 6-hop Rome -> China chain is low-trust, so it surfaces only with the lowered gate.
+    results = discover(seed_graph, "Roman Empire", top=20, min_trust=TRUST_FLOOR)
     by_endpoint = {seed_graph.node(r.path.node_ids[-1]).label: r for r in results}
     assert "Great Wall of China" in by_endpoint
     assert by_endpoint["Great Wall of China"].path.length == 6

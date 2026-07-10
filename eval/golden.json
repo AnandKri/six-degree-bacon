@@ -1,19 +1,19 @@
 {
-  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. These are CHARACTERIZATION values (what the deterministic engine currently produces), not hand-picked winners. Update deliberately when the seed graph, co-occurrence, or scoring rubric changes, and record why in an ADR. Phase-1 note: the endpoint-surprise term (-log2 P(endpoint | start) from Wikipedia-link co-occurrence, ADR 0003) now demotes 'obvious' destinations — 'Roman Empire' no longer tops out at Latin (an obvious pairing) but at Chang'an, the Silk Road's eastern terminus in China.",
+  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine currently produces at the default 'wow with evidence' gate), not hand-picked winners. Update deliberately when the seed graph, co-occurrence, or scoring changes, and record why in an ADR. Phase-2 (ADR 0006): results rank by wow = surprise x trust and are gated at trust >= 0.50, so tight, well-evidenced connections win (Roman Empire -> Mithra in 4 sourced hops; Zoroastrianism -> Qin Shi Huang, the First Emperor of China) instead of long low-trust rambles. All default results are confident (possibly = false).",
   "cases": [
     {
       "topic": "Roman Empire",
       "top": 1,
-      "expected_endpoint": "Chang'an",
-      "expected_hops": 6,
-      "expected_possibly": true
+      "expected_endpoint": "Mithra",
+      "expected_hops": 4,
+      "expected_possibly": false
     },
     {
-      "topic": "Christianity",
+      "topic": "Zoroastrianism",
       "top": 1,
-      "expected_endpoint": "Proto-Indo-European",
-      "expected_hops": 6,
-      "expected_possibly": true
+      "expected_endpoint": "Qin Shi Huang",
+      "expected_hops": 4,
+      "expected_possibly": false
     }
   ]
 }

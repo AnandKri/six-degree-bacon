@@ -23,15 +23,17 @@ deterministic rank/reference→reliability mapping and pinned local snapshots, a
 *unexpected destinations* win (Rome no longer tops out at the obvious "Latin"). Phase-2 increments add
 **harvest→curated merge** (`discover --harvest`, QID unification + corroboration), harvest
 noise-filtering, a **wow-score rebalance** (rank by `surprise × trust`, gated on evidence), and a
-**seed-QID repair** (16 hallucinated QIDs fixed). Tight, well-sourced connections now win —
-Rome → Qin Shi Huang (the First Emperor of China) in 3 sourced hops — over long low-trust rambles.
-Still zero-LLM, deterministic, reproducible by hand. All checks green (ruff, format, mypy, 59 tests).
+**seed-QID repair** (16 hallucinated QIDs fixed), and **two archetypes** (a *journey* + an
+*improbable pair*). Tight, well-sourced cross-culture connections win — e.g. Euclid → al-Tusi's
+Persia → Silk Road → the Roman Republic. Still zero-LLM, deterministic, reproducible by hand. All
+checks green (ruff, format, mypy, 59 tests).
 
 ## How to run
 
 ```sh
 uv sync --extra dev                     # create .venv + install (writes uv.lock)
-uv run sdb discover "Roman Empire"      # confident sourced TIL (now: Rome -> Qin Shi Huang, 3 hops)
+uv run sdb discover "Roman Empire"      # two archetypes: a journey + an improbable pair
+uv run sdb validate-qids                # check every node's wikidata_qid resolves (guard, ADR 0008)
 uv run sdb discover "Trojan War" --include-possibly   # speculative paths when none clear the gate
 uv run sdb discover "Silk Road" --top 3 --json
 uv run sdb harvest Q2277 --hops 2       # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
@@ -68,7 +70,8 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   corroboration), `snapshot.py` (pin to `data/harvest/`, git-ignored).
 - `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
   `validate-qids`). `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
-- `data/seed.json` — curated 33-node / 40-statement graph across 8 domains, full provenance.
+- `data/seed.json` — curated 37-node / 46-statement graph across 9 domains, full provenance (incl. a
+  science subgraph: Euclid → al-Tusi → Jagannatha Samrat → Jai Singh II).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair).
@@ -111,11 +114,16 @@ mypy + pytest must stay green (CI enforces it).
 - ✅ **Seed-QID repair** (ADR 0008): 16 of 31 curated `wikidata_qid`s were hallucinated (silk_road →
   "Russian Empire", proto_indo_european → "Secure Shell"), faking provenance and poisoning
   co-occurrence. Repaired deterministically (label → Wikipedia article → `wikibase_item`, verified),
-  co-occurrence rebuilt (33/33 nodes). De-artifacted results: Rome now tops out at Qin Shi Huang.
+  co-occurrence rebuilt. De-artifacted results (Mithraism correctly reads as expected-from-Rome, not
+  a false surprise). A `validate-qids` guard + `tests/test_validate.py` prevent recurrence.
+- ✅ **Type-B seed coverage:** added a science subgraph (Euclid → al-Tusi → Jagannatha Samrat → Jai
+  Singh II) so the graph spans Greek maths ↔ Mughal-era India. Nuance found: Jai Singh ↔ Euclid *is*
+  documented together on Wikipedia, so the improbable-pair archetype correctly does **not** flag it —
+  it isn't fooled by a famous-but-documented link.
 - ✅ **Wow-score rebalance** (ADR 0006): rank by `surprise × trust`, gate at `trust ≥ 0.50` by default
   (`--include-possibly` to see speculative), and drop the length reward. Tight, well-evidenced
-  connections now win (Rome → Qin Shi Huang, 3 hops, trust 0.86) over long low-trust rambles; topics
-  with no confident connection honestly return nothing.
+  connections now win over long low-trust rambles; topics with no confident connection honestly
+  return nothing.
 - ✅ **Harvest→curated merge** (ADR 0005): `discover --harvest <snapshot>` overlays a harvest onto
   the tracked seed — QID node-unification + independent-source corroboration (noisy-OR, with a guard
   so a Wikidata harvest never double-counts a fact already citing Wikidata). Measured win is

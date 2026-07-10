@@ -1,17 +1,24 @@
 {
-  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces at the default 'wow with evidence' gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why in an ADR. Results rank by wow = surprise x trust, gated at trust >= 0.50 (ADR 0006). After the seed-QID repair (16 hallucinated QIDs corrected + co-occurrence rebuilt), Roman Empire tops out at Qin Shi Huang, the First Emperor of China, in 3 sourced hops. All default results are confident (possibly = false).",
+  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. Note: adding the Euclid/Jai Singh science subgraph raised the frequency of 'influenced_by' (lowering its rarity), which shifted Roman Empire's top journey from Qin Shi Huang to Mithra — a legitimate global-rarity effect. The Euclid -> Roman Republic case locks the new cross-culture bridge (Greek mathematics -> al-Tusi's Persia -> Silk Road -> Rome).",
   "cases": [
     {
       "topic": "Roman Empire",
       "top": 1,
-      "expected_endpoint": "Qin Shi Huang",
-      "expected_hops": 3,
+      "expected_endpoint": "Mithra",
+      "expected_hops": 4,
       "expected_possibly": false
     },
     {
       "topic": "Christianity",
       "top": 1,
       "expected_endpoint": "Mithra",
+      "expected_hops": 5,
+      "expected_possibly": false
+    },
+    {
+      "topic": "Euclid",
+      "top": 1,
+      "expected_endpoint": "Roman Republic",
       "expected_hops": 5,
       "expected_possibly": false
     }

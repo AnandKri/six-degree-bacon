@@ -317,6 +317,23 @@
       "rigveda",
       "romance_languages",
       "zoroastrianism"
+    ],
+    "euclid": [
+      "al_tusi",
+      "byzantine_empire"
+    ],
+    "al_tusi": [
+      "constantinople",
+      "euclid",
+      "persia"
+    ],
+    "jagannatha_samrat": [
+      "al_tusi",
+      "euclid",
+      "rigveda"
+    ],
+    "jai_singh_ii": [
+      "euclid"
     ]
   }
 }

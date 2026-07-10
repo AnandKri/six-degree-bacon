@@ -58,12 +58,15 @@ independent source **plus** a predicate-alignment layer to pay off. Merge's real
 
 ## 5. Remaining work (priority order)
 
-1. **Seed coverage for genuine improbable pairs (Type B).** Today the best "improbable pair" is
-   Rome → Great Wall of China (2 hops) because the seed has no truly cross-world short link. Add a few
-   real, sourced facts (e.g. the ADR-0007 chain: Euclid → al-Tusi's Arabic → Jagannatha Samrat's
-   Sanskrit *Rekhaganita* → Sawai Jai Singh II). **Process:** add nodes/statements with correct QIDs,
-   run `sdb validate-qids`, then `sdb build-cooccurrence` to refresh, then re-check `eval/golden.json`.
-   Small, high-payoff; makes Type B shine.
+1. **Seed coverage for genuine improbable pairs (Type B).** *Partly done:* the Euclid → al-Tusi →
+   Jagannatha Samrat → Jai Singh II science subgraph is in (spans Greek maths ↔ Mughal India). A
+   finding: that flagship pair (Jai Singh ↔ Euclid) is **documented together on Wikipedia**, so
+   co-occurrence rightly rates it *expected* — it is not an "improbable adjacency" by our signal. To
+   make Type B pop, add pairs that are genuinely **not** co-occurring yet short-linked (check with
+   `graph.endpoint_unexpectedness`). Remaining caveat: obscure nodes have thin Wikipedia co-occurrence
+   → occasional false "improbable" (e.g. Jai Singh → his own court astronomer). **Process after any
+   `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → re-check `eval/golden.json`
+   (adding edges shifts global predicate rarity, so journey winners can move).
 2. **Node enrichment on the harvest path.** ~30% of harvested nodes fall to the `culture` Domain
    fallback (weakens cross-domain surprise). Grow `INSTANCE_OF_DOMAIN` (P31→Domain) and pull better
    dates. Deterministic, bounded.

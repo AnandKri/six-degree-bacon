@@ -1,7 +1,7 @@
 # ADR 0007 — "Improbable adjacency" as a first-class surprise archetype
 
-- **Status:** proposed
-- **Phase:** 2 (candidate)
+- **Status:** accepted (implemented)
+- **Phase:** 2
 
 ## Context
 
@@ -77,3 +77,25 @@ high endpoint-surprise + adequate trust**.
   "journey" goldens are unaffected if the two archetypes are surfaced separately.
 - Requires re-tuning `W_LENGTH` (removed or reshaped) and the interaction with `W_ENDPOINT` against
   `eval/`; watch that short obvious pairs never leak past the endpoint-surprise + trust gates.
+
+## Update — as built
+
+Implemented as **two explicit archetypes** (`sdb.schema.enums.Archetype`), surfaced together by
+default (`sdb discover`, and `--archetype journey|unlikely|both`); each is a ranked list, honouring
+"rank TILs in order of wow":
+
+- **JOURNEY** — `surprise × trust` over `[3, 6]` hops (the existing wow score, ADR 0006).
+- **UNLIKELY** — `endpoint_unexpectedness × trust` over `[1, 3]` hops. We rank by *endpoint
+  improbability × trust* rather than raw "surprise density": density (total surprise ÷ hops) still
+  rewarded obvious 1-hop neighbours, whereas the endpoint term is exactly "how worlds-apart is this
+  destination." Both gate at `trust ≥ POSSIBLY_THRESHOLD`.
+
+Two course corrections came out of building it:
+
+1. **Prerequisite bug (ADR 0008).** Type B is only as honest as the co-occurrence data. Prototyping
+   surfaced the false-positive "Rome → Mithraism" (Mithraism *was* Roman) — traced to 16 hallucinated
+   seed QIDs that had emptied co-occurrence. Fixing those was a hard prerequisite; afterwards
+   Mithraism correctly reads as *expected* and drops out of Rome's improbable pairs.
+2. **Data, deferred by choice.** No Jai-Singh/Euclid-style fact was added, so on the current seed the
+   best genuine improbable pair is "Roman Empire → Great Wall of China" (2 hops, worlds apart yet
+   directly connected). Richer Type-B destinations await curated/harvested coverage, as anticipated.

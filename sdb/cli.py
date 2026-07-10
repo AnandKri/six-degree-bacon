@@ -16,17 +16,11 @@ import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 
-from sdb.constants import (
-    MAX_HOPS_DEFAULT,
-    MIN_HOPS_DEFAULT,
-    POSSIBLY_THRESHOLD,
-    TOP_DEFAULT,
-    TRUST_FLOOR,
-)
+from sdb.constants import POSSIBLY_THRESHOLD, TOP_DEFAULT, TRUST_FLOOR
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
 from sdb.graph.loader import load_cooccurrence, load_seed
-from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED
+from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED, Archetype
 from sdb.schema.models import DiscoveryResult, Source
 
 _DEFAULT_SEED = Path("data/seed.json")
@@ -123,9 +117,17 @@ def main(argv: list[str] | None = None) -> int:
         metavar="SNAPSHOT",
         help="Merge a harvest snapshot into the curated graph (repeatable).",
     )
-    discover_parser.add_argument("--top", type=int, default=TOP_DEFAULT, help="Number of results.")
-    discover_parser.add_argument("--min-hops", type=int, default=MIN_HOPS_DEFAULT)
-    discover_parser.add_argument("--max-hops", type=int, default=MAX_HOPS_DEFAULT)
+    discover_parser.add_argument(
+        "--archetype",
+        choices=["journey", "unlikely", "both"],
+        default="both",
+        help="journey (long chain), unlikely (short improbable adjacency), or both (default).",
+    )
+    discover_parser.add_argument(
+        "--top", type=int, default=TOP_DEFAULT, help="Number of results per archetype."
+    )
+    discover_parser.add_argument("--min-hops", type=int, default=None)
+    discover_parser.add_argument("--max-hops", type=int, default=None)
     discover_parser.add_argument(
         "--include-possibly",
         action="store_true",
@@ -196,38 +198,63 @@ def _run_discover(args: argparse.Namespace) -> int:
     cooccurrence = load_cooccurrence(args.cooccurrence) if args.cooccurrence.exists() else None
     graph = KnowledgeGraph.from_seed(seed, cooccurrence)
     min_trust = TRUST_FLOOR if args.include_possibly else POSSIBLY_THRESHOLD
+    archetypes = (
+        [Archetype.JOURNEY, Archetype.UNLIKELY]
+        if args.archetype == "both"
+        else [Archetype(args.archetype)]
+    )
     try:
-        results = discover(
-            graph,
-            topic,
-            min_hops=args.min_hops,
-            max_hops=args.max_hops,
-            top=args.top,
-            min_trust=min_trust,
-        )
+        by_archetype = {
+            archetype: discover(
+                graph,
+                topic,
+                archetype=archetype,
+                min_hops=args.min_hops,
+                max_hops=args.max_hops,
+                top=args.top,
+                min_trust=min_trust,
+            )
+            for archetype in archetypes
+        }
     except TopicNotFoundError as error:
         print(f"Topic not found: {topic!r}", file=sys.stderr)
         if error.suggestions:
             print("Did you mean: " + ", ".join(error.suggestions) + "?", file=sys.stderr)
         return 2
 
-    if not results:
-        print(f"No confident surprising connection found for {topic!r}.", file=sys.stderr)
+    if not any(by_archetype.values()):
+        print(f"No confident connection found for {topic!r}.", file=sys.stderr)
         if not args.include_possibly:
             print("Try --include-possibly for speculative paths.", file=sys.stderr)
         return 1
 
     if args.as_json:
-        payload = [_result_to_dict(graph, result, i) for i, result in enumerate(results, 1)]
+        payload = [
+            _result_to_dict(graph, result, i)
+            for archetype in archetypes
+            for i, result in enumerate(by_archetype[archetype], 1)
+        ]
         _emit(json.dumps(payload, indent=2))  # ensure_ascii=True -> always console-safe
         return 0
 
     glyphs = _glyphs()
     _emit(f"\nSix Degree Bacon - {topic}\n" + "=" * _WRAP_WIDTH)
-    for index, result in enumerate(results, 1):
-        _emit(_render_card(graph, result, index, glyphs))
-        _emit("")
+    for archetype in archetypes:
+        _emit(f"\n{_ARCHETYPE_HEADING[archetype]}")
+        results = by_archetype[archetype]
+        if not results:
+            _emit(f"   (no confident {archetype.value} found)\n")
+            continue
+        for index, result in enumerate(results, 1):
+            _emit(_render_card(graph, result, index, glyphs))
+            _emit("")
     return 0
+
+
+_ARCHETYPE_HEADING: dict[Archetype, str] = {
+    Archetype.JOURNEY: "THE JOURNEY  (a long, surprising chain)",
+    Archetype.UNLIKELY: "THE IMPROBABLE PAIR  (worlds apart, yet a short hop away)",
+}
 
 
 def _run_harvest(args: argparse.Namespace) -> int:
@@ -289,7 +316,14 @@ def _render_card(
     lines.append("")
 
     possibly_tag = f"   {glyphs.warn} low confidence" if result.possibly else ""
-    lines.append(f"   wow      {result.score:.1f}   (surprise {result.surprise:.1f} x trust)")
+    if result.archetype is Archetype.UNLIKELY:
+        score_line = (
+            f"   improbable {result.score:.1f}   "
+            f"(improbability {result.endpoint_unexpectedness:.1f} x trust)"
+        )
+    else:
+        score_line = f"   wow      {result.score:.1f}   (surprise {result.surprise:.1f} x trust)"
+    lines.append(score_line)
     lines.append(f"   trust    {_bar(result.trust, glyphs)}  {result.trust:.2f}{possibly_tag}")
     lines.append("")
 
@@ -321,12 +355,14 @@ def _result_to_dict(
     """Convert a result to a JSON-friendly dict."""
     return {
         "rank": index,
+        "archetype": result.archetype.value,
         "topic": graph.node(result.path.node_ids[0]).label,
         "endpoint": graph.node(result.path.node_ids[-1]).label,
         "hops": result.path.length,
         "score": round(result.score, 4),
         "trust": round(result.trust, 4),
         "surprise": round(result.surprise, 4),
+        "endpoint_unexpectedness": round(result.endpoint_unexpectedness, 4),
         "possibly": result.possibly,
         "til": result.til,
         "path": [graph.node(node_id).label for node_id in result.path.node_ids],

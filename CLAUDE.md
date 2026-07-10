@@ -71,12 +71,12 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `data/seed.json` — curated 33-node / 40-statement graph across 8 domains, full provenance.
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
-  0006 wow-score ranking, 0008 seed-QID repair; 0007 improbable-adjacency archetype *proposed*).
+  0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce. `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 54 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
-  2.81) golden cases, plus harvester/mapping/co-occurrence/merge and wow-score ranking;
-  `eval/golden.json` — ranker regression (characterization values).
+- `tests/` — 56 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+  2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, and both
+  archetypes; `eval/golden.json` — ranker regression (characterization values).
 
 ## Scoring in one paragraph
 
@@ -84,8 +84,10 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 quality → × validator penalties; path trust = product of edge confidences. **Surprise** (is it
 interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap +
 **endpoint unexpectedness** (`−log2 P(endpoint | start)` from Wikipedia-link co-occurrence) − hub
-penalty (length is *not* rewarded). Results rank by the **wow score `surprise × trust`** and are
-gated at `trust ≥ 0.50` by default (`--include-possibly` lowers the gate and flags `Possibly:`).
+penalty (length is *not* rewarded). Results come in two **archetypes** (ADR 0007), surfaced together:
+a **journey** (3–6 hops, ranked `surprise × trust`) and an **improbable pair** (1–3 hops, ranked
+`endpoint_unexpectedness × trust`). Both gate at `trust ≥ 0.50` by default (`--include-possibly`
+lowers the gate and flags `Possibly:`).
 
 ## Conventions (strict — see git history)
 
@@ -127,9 +129,11 @@ mypy + pytest must stay green (CI enforces it).
 - **Known finding (ADR 0005):** corroboration is correct but near-dormant on this seed, which is
   already Wikidata-sourced wherever Wikidata agrees. Its value needs a **genuinely independent second
   source** (DBpedia / Wikipedia-text extraction) — a documented graduation, built only when earned.
-- **Proposed — "improbable adjacency" archetype (ADR 0007):** surface *short* (1–3 hop) improbable
-  links (e.g. "Jai Singh had Euclid translated into Sanskrit") as a first-class "wow", by lowering
-  `MIN_HOPS_DEFAULT` and rewarding surprise *density* (per-hop) alongside the "journey" archetype.
+- ✅ **"Improbable adjacency" archetype (ADR 0007):** `sdb discover` now surfaces two archetypes —
+  a **journey** and an **improbable pair** (short 1–3 hop link between entities that feel worlds
+  apart, ranked `endpoint_unexpectedness × trust`). Rome → Great Wall of China (2 hops) is a genuine
+  Type-B wow; obvious neighbours (Rome → Latin) correctly rank low. Richer Type-B destinations await
+  broader seed coverage.
 - Still open: a **guided/seeded walk** to replace exhaustive enumeration at scale (ADR 0001);
   richer node enrichment (fewer `culture`-fallback domains); higher-fidelity endpoint co-occurrence.
   Neo4j, a web UI, an optional free/local LLM narrator remain graduations — adopt only when earned.

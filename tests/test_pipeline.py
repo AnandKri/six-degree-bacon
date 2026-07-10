@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from sdb.constants import POSSIBLY_THRESHOLD, TRUST_FLOOR
+from sdb.constants import MAX_HOPS_UNLIKELY, POSSIBLY_THRESHOLD, TRUST_FLOOR
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
+from sdb.schema.enums import Archetype
 
 
 def test_topic_not_found_has_suggestions(seed_graph: KnowledgeGraph) -> None:
@@ -39,3 +40,28 @@ def test_default_gate_surfaces_only_confident_results(seed_graph: KnowledgeGraph
     speculative = discover(seed_graph, "Roman Empire", top=50, min_trust=TRUST_FLOOR)
     assert len(speculative) > len(confident)
     assert all(result.trust >= TRUST_FLOOR for result in speculative)
+
+
+def test_unlikely_archetype_is_short_and_scored_by_improbability(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    results = discover(seed_graph, "Roman Empire", archetype=Archetype.UNLIKELY, top=5)
+    assert results
+    for result in results:
+        assert result.archetype is Archetype.UNLIKELY
+        assert result.path.length <= MAX_HOPS_UNLIKELY  # short by construction
+        # Ranked by the improbability of the destination, not the length of the route.
+        assert result.score == pytest.approx(result.endpoint_unexpectedness * result.trust)
+    scores = [result.score for result in results]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_improbable_pair_is_worlds_apart_not_an_obvious_neighbour(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # Rome & the Great Wall of China don't co-occur, yet connect in 2 hops — a genuine Type-B wow.
+    top = discover(seed_graph, "Roman Empire", archetype=Archetype.UNLIKELY)[0]
+    assert seed_graph.node(top.path.node_ids[-1]).label == "Great Wall of China"
+    assert top.path.length == 2
+    # It beats an obvious short neighbour: Rome -> Rome's directly-co-occurring city Latin.
+    assert top.endpoint_unexpectedness > seed_graph.endpoint_unexpectedness("roman_empire", "latin")

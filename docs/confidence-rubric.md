@@ -22,6 +22,19 @@ decays multiplicatively along a chain, the product naturally prefers tight, trus
 `trust ≥ POSSIBLY_THRESHOLD (0.50)` are surfaced (the "wow with evidence" gate); `--include-possibly`
 lowers the gate to `TRUST_FLOOR (0.15)` and flags sub-threshold paths `Possibly:`.
 
+### Two archetypes (ADR 0007)
+
+Results come in two shapes, ranked on their own scales and surfaced together:
+
+| Archetype | Hops | Ranking score |
+|---|---|---|
+| **Journey** — a long cross-domain chain | 3–6 | `surprise × trust` (the wow score above) |
+| **Improbable pair** — a short link between entities that feel worlds apart | 1–3 | `endpoint_unexpectedness × trust` |
+
+The improbable pair ranks by the *destination's* improbability (not the route's length or total
+surprise), so an obvious one-hop neighbour never wins: e.g. "Roman Empire → Great Wall of China"
+(2 hops, worlds apart) beats "Roman Empire → Latin" (directly co-occurring, low improbability).
+
 ---
 
 ## Trust

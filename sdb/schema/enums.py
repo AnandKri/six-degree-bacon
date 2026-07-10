@@ -120,3 +120,16 @@ class TimePrecision(StrEnum):
     CENTURY = "century"
     MILLENNIUM = "millennium"
     CIRCA = "circa"
+
+
+class Archetype(StrEnum):
+    """A shape of "wow" a result can have — the two are ranked on their own scales.
+
+    ``JOURNEY`` is the cross-domain chain, scored by ``surprise x trust``. ``UNLIKELY`` is the
+    *improbable adjacency* — a short link between two entities that feel worlds apart — scored by
+    ``endpoint_unexpectedness x trust`` so the improbability of the *destination*, not the length of
+    the route, decides it (see ADR 0007).
+    """
+
+    JOURNEY = "journey"
+    UNLIKELY = "unlikely"

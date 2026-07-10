@@ -10,7 +10,14 @@ from __future__ import annotations
 from pydantic import BaseModel, ConfigDict, Field
 
 from sdb.constants import SOURCE_RELIABILITY, WIKIDATA_RANK_MULTIPLIER
-from sdb.schema.enums import Domain, Predicate, SourceType, TimePrecision, WikidataRank
+from sdb.schema.enums import (
+    Archetype,
+    Domain,
+    Predicate,
+    SourceType,
+    TimePrecision,
+    WikidataRank,
+)
 
 # Statement rank refines reliability only for Wikidata sources (it is a Wikidata concept).
 _RANKED_SOURCE_TYPES = frozenset({SourceType.WIKIDATA_WITH_REF, SourceType.WIKIDATA_NO_REF})
@@ -121,15 +128,18 @@ class Path(BaseModel):
 class DiscoveryResult(BaseModel):
     """A ranked result: a path with its deterministic scores and a templated TIL.
 
-    ``score`` is the composite "wow" ranking key, ``surprise x trust`` — high only when a connection
-    is both genuinely surprising and well-evidenced.
+    ``score`` is the archetype's ranking key: for :attr:`~sdb.schema.enums.Archetype.JOURNEY` it is
+    the wow score ``surprise x trust``; for :attr:`~sdb.schema.enums.Archetype.UNLIKELY` it is
+    ``endpoint_unexpectedness x trust`` (the improbability of the destination).
     """
 
     model_config = ConfigDict(frozen=True)
 
     path: Path
+    archetype: Archetype
     trust: float
     surprise: float
+    endpoint_unexpectedness: float
     score: float
     til: str
     possibly: bool

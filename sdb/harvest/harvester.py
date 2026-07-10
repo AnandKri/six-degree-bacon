@@ -9,19 +9,24 @@ deterministic rank/reference-derived reliability. Endpoints resolve to canonical
 from __future__ import annotations
 
 from sdb.harvest.client import EntityFacts, NeighborEdge, SparqlClient
-from sdb.harvest.mapping import WIKIDATA_PREDICATE, domain_for, make_source
+from sdb.harvest.mapping import (
+    HARVEST_EXCLUDED_PROPERTIES,
+    WIKIDATA_PREDICATE,
+    domain_for,
+    make_source,
+)
 from sdb.schema.models import Node, SeedData, Statement
 
 HARVEST_LINK_QUALITY = 1.0  # QID-resolved endpoints are canonical; no fuzzy matching is involved.
 
-# "Described by source" (P1343 -> MENTIONED_IN) links an entity to encyclopedias that cover it:
-# useful but low-signal, so it is taken last when ``max_neighbors`` caps a high-degree node.
-_DEPRIORITIZED_PROPERTIES = frozenset({"P1343"})
 
-
-def _cap_order(edge: NeighborEdge) -> tuple[bool, str, str]:
-    """Deterministic order keeping structural edges ahead of deprioritized ones under a cap."""
-    return (edge.property_pid in _DEPRIORITIZED_PROPERTIES, edge.property_pid, edge.target_qid)
+def _is_harvestable(edge: NeighborEdge, subject: str) -> bool:
+    """Whether an edge is a curated, non-excluded, non-self relation worth harvesting."""
+    return (
+        edge.property_pid in WIKIDATA_PREDICATE
+        and edge.property_pid not in HARVEST_EXCLUDED_PROPERTIES
+        and edge.target_qid != subject
+    )
 
 
 def harvest(
@@ -53,8 +58,11 @@ def harvest(
         next_frontier: list[str] = []
         for subject in frontier:
             taken = 0
-            for edge in sorted(client.neighbors(subject), key=_cap_order):
-                if edge.property_pid not in WIKIDATA_PREDICATE or edge.target_qid == subject:
+            ordered = sorted(
+                client.neighbors(subject), key=lambda e: (e.property_pid, e.target_qid)
+            )
+            for edge in ordered:
+                if not _is_harvestable(edge, subject):
                     continue
                 if max_neighbors is not None and taken >= max_neighbors:
                     break

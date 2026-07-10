@@ -107,10 +107,14 @@ mypy + pytest must stay green (CI enforces it).
   so a Wikidata harvest never double-counts a fact already citing Wikidata). Measured win is
   **breadth** (one 2-hop harvest: 33→73 nodes, 25→44 reachable endpoints). Also widened the harvest
   vocabulary: `inspired_by`→P941, alias PIDs (P17/P131→located_in, P463→part_of), bigger `P31`→Domain.
+- ✅ **Harvest noise-filtering**: `P1343` ("described by source") is Wikidata's *bibliographic*
+  citation relation, bulk-linked to old public-domain encyclopedias (Brockhaus, Meyers, Nuttall…).
+  It stays in the vocabulary for curated `MENTIONED_IN` but is never harvested
+  (`HARVEST_EXCLUDED_PROPERTIES`), so a 2-hop Roman-Empire harvest drops 40→26 nodes with the
+  encyclopedia clutter gone and new endpoints that are real entities (Constantinople, Papal States…).
 - **Known finding (ADR 0005):** corroboration is correct but near-dormant on this seed, which is
   already Wikidata-sourced wherever Wikidata agrees. Its value needs a **genuinely independent second
   source** (DBpedia / Wikipedia-text extraction) — a documented graduation, built only when earned.
 - Still open: a **guided/seeded walk** to replace exhaustive enumeration at scale (ADR 0001);
-  harvest **noise filtering** (drop low-signal `mentioned_in`/encyclopedia edges); higher-fidelity
-  endpoint co-occurrence. Neo4j, a web UI, an optional free/local LLM narrator remain graduations —
-  adopt only when earned.
+  richer node enrichment (fewer `culture`-fallback domains); higher-fidelity endpoint co-occurrence.
+  Neo4j, a web UI, an optional free/local LLM narrator remain graduations — adopt only when earned.

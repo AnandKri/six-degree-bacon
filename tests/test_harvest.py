@@ -16,7 +16,9 @@ def _client() -> FakeSparqlClient:
             "Q1": (
                 NeighborEdge("P361", "Q2", "preferred", 2),  # part_of, referenced
                 NeighborEdge("P155", "Q3", "normal", 0),  # follows, unreferenced
-                NeighborEdge("P1343", "Q9", "normal", 0),  # described-by-source (deprioritized)
+                NeighborEdge(
+                    "P1343", "Q9", "normal", 0
+                ),  # described-by-source (bibliographic; excluded)
                 NeighborEdge("P361", "Q1", "normal", 0),  # self-loop, must be skipped
             ),
             "Q2": (NeighborEdge("P276", "Q4", "normal", 1),),  # located_in, one hop deeper
@@ -35,7 +37,11 @@ def _client() -> FakeSparqlClient:
 def test_one_hop_maps_edges_to_statements() -> None:
     seed = harvest(_client(), "Q1", hops=1)
     node_ids = {n.id for n in seed.nodes}
-    assert node_ids == {"Q1", "Q2", "Q3", "Q9"}  # the self-loop added no node/edge
+    assert node_ids == {
+        "Q1",
+        "Q2",
+        "Q3",
+    }  # self-loop added nothing; Q9 (via excluded P1343) dropped
 
     by_object = {(s.subject, s.object): s for s in seed.statements}
     assert ("Q1", "Q1") not in by_object  # self-loop skipped
@@ -50,7 +56,7 @@ def test_one_hop_maps_edges_to_statements() -> None:
 def test_two_hops_expand_frontier_and_dedup_back_edges() -> None:
     seed = harvest(_client(), "Q1", hops=2)
     node_ids = {n.id for n in seed.nodes}
-    assert node_ids == {"Q1", "Q2", "Q3", "Q4", "Q9"}  # Q4 reached at hop 2
+    assert node_ids == {"Q1", "Q2", "Q3", "Q4"}  # Q4 reached at hop 2; Q9 excluded
     edges = {(s.subject, s.object) for s in seed.statements}
     assert ("Q2", "Q4") in edges  # deeper hop
     assert ("Q3", "Q1") in edges  # back-edge kept (distinct statement), no duplicate node
@@ -64,11 +70,19 @@ def test_node_enrichment_maps_domain_and_dates() -> None:
     assert nodes["Q1"].wikidata_qid == "Q1"
 
 
-def test_max_neighbors_cap_deprioritizes_described_by_source() -> None:
-    # With a cap of 1, the described-by-source (P1343) edge yields to a structural one.
+def test_described_by_source_clutter_is_excluded() -> None:
+    # P1343 ("described by source") is bibliographic clutter: neither its edge nor the reference
+    # work it drags in (Q9) is harvested, at any depth.
+    seed = harvest(_client(), "Q1", hops=2)
+    assert "Q9" not in {n.id for n in seed.nodes}
+    assert all(s.predicate is not Predicate.MENTIONED_IN for s in seed.statements)
+
+
+def test_max_neighbors_caps_structural_edges_deterministically() -> None:
+    # With a cap of 1, the first structural edge in (property, target) order is kept.
     seed = harvest(_client(), "Q1", hops=1, max_neighbors=1)
     subjects_objects = {(s.subject, s.object) for s in seed.statements}
-    assert subjects_objects == {("Q1", "Q3")}  # P155 kept, P1343->Q9 and P361->Q2 dropped
+    assert subjects_objects == {("Q1", "Q3")}  # P155->Q3 sorts before P361->Q2
 
 
 def test_snapshot_round_trips(tmp_path: Path) -> None:

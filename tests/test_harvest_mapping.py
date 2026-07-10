@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from sdb.harvest.mapping import (
+    HARVEST_EXCLUDED_PROPERTIES,
     HARVEST_PREDICATE_ALIASES,
     HARVEST_PROPERTIES,
     WIKIDATA_PREDICATE,
@@ -21,7 +22,14 @@ def test_predicate_inverse_covers_curated_wikidata_properties() -> None:
     assert WIKIDATA_PREDICATE["P361"] is Predicate.PART_OF
     assert WIKIDATA_PREDICATE["P155"] is Predicate.FOLLOWS
     assert WIKIDATA_PREDICATE["P941"] is Predicate.INSPIRED_BY  # reconnected in Phase 2 (#1)
-    assert tuple(sorted(WIKIDATA_PREDICATE)) == HARVEST_PROPERTIES
+
+
+def test_harvested_properties_exclude_bibliographic_clutter() -> None:
+    # P1343 stays in the vocabulary (for curated MENTIONED_IN) but is never harvested.
+    assert "P1343" in WIKIDATA_PREDICATE
+    assert "P1343" in HARVEST_EXCLUDED_PROPERTIES
+    assert "P1343" not in HARVEST_PROPERTIES
+    assert set(HARVEST_PROPERTIES) == set(WIKIDATA_PREDICATE) - HARVEST_EXCLUDED_PROPERTIES
 
 
 def test_inspired_by_now_has_a_canonical_wikidata_property() -> None:

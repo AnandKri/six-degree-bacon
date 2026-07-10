@@ -26,14 +26,23 @@ HARVEST_PREDICATE_ALIASES: dict[str, Predicate] = {
     "P463": Predicate.PART_OF,  # member of
 }
 
+# Properties kept in the vocabulary but never harvested. "Described by source" (P1343) is Wikidata's
+# *bibliographic* citation relation (an entity is described in reference work Y), carried in bulk to
+# old public-domain encyclopedias (Brockhaus, Meyers, Nuttall…). That is pure clutter for path
+# discovery and semantically unlike our content-oriented MENTIONED_IN, so we harvest neither it nor
+# the reference works it drags in.
+HARVEST_EXCLUDED_PROPERTIES: frozenset[str] = frozenset({"P1343"})
+
 # Inverse of PREDICATE_WIKIDATA (predicates with a canonical Wikidata property) plus the aliases. A
 # harvested statement whose property is absent here is outside our vocabulary and is skipped.
 WIKIDATA_PREDICATE: dict[str, Predicate] = {
     pid: predicate for predicate, pid in PREDICATE_WIKIDATA.items() if pid is not None
 } | HARVEST_PREDICATE_ALIASES
 
-# The Wikidata properties we harvest (the curated predicate set, as property ids).
-HARVEST_PROPERTIES: tuple[str, ...] = tuple(sorted(WIKIDATA_PREDICATE))
+# The Wikidata properties we actually query and harvest (vocabulary minus the excluded clutter).
+HARVEST_PROPERTIES: tuple[str, ...] = tuple(
+    pid for pid in sorted(WIKIDATA_PREDICATE) if pid not in HARVEST_EXCLUDED_PROPERTIES
+)
 
 # Wikidata "instance of" (P31) class → thematic Domain. Deterministic and intentionally small;
 # anything unmapped falls back to DOMAIN_FALLBACK. Extend this table as the harvest set grows.

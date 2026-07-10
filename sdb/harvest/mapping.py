@@ -17,11 +17,20 @@ from sdb.schema.enums import (
 )
 from sdb.schema.models import Source
 
-# Inverse of PREDICATE_WIKIDATA, for the predicates that have a Wikidata property. A harvested
-# statement whose property is not in this table is outside our curated vocabulary and is skipped.
+# Additional Wikidata properties that map onto an *existing* predicate (many Wikidata properties
+# express the same relation). These widen harvest recall without adding narration vocabulary; each
+# must be a faithful subject→object match for its predicate's direction.
+HARVEST_PREDICATE_ALIASES: dict[str, Predicate] = {
+    "P17": Predicate.LOCATED_IN,  # country
+    "P131": Predicate.LOCATED_IN,  # located in the administrative territorial entity
+    "P463": Predicate.PART_OF,  # member of
+}
+
+# Inverse of PREDICATE_WIKIDATA (predicates with a canonical Wikidata property) plus the aliases. A
+# harvested statement whose property is absent here is outside our vocabulary and is skipped.
 WIKIDATA_PREDICATE: dict[str, Predicate] = {
     pid: predicate for predicate, pid in PREDICATE_WIKIDATA.items() if pid is not None
-}
+} | HARVEST_PREDICATE_ALIASES
 
 # The Wikidata properties we harvest (the curated predicate set, as property ids).
 HARVEST_PROPERTIES: tuple[str, ...] = tuple(sorted(WIKIDATA_PREDICATE))
@@ -32,22 +41,32 @@ INSTANCE_OF_DOMAIN: dict[str, Domain] = {
     "Q6256": Domain.GEOGRAPHY,  # country
     "Q515": Domain.GEOGRAPHY,  # city
     "Q1549591": Domain.GEOGRAPHY,  # big city
+    "Q5119": Domain.GEOGRAPHY,  # capital city
+    "Q486972": Domain.GEOGRAPHY,  # human settlement
     "Q82794": Domain.GEOGRAPHY,  # geographic region
+    "Q1620908": Domain.GEOGRAPHY,  # historical region
+    "Q839954": Domain.GEOGRAPHY,  # archaeological site
+    "Q4022": Domain.GEOGRAPHY,  # river
+    "Q23442": Domain.GEOGRAPHY,  # island
+    "Q8502": Domain.GEOGRAPHY,  # mountain
+    "Q107425": Domain.GEOGRAPHY,  # landscape
     "Q3624078": Domain.HISTORY,  # sovereign state
+    "Q3024240": Domain.HISTORY,  # historical country
+    "Q28171280": Domain.HISTORY,  # ancient civilization
     "Q48349": Domain.HISTORY,  # empire
-    "Q7269": Domain.GENEALOGY,  # dynasty
-    "Q164950": Domain.GENEALOGY,  # noble family
-    "Q5": Domain.HISTORY,  # human
     "Q11514315": Domain.HISTORY,  # historical period
     "Q178561": Domain.HISTORY,  # battle
     "Q198": Domain.HISTORY,  # war
+    "Q5": Domain.HISTORY,  # human
+    "Q7269": Domain.GENEALOGY,  # dynasty
+    "Q164950": Domain.GENEALOGY,  # noble family
     "Q34770": Domain.LANGUAGE,  # language
     "Q25295": Domain.LANGUAGE,  # language family
     "Q9174": Domain.RELIGION,  # religion
     "Q1530022": Domain.RELIGION,  # religious concept
     "Q178885": Domain.MYTH,  # deity
     "Q22988604": Domain.MYTH,  # mythological figure
-    "Q107425": Domain.GEOGRAPHY,  # landscape
+    "Q41710": Domain.CULTURE,  # ethnic group
     "Q1002697": Domain.CULTURE,  # periodical / publication
     "Q571": Domain.CULTURE,  # book
     "Q47461344": Domain.CULTURE,  # written work

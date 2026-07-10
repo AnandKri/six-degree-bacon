@@ -20,8 +20,10 @@ A local-first, **zero-LLM**, fully deterministic engine over a curated graph, no
 **Wikidata SPARQL harvester** that ingests a k-hop neighbourhood into the `Statement` model with
 deterministic rank/reference→reliability mapping and pinned local snapshots, and (2) an
 **endpoint-surprise term** — `−log P(endpoint | start)` from real Wikipedia-link co-occurrence — so
-*unexpected destinations* win (Rome no longer tops out at the obvious "Latin"). Still zero-LLM,
-deterministic, reproducible by hand. All checks green (ruff, format, mypy, 45 tests).
+*unexpected destinations* win (Rome no longer tops out at the obvious "Latin"). A Phase-2 increment
+adds **harvest→curated merge** (`discover --harvest`): QID node-unification + independent-source
+corroboration, plus a wider harvest predicate/domain vocabulary. Still zero-LLM, deterministic,
+reproducible by hand. All checks green (ruff, format, mypy, 51 tests).
 
 ## How to run
 
@@ -30,6 +32,7 @@ uv sync --extra dev                     # create .venv + install (writes uv.lock
 uv run sdb discover "Roman Empire"      # a sourced TIL card (now: Chang'an, not Latin)
 uv run sdb discover "Silk Road" --top 3 --json
 uv run sdb harvest Q2277 --hops 2       # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
+uv run sdb discover "Roman Empire" --harvest data/harvest/q2277.json   # overlay a harvest, merged
 uv run sdb build-cooccurrence           # refresh data/cooccurrence.json from Wikipedia links
 uv run ruff check . && uv run ruff format --check . && uv run mypy sdb && uv run pytest
 ```
@@ -54,21 +57,22 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   (information-theoretic + **endpoint-unexpectedness** from co-occurrence), `confidence.py` (source
   rubric → noisy-OR corroboration → link quality → validators → weakest-link path trust),
   `narrate.py` (template TIL + `Possibly:` flag), `pipeline.py` (`discover()`).
-- `sdb/harvest/` — Phase-1 ingestion (all deterministic given a snapshot): `client.py`
+- `sdb/harvest/` — ingestion (all deterministic given a snapshot): `client.py`
   (`SparqlClient` protocol + live `WikidataClient` + offline `FakeSparqlClient`), `mapping.py`
-  (Wikidata rank/reference → `Source`, `P31` → `Domain`, PID → `Predicate`), `harvester.py` (k-hop
-  BFS → `SeedData`), `cooccurrence.py` (Wikipedia-link co-occurrence harvest), `snapshot.py` (pin to
-  `data/harvest/`, git-ignored).
-- `sdb/cli.py` — the CLI (`discover`, `harvest`, `build-cooccurrence`). `sdb/viz.py` — optional
-  matplotlib path drawing (`viz` extra).
+  (Wikidata rank/reference → `Source`, `P31` → `Domain`, PID → `Predicate` incl. alias PIDs),
+  `harvester.py` (k-hop BFS → `SeedData`), `cooccurrence.py` (Wikipedia-link co-occurrence harvest),
+  `merge.py` (overlay a harvest onto the curated graph: QID node-unification + independent-source
+  corroboration), `snapshot.py` (pin to `data/harvest/`, git-ignored).
+- `sdb/cli.py` — the CLI (`discover` [+ `--harvest` overlay], `harvest`, `build-cooccurrence`).
+  `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
 - `data/seed.json` — curated 33-node / 40-statement graph across 8 domains, full provenance.
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
-- `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester). `docs/confidence-rubric.md` — the
-  rubric, with worked examples the tests reproduce. `docs/reference/` — the original idea sketch
-  (git-ignored, local only).
-- `tests/` — 45 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
-  2.81) golden cases, plus harvester/mapping/co-occurrence; `eval/golden.json` — ranker regression
-  (characterization values).
+- `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration).
+  `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
+  `docs/reference/` — the original idea sketch (git-ignored, local only).
+- `tests/` — 51 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+  2.81) golden cases, plus harvester/mapping/co-occurrence/merge; `eval/golden.json` — ranker
+  regression (characterization values).
 
 ## Scoring in one paragraph
 
@@ -96,10 +100,17 @@ mypy + pytest must stay green (CI enforces it).
    Chang'an, not Latin; regression-locked in `eval/golden.json` + `tests/test_eval_golden.py`.
 3. ✅ Stayed **zero-LLM and deterministic**; every score still reproducible by hand.
 
-## Next: Phase 2 candidates (only when earned)
+## Phase 2 — in progress
 
-- A **guided/seeded walk** to replace exhaustive enumeration once harvested graphs outgrow it
-  (ADR 0001), and richer node enrichment (dates, better `P31`→`Domain`) on the harvest path.
-- Higher-fidelity endpoint co-occurrence (backlink corpora) behind the existing `WikipediaClient`
-  seam. Neo4j (scale / NL→Cypher), a web UI, an optional free/local LLM narrator remain documented
-  graduations behind an interface — adopt only when earned.
+- ✅ **Harvest→curated merge** (ADR 0005): `discover --harvest <snapshot>` overlays a harvest onto
+  the tracked seed — QID node-unification + independent-source corroboration (noisy-OR, with a guard
+  so a Wikidata harvest never double-counts a fact already citing Wikidata). Measured win is
+  **breadth** (one 2-hop harvest: 33→73 nodes, 25→44 reachable endpoints). Also widened the harvest
+  vocabulary: `inspired_by`→P941, alias PIDs (P17/P131→located_in, P463→part_of), bigger `P31`→Domain.
+- **Known finding (ADR 0005):** corroboration is correct but near-dormant on this seed, which is
+  already Wikidata-sourced wherever Wikidata agrees. Its value needs a **genuinely independent second
+  source** (DBpedia / Wikipedia-text extraction) — a documented graduation, built only when earned.
+- Still open: a **guided/seeded walk** to replace exhaustive enumeration at scale (ADR 0001);
+  harvest **noise filtering** (drop low-signal `mentioned_in`/encyclopedia edges); higher-fidelity
+  endpoint co-occurrence. Neo4j, a web UI, an optional free/local LLM narrator remain graduations —
+  adopt only when earned.

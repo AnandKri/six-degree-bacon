@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from sdb.harvest.mapping import (
+    HARVEST_PREDICATE_ALIASES,
     HARVEST_PROPERTIES,
     WIKIDATA_PREDICATE,
     domain_for,
@@ -12,14 +13,27 @@ from sdb.harvest.mapping import (
     parse_rank,
     source_type_for_references,
 )
-from sdb.schema.enums import Domain, Predicate, SourceType, WikidataRank
+from sdb.schema.enums import PREDICATE_WIKIDATA, Domain, Predicate, SourceType, WikidataRank
 
 
 def test_predicate_inverse_covers_curated_wikidata_properties() -> None:
     # Every Wikidata-backed predicate round-trips through the inverse table.
     assert WIKIDATA_PREDICATE["P361"] is Predicate.PART_OF
     assert WIKIDATA_PREDICATE["P155"] is Predicate.FOLLOWS
+    assert WIKIDATA_PREDICATE["P941"] is Predicate.INSPIRED_BY  # reconnected in Phase 2 (#1)
     assert tuple(sorted(WIKIDATA_PREDICATE)) == HARVEST_PROPERTIES
+
+
+def test_inspired_by_now_has_a_canonical_wikidata_property() -> None:
+    assert PREDICATE_WIKIDATA[Predicate.INSPIRED_BY] == "P941"
+
+
+def test_alias_properties_widen_recall_onto_existing_predicates() -> None:
+    # Aliases map many Wikidata properties onto one predicate, without new narration vocabulary.
+    assert HARVEST_PREDICATE_ALIASES["P17"] is Predicate.LOCATED_IN  # country
+    assert HARVEST_PREDICATE_ALIASES["P131"] is Predicate.LOCATED_IN  # admin territory
+    assert HARVEST_PREDICATE_ALIASES["P463"] is Predicate.PART_OF  # member of
+    assert set(HARVEST_PREDICATE_ALIASES) <= set(HARVEST_PROPERTIES)
 
 
 @pytest.mark.parametrize(

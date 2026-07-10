@@ -109,6 +109,14 @@ def main(argv: list[str] | None = None) -> int:
         default=_DEFAULT_COOCCURRENCE,
         help="Path to the Wikipedia-link co-occurrence JSON (endpoint-surprise term).",
     )
+    discover_parser.add_argument(
+        "--harvest",
+        type=Path,
+        action="append",
+        default=None,
+        metavar="SNAPSHOT",
+        help="Merge a harvest snapshot into the curated graph (repeatable).",
+    )
     discover_parser.add_argument("--top", type=int, default=TOP_DEFAULT, help="Number of results.")
     discover_parser.add_argument("--min-hops", type=int, default=MIN_HOPS_DEFAULT)
     discover_parser.add_argument("--max-hops", type=int, default=MAX_HOPS_DEFAULT)
@@ -155,6 +163,24 @@ def _run_discover(args: argparse.Namespace) -> int:
     except FileNotFoundError:
         print(f"seed file not found: {args.seed}", file=sys.stderr)
         return 2
+
+    if args.harvest:
+        from sdb.harvest.merge import merge_seeds
+        from sdb.harvest.snapshot import load_snapshot
+
+        for snapshot_path in args.harvest:
+            try:
+                overlay = load_snapshot(snapshot_path)
+            except FileNotFoundError:
+                print(f"harvest snapshot not found: {snapshot_path}", file=sys.stderr)
+                return 2
+            merged = merge_seeds(seed, overlay)
+            seed = merged.seed
+            print(
+                f"merged {snapshot_path}: +{merged.added_nodes} nodes, "
+                f"+{merged.added_statements} statements, {merged.corroborated} facts corroborated",
+                file=sys.stderr,
+            )
 
     cooccurrence = load_cooccurrence(args.cooccurrence) if args.cooccurrence.exists() else None
     graph = KnowledgeGraph.from_seed(seed, cooccurrence)

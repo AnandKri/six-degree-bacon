@@ -54,10 +54,10 @@ PREDICATE_WIKIDATA: dict[Predicate, str | None] = {
     Predicate.NAMED_AFTER: "P138",  # named after
     Predicate.DERIVED_FROM: "P144",  # based on / derived from
     Predicate.MENTIONED_IN: "P1343",  # described by source
+    Predicate.INSPIRED_BY: "P941",  # inspired by
     Predicate.CLAIMED_DESCENT_FROM: None,  # project-specific
     Predicate.MYTHOLOGICALLY_RELATED_TO: None,
     Predicate.ON_TRADE_ROUTE: None,
-    Predicate.INSPIRED_BY: None,
     Predicate.CONNECTED_VIA_TRADE: None,
 }
 

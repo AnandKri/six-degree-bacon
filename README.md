@@ -36,6 +36,7 @@ Requires Python 3.12+ and [`uv`](https://docs.astral.sh/uv/).
 uv sync --extra dev          # create .venv + install (writes uv.lock)
 uv run sdb discover "Roman Empire"
 uv run sdb harvest Q2277 --hops 2        # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
+uv run sdb discover "Roman Empire" --harvest data/harvest/q2277.json  # overlay a harvest, merged
 uv run sdb build-cooccurrence            # refresh data/cooccurrence.json from Wikipedia links
 uv run pytest                # run the test suite
 ```
@@ -49,10 +50,10 @@ sdb/
   schema/     enums (Domain, Predicate, SourceType, …) + Pydantic models (Node, Statement, …)
   graph/      build a networkx graph + cache derived features (degree, rarity, co-occurrence)
   engine/     traversal · surprise · confidence · narrate · pipeline   (pure, deterministic)
-  harvest/    Phase-1 ingestion: Wikidata SPARQL client · rank/ref mapping · k-hop harvester ·
-              Wikipedia-link co-occurrence · pinned snapshots   (deterministic given a snapshot)
+  harvest/    ingestion: Wikidata SPARQL client · rank/ref mapping · k-hop harvester · Wikipedia-link
+              co-occurrence · merge-into-curated + corroboration · pinned snapshots  (deterministic)
   constants.py  the scoring rubric — the single source of truth for every weight and threshold
-  cli.py      `sdb discover "<topic>"` · `sdb harvest <QID>` · `sdb build-cooccurrence`
+  cli.py      `sdb discover "<topic>" [--harvest <snap>]` · `sdb harvest <QID>` · `sdb build-cooccurrence`
 data/seed.json         the curated graph, with a planted cross-domain surprising path + sources
 data/cooccurrence.json committed Wikipedia-link co-occurrence for the endpoint-surprise term
 docs/         ADRs and the confidence rubric (the original idea sketch is kept locally, untracked)

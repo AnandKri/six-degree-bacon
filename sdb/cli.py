@@ -159,11 +159,19 @@ def main(argv: list[str] | None = None) -> int:
         "--out", type=Path, default=_DEFAULT_COOCCURRENCE, help="Output co-occurrence JSON path."
     )
 
+    validate_parser = subparsers.add_parser(
+        "validate-qids", help="Check that each node's wikidata_qid resolves back to that node."
+    )
+    validate_parser.add_argument(
+        "--seed", type=Path, default=_DEFAULT_SEED, help="Seed graph to validate."
+    )
+
     args = parser.parse_args(argv)
     dispatch = {
         "discover": _run_discover,
         "harvest": _run_harvest,
         "build-cooccurrence": _run_build_cooccurrence,
+        "validate-qids": _run_validate_qids,
     }
     return dispatch[args.command](args)
 
@@ -292,6 +300,32 @@ def _run_build_cooccurrence(args: argparse.Namespace) -> int:
     args.out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote co-occurrence for {len(matrix)} nodes to {args.out}")
     return 0
+
+
+def _run_validate_qids(args: argparse.Namespace) -> int:
+    """Check every node's ``wikidata_qid`` against Wikipedia; exit non-zero on any mismatch."""
+    from sdb.harvest.validate import LiveTitleResolver, validate_qids
+
+    try:
+        seed = load_seed(args.seed)
+    except FileNotFoundError:
+        print(f"seed file not found: {args.seed}", file=sys.stderr)
+        return 2
+
+    checked = sum(1 for node in seed.nodes if node.wikidata_qid is not None)
+    print(f"Validating {checked} node QIDs against Wikipedia ...", file=sys.stderr)
+    mismatches = validate_qids(seed.nodes, LiveTitleResolver())
+    if not mismatches:
+        print(f"OK: all {checked} node QIDs resolve correctly.")
+        return 0
+    for mismatch in mismatches:
+        print(
+            f"  MISMATCH {mismatch.node_id}: stored {mismatch.stored_qid}, "
+            f"{mismatch.label!r} resolves to {mismatch.resolved_qid}",
+            file=sys.stderr,
+        )
+    print(f"{len(mismatches)} QID mismatch(es) — see ADR 0008.", file=sys.stderr)
+    return 1
 
 
 def _render_card(

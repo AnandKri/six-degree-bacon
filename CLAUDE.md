@@ -14,7 +14,7 @@ Two north stars:
    evaluated, fully provenanced. **Correctness never depends on an LLM.** Every score is reproducible
    by hand from `docs/confidence-rubric.md`.
 
-## Status: Phase 1 complete
+## Status: Phase 2 in progress — see [`docs/HANDOVER.md`](docs/HANDOVER.md) for the pick-up guide
 
 A local-first, **zero-LLM**, fully deterministic engine over a curated graph, now with (1) a
 **Wikidata SPARQL harvester** that ingests a k-hop neighbourhood into the `Statement` model with
@@ -25,7 +25,7 @@ deterministic rank/reference→reliability mapping and pinned local snapshots, a
 noise-filtering, a **wow-score rebalance** (rank by `surprise × trust`, gated on evidence), and a
 **seed-QID repair** (16 hallucinated QIDs fixed). Tight, well-sourced connections now win —
 Rome → Qin Shi Huang (the First Emperor of China) in 3 sourced hops — over long low-trust rambles.
-Still zero-LLM, deterministic, reproducible by hand. All checks green (ruff, format, mypy, 54 tests).
+Still zero-LLM, deterministic, reproducible by hand. All checks green (ruff, format, mypy, 59 tests).
 
 ## How to run
 
@@ -66,15 +66,15 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   `harvester.py` (k-hop BFS → `SeedData`), `cooccurrence.py` (Wikipedia-link co-occurrence harvest),
   `merge.py` (overlay a harvest onto the curated graph: QID node-unification + independent-source
   corroboration), `snapshot.py` (pin to `data/harvest/`, git-ignored).
-- `sdb/cli.py` — the CLI (`discover` [+ `--harvest` overlay], `harvest`, `build-cooccurrence`).
-  `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
+- `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
+  `validate-qids`). `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
 - `data/seed.json` — curated 33-node / 40-statement graph across 8 domains, full provenance.
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce. `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 56 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 59 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, and both
   archetypes; `eval/golden.json` — ranker regression (characterization values).
 

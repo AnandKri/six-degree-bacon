@@ -43,6 +43,8 @@ returns the darknet market, Q58027, ahead of the trade route):
   trust 0.86 — Rome to the First Emperor of China), the tight, well-sourced "wow" that the buggy data
   had been burying. `eval/golden.json` re-characterized accordingly.
 - Provenance is trustworthy again — the project's central promise.
-- **Process gap:** nothing had validated the curated QIDs. A cheap CI check (assert each
-  `wikidata_qid` resolves to a label matching the node) would have caught this and is a candidate
-  guard for the harvest/curation path.
+- **Process gap, now guarded:** nothing had validated the curated QIDs. Added `sdb validate-qids`
+  (`sdb/harvest/validate.py`) — it resolves each node's label → Wikipedia article → `wikibase_item`
+  and asserts it equals the stored QID, exiting non-zero on any mismatch. Offline structural
+  invariants (QID format/uniqueness, co-occurrence integrity) are covered by `tests/test_validate.py`;
+  wiring the live command into a network-enabled CI job (still open) would fully close the gap.

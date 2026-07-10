@@ -1,18 +1,18 @@
 {
-  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine currently produces at the default 'wow with evidence' gate), not hand-picked winners. Update deliberately when the seed graph, co-occurrence, or scoring changes, and record why in an ADR. Phase-2 (ADR 0006): results rank by wow = surprise x trust and are gated at trust >= 0.50, so tight, well-evidenced connections win (Roman Empire -> Mithra in 4 sourced hops; Zoroastrianism -> Qin Shi Huang, the First Emperor of China) instead of long low-trust rambles. All default results are confident (possibly = false).",
+  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces at the default 'wow with evidence' gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why in an ADR. Results rank by wow = surprise x trust, gated at trust >= 0.50 (ADR 0006). After the seed-QID repair (16 hallucinated QIDs corrected + co-occurrence rebuilt), Roman Empire tops out at Qin Shi Huang, the First Emperor of China, in 3 sourced hops. All default results are confident (possibly = false).",
   "cases": [
     {
       "topic": "Roman Empire",
       "top": 1,
-      "expected_endpoint": "Mithra",
-      "expected_hops": 4,
+      "expected_endpoint": "Qin Shi Huang",
+      "expected_hops": 3,
       "expected_possibly": false
     },
     {
-      "topic": "Zoroastrianism",
+      "topic": "Christianity",
       "top": 1,
-      "expected_endpoint": "Qin Shi Huang",
-      "expected_hops": 4,
+      "expected_endpoint": "Mithra",
+      "expected_hops": 5,
       "expected_possibly": false
     }
   ]

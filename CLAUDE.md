@@ -22,16 +22,16 @@ deterministic rank/reference→reliability mapping and pinned local snapshots, a
 **endpoint-surprise term** — `−log P(endpoint | start)` from real Wikipedia-link co-occurrence — so
 *unexpected destinations* win (Rome no longer tops out at the obvious "Latin"). Phase-2 increments add
 **harvest→curated merge** (`discover --harvest`, QID unification + corroboration), harvest
-noise-filtering, and a **wow-score rebalance** — results now rank by `surprise × trust` and are gated
-on evidence, so tight, well-sourced connections win (Rome → Mithra in 4 sourced hops) over long
-low-trust rambles. Still zero-LLM, deterministic, reproducible by hand. All checks green (ruff,
-format, mypy, 54 tests).
+noise-filtering, a **wow-score rebalance** (rank by `surprise × trust`, gated on evidence), and a
+**seed-QID repair** (16 hallucinated QIDs fixed). Tight, well-sourced connections now win —
+Rome → Qin Shi Huang (the First Emperor of China) in 3 sourced hops — over long low-trust rambles.
+Still zero-LLM, deterministic, reproducible by hand. All checks green (ruff, format, mypy, 54 tests).
 
 ## How to run
 
 ```sh
 uv sync --extra dev                     # create .venv + install (writes uv.lock)
-uv run sdb discover "Roman Empire"      # a confident, sourced TIL card (now: Rome -> Mithra, 4 hops)
+uv run sdb discover "Roman Empire"      # confident sourced TIL (now: Rome -> Qin Shi Huang, 3 hops)
 uv run sdb discover "Trojan War" --include-possibly   # speculative paths when none clear the gate
 uv run sdb discover "Silk Road" --top 3 --json
 uv run sdb harvest Q2277 --hops 2       # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
@@ -71,9 +71,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `data/seed.json` — curated 33-node / 40-statement graph across 8 domains, full provenance.
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
-  0006 wow-score ranking; 0007 improbable-adjacency archetype *proposed*). `docs/confidence-rubric.md`
-  — the rubric, with worked examples the tests reproduce. `docs/reference/` — the original idea
-  sketch (git-ignored, local only).
+  0006 wow-score ranking, 0008 seed-QID repair; 0007 improbable-adjacency archetype *proposed*).
+  `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce. `docs/reference/`
+  — the original idea sketch (git-ignored, local only).
 - `tests/` — 54 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge and wow-score ranking;
   `eval/golden.json` — ranker regression (characterization values).
@@ -106,10 +106,14 @@ mypy + pytest must stay green (CI enforces it).
 
 ## Phase 2 — in progress
 
+- ✅ **Seed-QID repair** (ADR 0008): 16 of 31 curated `wikidata_qid`s were hallucinated (silk_road →
+  "Russian Empire", proto_indo_european → "Secure Shell"), faking provenance and poisoning
+  co-occurrence. Repaired deterministically (label → Wikipedia article → `wikibase_item`, verified),
+  co-occurrence rebuilt (33/33 nodes). De-artifacted results: Rome now tops out at Qin Shi Huang.
 - ✅ **Wow-score rebalance** (ADR 0006): rank by `surprise × trust`, gate at `trust ≥ 0.50` by default
   (`--include-possibly` to see speculative), and drop the length reward. Tight, well-evidenced
-  connections now win (Rome → Mithra, 4 hops, trust 0.84; Zoroastrianism → Qin Shi Huang) over long
-  low-trust rambles; topics with no confident connection honestly return nothing.
+  connections now win (Rome → Qin Shi Huang, 3 hops, trust 0.86) over long low-trust rambles; topics
+  with no confident connection honestly return nothing.
 - ✅ **Harvest→curated merge** (ADR 0005): `discover --harvest <snapshot>` overlays a harvest onto
   the tracked seed — QID node-unification + independent-source corroboration (noisy-OR, with a guard
   so a Wikidata harvest never double-counts a fact already citing Wikidata). Measured win is

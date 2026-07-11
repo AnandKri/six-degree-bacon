@@ -4,7 +4,7 @@
 .DEFAULT_GOAL := check
 TOPIC ?= Roman Empire
 
-.PHONY: install lint format typecheck test check discover clean
+.PHONY: install lint format typecheck test check validate discover clean
 
 install:  ## Create the venv and install dev dependencies (writes uv.lock).
 	uv sync --extra dev
@@ -21,7 +21,10 @@ typecheck:  ## Static type check the package with mypy.
 test:  ## Run the test suite.
 	uv run pytest
 
-check: lint typecheck test  ## Lint + typecheck + test (the CI gate).
+check: lint typecheck test  ## Lint + typecheck + test (the offline CI gate).
+
+validate:  ## Network guard (ADR 0008): check every seed QID resolves. Run after editing seed.json.
+	uv run sdb validate-qids
 
 discover:  ## Discover a surprising path for TOPIC (e.g. `make discover TOPIC="Roman Empire"`).
 	uv run sdb discover "$(TOPIC)"

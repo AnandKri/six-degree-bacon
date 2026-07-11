@@ -92,7 +92,9 @@ independent source **plus** a predicate-alignment layer to pay off. Merge's real
    graph exhaustive `[3,6]` overflows while `find_paths` returns ≤ budget in ~67 ms, deterministically.
 4. **Corroboration, only if earned:** a second *independent* source (DBpedia/Wikipedia-text) **with**
    a deterministic predicate-alignment table. See §4 — don't build without the alignment layer.
-5. **Wire `validate-qids` into CI** (a network-enabled job) so hallucinated QIDs can't reappear.
+5. ✅ **Wired `validate-qids` into CI** — a separate network-enabled workflow
+   (`.github/workflows/qid-validation.yaml`, `make validate`) that runs on `data/seed.json` changes,
+   weekly, and on demand (with a 3× retry for network flakiness), kept out of the offline `ci` gate.
 
 Documented graduations: ✅ a web UI (`sdb serve`, ADR 0013) — done. Still open (adopt only when
 earned): Neo4j (scale/NL→Cypher), a static-export site for free GitHub Pages hosting (deterministic

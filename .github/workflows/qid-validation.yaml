@@ -1,0 +1,44 @@
+name: qid-validation
+
+# Network-enabled guard (ADR 0008): resolve every seed node's label -> Wikipedia article ->
+# wikibase_item and assert it equals the stored wikidata_qid, so a hallucinated QID can't reappear.
+# Kept separate from the offline `ci` gate so Wikipedia flakiness never blocks lint/type/test.
+on:
+  push:
+    branches: [main]
+    paths: ["data/seed.json"]
+  pull_request:
+    paths: ["data/seed.json"]
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC — catches drift even without a seed edit
+  workflow_dispatch: {}
+
+jobs:
+  validate-qids:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Validate seed QIDs against Wikipedia
+        # Retry to ride out transient network errors; a real QID mismatch fails deterministically
+        # on every attempt, so retries never mask it.
+        run: |
+          for attempt in 1 2 3; do
+            if uv run sdb validate-qids; then
+              exit 0
+            fi
+            echo "attempt $attempt failed; retrying in 20s..."
+            sleep 20
+          done
+          echo "validate-qids failed after 3 attempts" >&2
+          exit 1

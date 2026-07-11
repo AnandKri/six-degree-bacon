@@ -2,7 +2,7 @@
 
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 in progress**, `main` @ pushed,
-all checks green (**83 tests**).
+all checks green (**84 tests**).
 
 ## 1. What it is (one paragraph)
 

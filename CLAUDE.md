@@ -29,8 +29,8 @@ extent so harvested people are dated), and a **Hellenistic–India–Buddhism se
 the science/India cluster into the Rome–Silk Road–China web. Tight, well-sourced cross-culture
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
-plus a static export (`sdb build-site`) for free hosting. All checks green (ruff, format, mypy, 83
-tests).
+plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
+(ruff, format, mypy, 84 tests).
 
 ## How to run
 
@@ -91,7 +91,7 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   Greece cluster). `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 83 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 84 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
   static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —

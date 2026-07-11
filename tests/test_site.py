@@ -50,3 +50,13 @@ def test_index_html_is_the_packaged_page(seed_graph: KnowledgeGraph, tmp_path: P
     )
     assert served == packaged  # no separate template to drift from `sdb serve`
     assert "./data.json" in served  # the page probes for the static bundle
+
+
+def test_theme_css_is_injected_as_an_override(seed_graph: KnowledgeGraph, tmp_path: Path) -> None:
+    # An embed theme re-skins the page via its CSS variables, without a separate template.
+    out = tmp_path / "themed"
+    build_site(seed_graph, out, theme_css=":root { --accent: #5eead4; --bg: #0f172a; }")
+    html = (out / "index.html").read_text(encoding="utf-8")
+    assert "--accent: #5eead4" in html and "embed theme override" in html
+    assert html.count("</head>") == 1  # injected exactly once, before the head close
+    assert "./data.json" in html  # still the dual-mode page

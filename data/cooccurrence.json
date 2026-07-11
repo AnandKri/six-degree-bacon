@@ -4,11 +4,13 @@
     "roman_empire": [
       "alexander_the_great",
       "alexandria",
+      "ancient_greece",
       "augustus",
       "byzantine_empire",
       "christianity",
       "constantine_the_great",
       "constantinople",
+      "greek_mythology",
       "hadrian",
       "hadrians_wall",
       "han_dynasty",
@@ -24,6 +26,7 @@
     "roman_republic": [
       "alexander_the_great",
       "alexandria",
+      "ancient_greece",
       "augustus",
       "byzantine_empire",
       "constantinople",
@@ -39,6 +42,7 @@
     "hadrian": [
       "alexander_the_great",
       "alexandria",
+      "athens",
       "augustus",
       "byzantine_empire",
       "constantine_the_great",
@@ -60,6 +64,7 @@
       "constantinople",
       "julio_claudian_dynasty",
       "latin",
+      "plato",
       "roman_empire",
       "roman_republic",
       "romance_languages",
@@ -70,6 +75,7 @@
       "aeneas",
       "alexander_the_great",
       "alexandria",
+      "ancient_greece",
       "byzantine_empire",
       "constantine_the_great",
       "constantinople",
@@ -113,6 +119,7 @@
       "constantine_the_great",
       "constantinople",
       "han_dynasty",
+      "homer",
       "julius_caesar",
       "latin",
       "qin_dynasty",
@@ -123,6 +130,7 @@
       "silk_road"
     ],
     "constantinople": [
+      "athens",
       "byzantine_empire",
       "constantine_the_great",
       "roman_empire",
@@ -130,6 +138,7 @@
     ],
     "christianity": [
       "alexandria",
+      "ancient_greece",
       "buddhism",
       "byzantine_empire",
       "constantine_the_great",
@@ -147,6 +156,7 @@
       "augustus",
       "buddhism",
       "christianity",
+      "greek_mythology",
       "mithra",
       "rigveda",
       "roman_empire",
@@ -177,6 +187,7 @@
       "roman_empire"
     ],
     "rigveda": [
+      "homer",
       "latin",
       "persia"
     ],
@@ -191,6 +202,7 @@
     "silk_road": [
       "alexandria",
       "amber_road",
+      "ancient_greece",
       "augustus",
       "buddhism",
       "byzantine_empire",
@@ -276,6 +288,7 @@
     "romulus": [
       "aeneas",
       "alexander_the_great",
+      "greek_mythology",
       "julio_claudian_dynasty",
       "julius_caesar",
       "mithraism",
@@ -284,6 +297,8 @@
     ],
     "aeneas": [
       "augustus",
+      "greek_mythology",
+      "homer",
       "julius_caesar",
       "mithraism",
       "rome",
@@ -294,24 +309,35 @@
     "trojan_war": [
       "aeneas",
       "alexander_the_great",
+      "ancient_greece",
+      "athens",
       "augustus",
+      "greek_mythology",
+      "homer",
       "julio_claudian_dynasty",
       "julius_caesar",
+      "plato",
       "romulus",
       "troy"
     ],
     "troy": [
       "aeneas",
       "alexander_the_great",
+      "ancient_greece",
+      "aristotle",
       "augustus",
       "constantinople",
+      "greek_mythology",
+      "homer",
       "india",
       "julius_caesar",
+      "plato",
       "roman_empire",
       "trojan_war"
     ],
     "rome": [
       "aeneas",
+      "athens",
       "augustus",
       "byzantine_empire",
       "china",
@@ -341,6 +367,7 @@
     "romance_languages": [
       "buddhism",
       "constantinople",
+      "homer",
       "india",
       "latin",
       "proto_indo_european",
@@ -351,6 +378,7 @@
     ],
     "proto_indo_european": [
       "buddhism",
+      "homer",
       "latin",
       "rigveda",
       "romance_languages",
@@ -360,9 +388,13 @@
       "al_tusi",
       "alexander_the_great",
       "alexandria",
-      "byzantine_empire"
+      "ancient_greece",
+      "athens",
+      "byzantine_empire",
+      "plato"
     ],
     "al_tusi": [
+      "aristotle",
       "constantinople",
       "euclid",
       "persia"
@@ -379,13 +411,19 @@
     ],
     "alexander_the_great": [
       "alexandria",
+      "ancient_greece",
+      "aristotle",
+      "athens",
       "augustus",
       "byzantine_empire",
       "china",
+      "greek_mythology",
       "hadrian",
+      "homer",
       "india",
       "julius_caesar",
       "persia",
+      "plato",
       "roman_empire",
       "roman_republic",
       "silk_road",
@@ -393,6 +431,7 @@
     ],
     "alexandria": [
       "alexander_the_great",
+      "athens",
       "augustus",
       "christianity",
       "constantinople",
@@ -416,6 +455,78 @@
       "rigveda",
       "silk_road",
       "zoroastrianism"
+    ],
+    "ancient_greece": [
+      "alexander_the_great",
+      "alexandria",
+      "aristotle",
+      "athens",
+      "augustus",
+      "byzantine_empire",
+      "christianity",
+      "euclid",
+      "greek_mythology",
+      "homer",
+      "plato",
+      "roman_empire",
+      "roman_republic",
+      "troy"
+    ],
+    "athens": [
+      "alexander_the_great",
+      "ancient_greece",
+      "aristotle",
+      "byzantine_empire",
+      "constantinople",
+      "greek_mythology",
+      "hadrian",
+      "homer",
+      "latin",
+      "plato",
+      "roman_empire",
+      "roman_republic",
+      "rome"
+    ],
+    "aristotle": [
+      "alexander_the_great",
+      "alexandria",
+      "ancient_greece",
+      "athens",
+      "greek_mythology",
+      "homer",
+      "plato"
+    ],
+    "plato": [
+      "ancient_greece",
+      "aristotle",
+      "athens",
+      "byzantine_empire",
+      "greek_mythology",
+      "homer"
+    ],
+    "homer": [
+      "aeneas",
+      "alexandria",
+      "ancient_greece",
+      "aristotle",
+      "athens",
+      "greek_mythology",
+      "hadrian",
+      "plato",
+      "rome",
+      "trojan_war"
+    ],
+    "greek_mythology": [
+      "aeneas",
+      "ancient_greece",
+      "aristotle",
+      "christianity",
+      "homer",
+      "mithraism",
+      "plato",
+      "roman_empire",
+      "trojan_war",
+      "troy"
     ]
   }
 }

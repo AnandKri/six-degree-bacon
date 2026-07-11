@@ -81,3 +81,22 @@ def test_bridge_connects_buddhism_to_the_greco_roman_world(seed_graph: Knowledge
         assert result.path.length <= MAX_HOPS_UNLIKELY
     endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in results}
     assert endpoints & {"Persia", "Alexander the Great", "Great Wall of China"}
+
+
+def test_greece_cluster_connects_philosophy_to_the_east(seed_graph: KnowledgeGraph) -> None:
+    # ADR 0016: the Ancient Greece cluster is a hub — Aristotle reaches the Eastern world (he
+    # tutored Alexander -> India -> Buddhism -> Silk Road), not just Greek neighbours, and its
+    # improbable pairs are short and genuinely worlds-apart.
+    journeys = discover(seed_graph, "Aristotle", top=3)
+    assert journeys
+    endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in journeys}
+    assert endpoints & {"Buddhism", "India", "Silk Road", "Persia"}
+
+    pairs = discover(seed_graph, "Aristotle", archetype=Archetype.UNLIKELY, top=3)
+    assert pairs
+    for result in pairs:
+        assert result.path.length <= MAX_HOPS_UNLIKELY
+    # Its improbable partners are trans-cultural (India/Persia/Buddhism/Silk Road), not the obvious
+    # Greek neighbours (Plato, Athens).
+    pair_endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in pairs}
+    assert pair_endpoints & {"India", "Persia", "Buddhism", "Silk Road"}

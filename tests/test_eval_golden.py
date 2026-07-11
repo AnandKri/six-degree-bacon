@@ -26,8 +26,9 @@ def test_golden_top_results(seed_graph: KnowledgeGraph) -> None:
 def test_planted_path_discoverable(seed_graph: KnowledgeGraph) -> None:
     # The planted 6-hop Rome -> China chain is low-trust and deep, so it surfaces only with the
     # lowered gate AND when the depth is explicitly allowed (the default cap is now 4 hops; the
-    # engine still supports the full "six degrees" via max_hops).
-    results = discover(seed_graph, "Roman Empire", top=20, min_trust=TRUST_FLOOR, max_hops=6)
+    # engine still supports the full "six degrees" via max_hops). `top` spans every reachable
+    # endpoint so seed growth (more endpoints) can't crowd the deep chain out of the window.
+    results = discover(seed_graph, "Roman Empire", top=99, min_trust=TRUST_FLOOR, max_hops=6)
     by_endpoint = {seed_graph.node(r.path.node_ids[-1]).label: r for r in results}
     assert "Great Wall of China" in by_endpoint
     assert by_endpoint["Great Wall of China"].path.length == 6

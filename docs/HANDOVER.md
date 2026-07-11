@@ -2,7 +2,7 @@
 
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 in progress**, `main` @ pushed,
-all checks green (**82 tests**).
+all checks green (**83 tests**).
 
 ## 1. What it is (one paragraph)
 
@@ -46,7 +46,7 @@ Unicode (the `sdb` CLI already degrades to ASCII safely; this only bites ad-hoc 
   — the zero-dep web UI (ADR 0013): `discover_payload()` (pure/testable) + a stdlib `http.server`
   wrapper; the page is dual-mode. `sdb/site.py` — `build_site()` pre-renders that page + a `data.json`
   bundle to `site/` for free static hosting (ADR 0015).
-- `data/seed.json` (41 nodes / 54 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (47 nodes / 64 statements, verified QIDs) + `data/cooccurrence.json` (committed).
 - `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -102,6 +102,11 @@ independent source **plus** a predicate-alignment layer to pay off. Merge's real
 5. ✅ **Wired `validate-qids` into CI** — a separate network-enabled workflow
    (`.github/workflows/qid-validation.yaml`, `make validate`) that runs on `data/seed.json` changes,
    weekly, and on demand (with a 3× retry for network flakiness), kept out of the offline `ci` gate.
+6. 🔜 **Breadth (in progress).** Add coherent, well-connected clusters one commit each (verify QIDs →
+   source → `validate-qids` → `build-cooccurrence` → re-check golden). ✅ **Ancient Greece** done
+   (ADR 0016: Athens, Aristotle, Plato, Homer, Greek mythology — six new topics, golden unchanged).
+   Next (deferred): **Ancient Egypt** (Cleopatra ↔ Rome), **Islamic Golden Age** (al-Khwarizmi ↔
+   Euclid/al-Tusi). See memory `sdb-breadth-paused` for the cluster plan.
 
 Documented graduations: ✅ a web UI (`sdb serve`, ADR 0013) and ✅ a static-export site for free
 GitHub Pages hosting (`sdb build-site`, ADR 0015) — both done. Still open (adopt only when earned):

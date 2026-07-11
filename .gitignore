@@ -22,6 +22,9 @@ venv/
 # Phase 1+ harvested snapshots (the curated seed under data/ stays tracked)
 data/harvest/
 
+# Generated static-site export (`sdb build-site`); regenerate, don't track
+site/
+
 # Original idea-sketch reference material — kept locally, not tracked
 docs/reference/
 

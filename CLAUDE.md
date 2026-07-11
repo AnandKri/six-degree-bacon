@@ -28,8 +28,9 @@ pair*), **harvest node enrichment** (P31→Domain coverage incl. `SCIENCE`/`ART`
 extent so harvested people are dated), and a **Hellenistic–India–Buddhism seed bridge** that connects
 the science/India cluster into the Rome–Silk Road–China web. Tight, well-sourced cross-culture
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
-zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`).
-All checks green (ruff, format, mypy, 79 tests).
+zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
+plus a static export (`sdb build-site`) for free hosting. All checks green (ruff, format, mypy, 82
+tests).
 
 ## How to run
 
@@ -37,6 +38,7 @@ All checks green (ruff, format, mypy, 79 tests).
 uv sync --extra dev                     # create .venv + install (writes uv.lock)
 uv run sdb discover "Roman Empire"      # two archetypes: a journey + an improbable pair
 uv run sdb serve                        # interactive web UI at http://127.0.0.1:8000 (zero-dep)
+uv run sdb build-site                    # pre-render a static site/ for free GitHub Pages hosting
 uv run sdb validate-qids                # check every node's wikidata_qid resolves (guard, ADR 0008)
 uv run sdb discover "Trojan War" --include-possibly   # speculative paths when none clear the gate
 uv run sdb discover "Silk Road" --top 3 --json
@@ -74,9 +76,10 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   `merge.py` (overlay a harvest onto the curated graph: QID node-unification + independent-source
   corroboration), `snapshot.py` (pin to `data/harvest/`, git-ignored).
 - `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
-  `validate-qids`, `serve`). `sdb/web.py` + `sdb/static/index.html` — a zero-dependency stdlib web UI
-  (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change. `sdb/viz.py` — optional
-  matplotlib path drawing (`viz` extra).
+  `validate-qids`, `serve`, `build-site`). `sdb/web.py` + `sdb/static/index.html` — a zero-dependency
+  stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change; the page is
+  dual-mode, so `sdb/site.py` (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page
+  for free GitHub Pages hosting. `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
 - `data/seed.json` — curated 41-node / 54-statement graph across 8 domains, full provenance (incl. a
   science subgraph Euclid → al-Tusi → Jagannatha Samrat → Jai Singh II, and a Hellenistic–India–
   Buddhism bridge: Euclid → Alexandria → Alexander → India → Buddhism → Silk Road).
@@ -84,14 +87,14 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair, 0009 harvest
   node enrichment, 0010 guided-walk scaling, 0011 Hellenistic–India–Buddhism bridge, 0012 default
-  hop cap 6→4, 0013 web UI, 0014 corroboration spike/defer). `docs/confidence-rubric.md` — the rubric,
-  with worked examples the tests reproduce.
+  hop cap 6→4, 0013 web UI, 0014 corroboration spike/defer, 0015 static-site export).
+  `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 79 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 82 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
-  the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), and
-  a guided-walk scaling/perf test; `eval/golden.json` —
+  the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
+  static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —
   ranker regression (characterization values).
 
 ## Scoring in one paragraph

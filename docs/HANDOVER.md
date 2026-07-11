@@ -2,7 +2,7 @@
 
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 in progress**, `main` @ pushed,
-all checks green (**79 tests**).
+all checks green (**82 tests**).
 
 ## 1. What it is (one paragraph)
 
@@ -18,6 +18,7 @@ uv sync --extra dev
 uv run sdb discover "Roman Empire"           # two archetypes: a journey + an improbable pair
 uv run sdb discover "Trojan War" --include-possibly
 uv run sdb serve                             # interactive web UI (zero-dep, ADR 0013) at :8000
+uv run sdb build-site                        # static export -> site/ for free hosting (ADR 0015)
 uv run sdb validate-qids                      # network: checks seed QIDs resolve (guard for ADR 0008)
 uv run ruff check . && uv run ruff format --check . && uv run mypy sdb && uv run pytest
 ```
@@ -41,8 +42,10 @@ Unicode (the `sdb` CLI already degrades to ASCII safely; this only bites ad-hoc 
   `cooccurrence.py` (Wikipedia-link matrix), `merge.py` (overlay harvest onto seed + corroboration),
   `snapshot.py` (pin to git-ignored `data/harvest/`), `validate.py` (QID guard).
 - `sdb/cli.py` — `discover` (`--archetype`, `--include-possibly`, `--harvest`), `harvest`,
-  `build-cooccurrence`, `validate-qids`, `serve`. `sdb/web.py` + `sdb/static/index.html` — the
-  zero-dep web UI (ADR 0013): `discover_payload()` (pure/testable) + a stdlib `http.server` wrapper.
+  `build-cooccurrence`, `validate-qids`, `serve`, `build-site`. `sdb/web.py` + `sdb/static/index.html`
+  — the zero-dep web UI (ADR 0013): `discover_payload()` (pure/testable) + a stdlib `http.server`
+  wrapper; the page is dual-mode. `sdb/site.py` — `build_site()` pre-renders that page + a `data.json`
+  bundle to `site/` for free static hosting (ADR 0015).
 - `data/seed.json` (41 nodes / 54 statements, verified QIDs) + `data/cooccurrence.json` (committed).
 - `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
@@ -100,9 +103,9 @@ independent source **plus** a predicate-alignment layer to pay off. Merge's real
    (`.github/workflows/qid-validation.yaml`, `make validate`) that runs on `data/seed.json` changes,
    weekly, and on demand (with a 3× retry for network flakiness), kept out of the offline `ci` gate.
 
-Documented graduations: ✅ a web UI (`sdb serve`, ADR 0013) — done. Still open (adopt only when
-earned): Neo4j (scale/NL→Cypher), a static-export site for free GitHub Pages hosting (deterministic
-→ pre-renderable), an optional free/local LLM narrator behind the existing template seam.
+Documented graduations: ✅ a web UI (`sdb serve`, ADR 0013) and ✅ a static-export site for free
+GitHub Pages hosting (`sdb build-site`, ADR 0015) — both done. Still open (adopt only when earned):
+Neo4j (scale/NL→Cypher), an optional free/local LLM narrator behind the existing template seam.
 
 ## 6. Conventions / gotchas
 

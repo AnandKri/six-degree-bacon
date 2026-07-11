@@ -176,6 +176,17 @@ def main(argv: list[str] | None = None) -> int:
         "--cooccurrence", type=Path, default=_DEFAULT_COOCCURRENCE, help="Co-occurrence JSON."
     )
 
+    site_parser = subparsers.add_parser(
+        "build-site", help="Pre-render a static site for free hosting (e.g. GitHub Pages)."
+    )
+    site_parser.add_argument(
+        "--out", type=Path, default=Path("site"), help="Output directory (default site/)."
+    )
+    site_parser.add_argument("--seed", type=Path, default=_DEFAULT_SEED, help="Seed graph JSON.")
+    site_parser.add_argument(
+        "--cooccurrence", type=Path, default=_DEFAULT_COOCCURRENCE, help="Co-occurrence JSON."
+    )
+
     args = parser.parse_args(argv)
     dispatch = {
         "discover": _run_discover,
@@ -183,6 +194,7 @@ def main(argv: list[str] | None = None) -> int:
         "build-cooccurrence": _run_build_cooccurrence,
         "validate-qids": _run_validate_qids,
         "serve": _run_serve,
+        "build-site": _run_build_site,
     }
     return dispatch[args.command](args)
 
@@ -195,6 +207,23 @@ def _run_serve(args: argparse.Namespace) -> int:
         print(f"seed file not found: {args.seed}", file=sys.stderr)
         return 2
     serve(args.host, args.port, seed_path=args.seed, cooccurrence_path=args.cooccurrence)
+    return 0
+
+
+def _run_build_site(args: argparse.Namespace) -> int:
+    """Pre-render the static site (deterministic; deployable to any static host)."""
+    from sdb.site import build_site
+    from sdb.web import load_graph
+
+    if not args.seed.exists():
+        print(f"seed file not found: {args.seed}", file=sys.stderr)
+        return 2
+    graph = load_graph(args.seed, args.cooccurrence)
+    index_path = build_site(graph, args.out)
+    print(
+        f"Wrote static site for {len(graph.nodes())} topics to {index_path.parent}"
+        f" — serve with any static host (e.g. GitHub Pages)."
+    )
     return 0
 
 

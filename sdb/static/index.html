@@ -184,18 +184,41 @@ function sectionHtml(title, cards, kind) {
   return '<div class="section-label">' + title + '</div>' + cards.map(c => cardHtml(c, kind)).join("");
 }
 
+// Static mode (e.g. GitHub Pages): a prebuilt ./data.json; else the live /api/discover server.
+const staticReady = fetch("./data.json").then(r => r.ok ? r.json() : null).catch(() => null);
+
+function staticLookup(S, topic, archetype, possibly) {
+  const needle = topic.trim().toLowerCase();
+  const hit = S.index.find(e => [e.id, e.label, e.qid, ...(e.aliases || [])]
+    .filter(Boolean).some(v => v.toLowerCase() === needle));
+  if (!hit) {
+    const sug = S.index.filter(e => e.label.toLowerCase().includes(needle))
+      .slice(0, 3).map(e => e.label);
+    return { topic, error: "not_found", suggestions: sug };
+  }
+  const r = S.results[hit.id][possibly ? "loose" : "strict"];
+  const results = {};
+  if (archetype === "both" || archetype === "journey") results.journey = r.journey;
+  if (archetype === "both" || archetype === "unlikely") results.unlikely = r.unlikely;
+  return { topic, results };
+}
+
+async function getData(topic, archetype, possibly) {
+  const S = await staticReady;
+  if (S) return staticLookup(S, topic, archetype, possibly);
+  const q = new URLSearchParams({ topic, archetype, include_possibly: possibly, top: "3" });
+  const resp = await fetch("/api/discover?" + q.toString());
+  return resp.json();
+}
+
 async function run(topic) {
   const status = $("status"), results = $("results");
   results.innerHTML = "";
   if (!topic.trim()) { status.textContent = "Enter a topic to begin."; return; }
   status.textContent = "Searching…";
-  const q = new URLSearchParams({
-    topic, archetype: $("archetype").value, include_possibly: $("possibly").checked, top: "3"
-  });
   let data;
   try {
-    const resp = await fetch("/api/discover?" + q.toString());
-    data = await resp.json();
+    data = await getData(topic, $("archetype").value, $("possibly").checked);
   } catch (e) { status.textContent = "Request failed: " + e; return; }
 
   if (data.error === "not_found") {

@@ -4,12 +4,15 @@
     "roman_empire": [
       "alexander_the_great",
       "alexandria",
+      "ancient_egypt",
       "ancient_greece",
       "augustus",
       "byzantine_empire",
       "christianity",
+      "cleopatra",
       "constantine_the_great",
       "constantinople",
+      "egyptian_hieroglyphs",
       "greek_mythology",
       "hadrian",
       "hadrians_wall",
@@ -26,9 +29,11 @@
     "roman_republic": [
       "alexander_the_great",
       "alexandria",
+      "ancient_egypt",
       "ancient_greece",
       "augustus",
       "byzantine_empire",
+      "cleopatra",
       "constantinople",
       "hadrians_wall",
       "julio_claudian_dynasty",
@@ -45,8 +50,10 @@
       "athens",
       "augustus",
       "byzantine_empire",
+      "cleopatra",
       "constantine_the_great",
       "hadrians_wall",
+      "nile",
       "roman_empire",
       "rome"
     ],
@@ -61,9 +68,11 @@
       "alexandria",
       "augustus",
       "byzantine_empire",
+      "cleopatra",
       "constantinople",
       "julio_claudian_dynasty",
       "latin",
+      "nile",
       "plato",
       "roman_empire",
       "roman_republic",
@@ -75,8 +84,10 @@
       "aeneas",
       "alexander_the_great",
       "alexandria",
+      "ancient_egypt",
       "ancient_greece",
       "byzantine_empire",
+      "cleopatra",
       "constantine_the_great",
       "constantinople",
       "hadrian",
@@ -94,6 +105,7 @@
       "alexandria",
       "augustus",
       "byzantine_empire",
+      "cleopatra",
       "constantinople",
       "julius_caesar",
       "latin",
@@ -115,6 +127,7 @@
     ],
     "byzantine_empire": [
       "alexandria",
+      "ancient_egypt",
       "christianity",
       "constantine_the_great",
       "constantinople",
@@ -193,6 +206,7 @@
     ],
     "persia": [
       "alexander_the_great",
+      "ancient_egypt",
       "china",
       "christianity",
       "india",
@@ -202,6 +216,7 @@
     "silk_road": [
       "alexandria",
       "amber_road",
+      "ancient_egypt",
       "ancient_greece",
       "augustus",
       "buddhism",
@@ -226,6 +241,7 @@
     "great_wall_of_china": [
       "alexander_the_great",
       "china",
+      "great_pyramid_of_giza",
       "hadrians_wall",
       "han_dynasty",
       "india",
@@ -238,6 +254,7 @@
       "qin_dynasty"
     ],
     "qin_dynasty": [
+      "ancient_egypt",
       "byzantine_empire",
       "china",
       "great_wall_of_china",
@@ -246,6 +263,7 @@
       "roman_empire"
     ],
     "han_dynasty": [
+      "ancient_egypt",
       "byzantine_empire",
       "chang_an",
       "china",
@@ -309,6 +327,7 @@
     "trojan_war": [
       "aeneas",
       "alexander_the_great",
+      "ancient_egypt",
       "ancient_greece",
       "athens",
       "augustus",
@@ -337,6 +356,7 @@
     ],
     "rome": [
       "aeneas",
+      "ancient_egypt",
       "athens",
       "augustus",
       "byzantine_empire",
@@ -411,12 +431,15 @@
     ],
     "alexander_the_great": [
       "alexandria",
+      "ancient_egypt",
       "ancient_greece",
       "aristotle",
       "athens",
       "augustus",
       "byzantine_empire",
       "china",
+      "cleopatra",
+      "egyptian_hieroglyphs",
       "greek_mythology",
       "hadrian",
       "homer",
@@ -431,13 +454,17 @@
     ],
     "alexandria": [
       "alexander_the_great",
+      "ancient_egypt",
       "athens",
       "augustus",
       "christianity",
       "constantinople",
+      "egyptian_hieroglyphs",
+      "great_pyramid_of_giza",
       "hadrian",
       "india",
       "julius_caesar",
+      "nile",
       "rome"
     ],
     "india": [
@@ -459,11 +486,13 @@
     "ancient_greece": [
       "alexander_the_great",
       "alexandria",
+      "ancient_egypt",
       "aristotle",
       "athens",
       "augustus",
       "byzantine_empire",
       "christianity",
+      "cleopatra",
       "euclid",
       "greek_mythology",
       "homer",
@@ -527,6 +556,53 @@
       "roman_empire",
       "trojan_war",
       "troy"
+    ],
+    "ancient_egypt": [
+      "alexander_the_great",
+      "alexandria",
+      "ancient_greece",
+      "byzantine_empire",
+      "christianity",
+      "egyptian_hieroglyphs",
+      "great_pyramid_of_giza",
+      "han_dynasty",
+      "julius_caesar",
+      "nile",
+      "qin_dynasty",
+      "roman_empire"
+    ],
+    "cleopatra": [
+      "alexander_the_great",
+      "alexandria",
+      "ancient_egypt",
+      "augustus",
+      "euclid",
+      "greek_mythology",
+      "hadrian",
+      "homer",
+      "julio_claudian_dynasty",
+      "julius_caesar",
+      "latin",
+      "nile",
+      "roman_empire",
+      "roman_republic"
+    ],
+    "nile": [
+      "alexandria",
+      "ancient_egypt",
+      "egyptian_hieroglyphs",
+      "greek_mythology",
+      "latin",
+      "roman_empire"
+    ],
+    "great_pyramid_of_giza": [
+      "ancient_greece",
+      "nile",
+      "roman_empire"
+    ],
+    "egyptian_hieroglyphs": [
+      "alexander_the_great",
+      "ancient_egypt"
     ]
   }
 }

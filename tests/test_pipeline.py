@@ -100,3 +100,24 @@ def test_greece_cluster_connects_philosophy_to_the_east(seed_graph: KnowledgeGra
     # Greek neighbours (Plato, Athens).
     pair_endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in pairs}
     assert pair_endpoints & {"India", "Persia", "Buddhism", "Silk Road"}
+
+
+def test_egypt_cluster_is_connected_not_an_island(seed_graph: KnowledgeGraph) -> None:
+    # ADR 0017: Cleopatra reaches the wider world via Alexandria (-> Alexander -> India ->
+    # Buddhism), and Ancient Egypt bridges to Rome (annexed as a province) — not an island.
+    cleopatra = discover(seed_graph, "Cleopatra", top=3)
+    assert cleopatra
+    assert {seed_graph.node(r.path.node_ids[-1]).label for r in cleopatra} & {
+        "Buddhism",
+        "India",
+        "Silk Road",
+    }
+    pairs = discover(seed_graph, "Ancient Egypt", archetype=Archetype.UNLIKELY, top=3)
+    assert pairs
+    for result in pairs:
+        assert result.path.length <= MAX_HOPS_UNLIKELY
+    assert {seed_graph.node(r.path.node_ids[-1]).label for r in pairs} & {
+        "Mithraism",
+        "Buddhism",
+        "Persia",
+    }

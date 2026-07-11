@@ -1,25 +1,25 @@
 {
-  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. Note: adding the Euclid/Jai Singh science subgraph raised the frequency of 'influenced_by' (lowering its rarity), which shifted Roman Empire's top journey from Qin Shi Huang to Mithra — a legitimate global-rarity effect. The Euclid -> Roman Republic case locks the new cross-culture bridge (Greek mathematics -> al-Tusi's Persia -> Silk Road -> Rome).",
+  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. History: adding the science subgraph shifted Roman Empire's top from Qin Shi Huang to Mithra. The Hellenistic-India-Buddhism bridge (ADR 0011: added India, Buddhism, Alexander the Great, Alexandria + short cross-cultural links) then connected the formerly-isolated science/India cluster into the Rome-Silk Road-China web, so the longest *meaningful* journeys now span Eurasia: Roman Empire -> Buddhism (via Silk Road -> Persia -> Alexander -> India), Christianity -> Rigveda, and a now-un-isolated Euclid -> Persia. Winners lead their runners-up by >=1.3 wow, so they are stable.",
   "cases": [
     {
       "topic": "Roman Empire",
       "top": 1,
-      "expected_endpoint": "Mithra",
-      "expected_hops": 4,
+      "expected_endpoint": "Buddhism",
+      "expected_hops": 5,
       "expected_possibly": false
     },
     {
       "topic": "Christianity",
       "top": 1,
-      "expected_endpoint": "Mithra",
-      "expected_hops": 5,
+      "expected_endpoint": "Rigveda",
+      "expected_hops": 6,
       "expected_possibly": false
     },
     {
       "topic": "Euclid",
       "top": 1,
-      "expected_endpoint": "Roman Republic",
-      "expected_hops": 5,
+      "expected_endpoint": "Persia",
+      "expected_hops": 6,
       "expected_possibly": false
     }
   ]

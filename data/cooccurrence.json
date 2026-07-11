@@ -2,6 +2,8 @@
   "_comment": "Wikipedia-link co-occurrence for the endpoint-surprise term; see docs/confidence-rubric.md. Regenerate with `sdb build-cooccurrence`.",
   "links": {
     "roman_empire": [
+      "alexander_the_great",
+      "alexandria",
       "augustus",
       "byzantine_empire",
       "christianity",
@@ -20,6 +22,8 @@
       "silk_road"
     ],
     "roman_republic": [
+      "alexander_the_great",
+      "alexandria",
       "augustus",
       "byzantine_empire",
       "constantinople",
@@ -33,6 +37,8 @@
       "romulus"
     ],
     "hadrian": [
+      "alexander_the_great",
+      "alexandria",
       "augustus",
       "byzantine_empire",
       "constantine_the_great",
@@ -47,6 +53,8 @@
     ],
     "julius_caesar": [
       "aeneas",
+      "alexander_the_great",
+      "alexandria",
       "augustus",
       "byzantine_empire",
       "constantinople",
@@ -60,6 +68,8 @@
     ],
     "augustus": [
       "aeneas",
+      "alexander_the_great",
+      "alexandria",
       "byzantine_empire",
       "constantine_the_great",
       "constantinople",
@@ -75,6 +85,7 @@
       "troy"
     ],
     "julio_claudian_dynasty": [
+      "alexandria",
       "augustus",
       "byzantine_empire",
       "constantinople",
@@ -97,6 +108,7 @@
       "troy"
     ],
     "byzantine_empire": [
+      "alexandria",
       "christianity",
       "constantine_the_great",
       "constantinople",
@@ -117,9 +129,12 @@
       "silk_road"
     ],
     "christianity": [
+      "alexandria",
+      "buddhism",
       "byzantine_empire",
       "constantine_the_great",
       "constantinople",
+      "india",
       "latin",
       "mithraism",
       "persia",
@@ -130,6 +145,7 @@
     "mithraism": [
       "aeneas",
       "augustus",
+      "buddhism",
       "christianity",
       "mithra",
       "rigveda",
@@ -148,9 +164,12 @@
       "zoroastrianism"
     ],
     "zoroastrianism": [
+      "alexander_the_great",
+      "buddhism",
       "china",
       "christianity",
       "constantine_the_great",
+      "india",
       "mithra",
       "mithraism",
       "persia",
@@ -162,14 +181,18 @@
       "persia"
     ],
     "persia": [
+      "alexander_the_great",
       "china",
       "christianity",
+      "india",
       "roman_empire",
       "zoroastrianism"
     ],
     "silk_road": [
+      "alexandria",
       "amber_road",
       "augustus",
+      "buddhism",
       "byzantine_empire",
       "chang_an",
       "china",
@@ -177,6 +200,7 @@
       "constantinople",
       "great_wall_of_china",
       "han_dynasty",
+      "india",
       "persia",
       "roman_empire",
       "rome",
@@ -188,9 +212,11 @@
       "silk_road"
     ],
     "great_wall_of_china": [
+      "alexander_the_great",
       "china",
       "hadrians_wall",
       "han_dynasty",
+      "india",
       "qin_dynasty",
       "silk_road"
     ],
@@ -220,10 +246,12 @@
     "zhang_qian": [
       "china",
       "han_dynasty",
+      "india",
       "rome",
       "silk_road"
     ],
     "chang_an": [
+      "buddhism",
       "christianity",
       "constantinople",
       "han_dynasty",
@@ -234,10 +262,12 @@
       "zoroastrianism"
     ],
     "china": [
+      "buddhism",
       "chang_an",
       "christianity",
       "great_wall_of_china",
       "han_dynasty",
+      "india",
       "persia",
       "qin_dynasty",
       "qin_shi_huang",
@@ -245,6 +275,7 @@
     ],
     "romulus": [
       "aeneas",
+      "alexander_the_great",
       "julio_claudian_dynasty",
       "julius_caesar",
       "mithraism",
@@ -262,6 +293,7 @@
     ],
     "trojan_war": [
       "aeneas",
+      "alexander_the_great",
       "augustus",
       "julio_claudian_dynasty",
       "julius_caesar",
@@ -270,8 +302,10 @@
     ],
     "troy": [
       "aeneas",
+      "alexander_the_great",
       "augustus",
       "constantinople",
+      "india",
       "julius_caesar",
       "roman_empire",
       "trojan_war"
@@ -293,6 +327,7 @@
       "trojan_war"
     ],
     "latin": [
+      "alexandria",
       "byzantine_empire",
       "constantinople",
       "hadrians_wall",
@@ -304,7 +339,9 @@
       "rome"
     ],
     "romance_languages": [
+      "buddhism",
       "constantinople",
+      "india",
       "latin",
       "proto_indo_european",
       "rigveda",
@@ -313,6 +350,7 @@
       "zoroastrianism"
     ],
     "proto_indo_european": [
+      "buddhism",
       "latin",
       "rigveda",
       "romance_languages",
@@ -320,6 +358,8 @@
     ],
     "euclid": [
       "al_tusi",
+      "alexander_the_great",
+      "alexandria",
       "byzantine_empire"
     ],
     "al_tusi": [
@@ -330,10 +370,52 @@
     "jagannatha_samrat": [
       "al_tusi",
       "euclid",
+      "india",
       "rigveda"
     ],
     "jai_singh_ii": [
-      "euclid"
+      "euclid",
+      "india"
+    ],
+    "alexander_the_great": [
+      "alexandria",
+      "augustus",
+      "byzantine_empire",
+      "china",
+      "hadrian",
+      "india",
+      "julius_caesar",
+      "persia",
+      "roman_empire",
+      "roman_republic",
+      "silk_road",
+      "troy"
+    ],
+    "alexandria": [
+      "alexander_the_great",
+      "augustus",
+      "christianity",
+      "constantinople",
+      "hadrian",
+      "india",
+      "julius_caesar",
+      "rome"
+    ],
+    "india": [
+      "buddhism",
+      "china",
+      "christianity",
+      "persia",
+      "rigveda",
+      "zoroastrianism"
+    ],
+    "buddhism": [
+      "china",
+      "christianity",
+      "mithraism",
+      "rigveda",
+      "silk_road",
+      "zoroastrianism"
     ]
   }
 }

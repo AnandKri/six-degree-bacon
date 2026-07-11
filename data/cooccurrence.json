@@ -2,6 +2,7 @@
   "_comment": "Wikipedia-link co-occurrence for the endpoint-surprise term; see docs/confidence-rubric.md. Regenerate with `sdb build-cooccurrence`.",
   "links": {
     "roman_empire": [
+      "abbasid_caliphate",
       "alexander_the_great",
       "alexandria",
       "ancient_egypt",
@@ -126,6 +127,7 @@
       "troy"
     ],
     "byzantine_empire": [
+      "abbasid_caliphate",
       "alexandria",
       "ancient_egypt",
       "christianity",
@@ -152,6 +154,7 @@
     "christianity": [
       "alexandria",
       "ancient_greece",
+      "baghdad",
       "buddhism",
       "byzantine_empire",
       "constantine_the_great",
@@ -188,6 +191,7 @@
     ],
     "zoroastrianism": [
       "alexander_the_great",
+      "baghdad",
       "buddhism",
       "china",
       "christianity",
@@ -205,6 +209,7 @@
       "persia"
     ],
     "persia": [
+      "abbasid_caliphate",
       "alexander_the_great",
       "ancient_egypt",
       "china",
@@ -214,11 +219,13 @@
       "zoroastrianism"
     ],
     "silk_road": [
+      "abbasid_caliphate",
       "alexandria",
       "amber_road",
       "ancient_egypt",
       "ancient_greece",
       "augustus",
+      "baghdad",
       "buddhism",
       "byzantine_empire",
       "chang_an",
@@ -254,6 +261,7 @@
       "qin_dynasty"
     ],
     "qin_dynasty": [
+      "abbasid_caliphate",
       "ancient_egypt",
       "byzantine_empire",
       "china",
@@ -263,6 +271,7 @@
       "roman_empire"
     ],
     "han_dynasty": [
+      "abbasid_caliphate",
       "ancient_egypt",
       "byzantine_empire",
       "chang_an",
@@ -281,6 +290,7 @@
       "silk_road"
     ],
     "chang_an": [
+      "baghdad",
       "buddhism",
       "christianity",
       "constantinople",
@@ -414,9 +424,12 @@
       "plato"
     ],
     "al_tusi": [
+      "al_khwarizmi",
       "aristotle",
+      "baghdad",
       "constantinople",
       "euclid",
+      "house_of_wisdom",
       "persia"
     ],
     "jagannatha_samrat": [
@@ -436,6 +449,7 @@
       "aristotle",
       "athens",
       "augustus",
+      "baghdad",
       "byzantine_empire",
       "china",
       "cleopatra",
@@ -468,6 +482,7 @@
       "rome"
     ],
     "india": [
+      "algebra",
       "buddhism",
       "china",
       "christianity",
@@ -517,6 +532,7 @@
       "rome"
     ],
     "aristotle": [
+      "abbasid_caliphate",
       "alexander_the_great",
       "alexandria",
       "ancient_greece",
@@ -558,6 +574,7 @@
       "troy"
     ],
     "ancient_egypt": [
+      "abbasid_caliphate",
       "alexander_the_great",
       "alexandria",
       "ancient_greece",
@@ -596,6 +613,7 @@
       "roman_empire"
     ],
     "great_pyramid_of_giza": [
+      "abbasid_caliphate",
       "ancient_greece",
       "nile",
       "roman_empire"
@@ -603,6 +621,60 @@
     "egyptian_hieroglyphs": [
       "alexander_the_great",
       "ancient_egypt"
+    ],
+    "al_khwarizmi": [
+      "abbasid_caliphate",
+      "al_tusi",
+      "algebra",
+      "baghdad",
+      "house_of_wisdom",
+      "zoroastrianism"
+    ],
+    "house_of_wisdom": [
+      "abbasid_caliphate",
+      "al_tusi",
+      "aristotle",
+      "baghdad",
+      "byzantine_empire",
+      "constantinople",
+      "euclid",
+      "persia",
+      "plato"
+    ],
+    "baghdad": [
+      "abbasid_caliphate",
+      "ancient_greece",
+      "chang_an",
+      "china",
+      "house_of_wisdom",
+      "india",
+      "mithra",
+      "persia"
+    ],
+    "abbasid_caliphate": [
+      "al_tusi",
+      "alexandria",
+      "algebra",
+      "ancient_egypt",
+      "ancient_greece",
+      "aristotle",
+      "baghdad",
+      "byzantine_empire",
+      "christianity",
+      "constantinople",
+      "euclid",
+      "han_dynasty",
+      "house_of_wisdom",
+      "nile",
+      "qin_dynasty",
+      "roman_empire",
+      "silk_road",
+      "zoroastrianism"
+    ],
+    "algebra": [
+      "al_khwarizmi",
+      "ancient_egypt",
+      "ancient_greece"
     ]
   }
 }

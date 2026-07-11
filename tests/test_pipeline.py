@@ -59,16 +59,16 @@ def test_unlikely_archetype_is_short_and_scored_by_improbability(
 def test_improbable_pair_is_worlds_apart_not_an_obvious_neighbour(
     seed_graph: KnowledgeGraph,
 ) -> None:
-    # Rome's most improbable short adjacencies are trans-Eurasian and tie at the top: the Great Wall
-    # of China, Buddhism and Zhang Qian all connect in 2 hops via the Silk Road and none co-occur
-    # with Rome. Which one wins the exact tie is immaterial; the invariant is that the top pair is
-    # short and genuinely worlds-apart, not an obvious co-occurring neighbour like Latin.
+    # Rome's most improbable short adjacencies are trans-Eurasian and tie at the top (Great Wall,
+    # Buddhism, Baghdad, House of Wisdom — all 2 hops via the Silk Road, none co-occurring w/ Rome).
+    # The exact tie winner is immaterial and grows with the seed, so the invariant is a *property*:
+    # the top pair is short and far more unexpected than an obvious co-occurring neighbour.
     top = discover(seed_graph, "Roman Empire", archetype=Archetype.UNLIKELY)[0]
     endpoint = seed_graph.node(top.path.node_ids[-1]).label
     assert top.path.length <= MAX_HOPS_UNLIKELY
-    assert endpoint in {"Great Wall of China", "Buddhism", "Zhang Qian"}
-    # It beats an obvious short neighbour: Rome -> Rome's directly-co-occurring city Latin.
-    assert top.endpoint_unexpectedness > seed_graph.endpoint_unexpectedness("roman_empire", "latin")
+    assert endpoint != "Latin"  # not the obvious directly-linked neighbour
+    latin_eu = seed_graph.endpoint_unexpectedness("roman_empire", "latin")
+    assert top.endpoint_unexpectedness > latin_eu  # genuinely worlds-apart
 
 
 def test_bridge_connects_buddhism_to_the_greco_roman_world(seed_graph: KnowledgeGraph) -> None:
@@ -119,5 +119,22 @@ def test_egypt_cluster_is_connected_not_an_island(seed_graph: KnowledgeGraph) ->
     assert {seed_graph.node(r.path.node_ids[-1]).label for r in pairs} & {
         "Mithraism",
         "Buddhism",
+        "Persia",
+    }
+
+
+def test_islamic_cluster_bridges_greek_and_indian_science(seed_graph: KnowledgeGraph) -> None:
+    # ADR 0018: the math lineage runs Algebra -> al-Khwarizmi -> al-Tusi -> Euclid, tying the
+    # Islamic Golden Age into the existing Euclid science subgraph; Baghdad reaches the Silk Road.
+    algebra = discover(seed_graph, "Algebra", top=1)
+    assert algebra
+    assert "Euclid" in [seed_graph.node(n).label for n in algebra[0].path.node_ids]
+
+    baghdad = discover(seed_graph, "Baghdad", top=3)
+    assert baghdad
+    assert {seed_graph.node(r.path.node_ids[-1]).label for r in baghdad} & {
+        "Buddhism",
+        "India",
+        "Rigveda",
         "Persia",
     }

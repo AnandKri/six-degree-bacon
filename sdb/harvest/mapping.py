@@ -44,43 +44,99 @@ HARVEST_PROPERTIES: tuple[str, ...] = tuple(
     pid for pid in sorted(WIKIDATA_PREDICATE) if pid not in HARVEST_EXCLUDED_PROPERTIES
 )
 
-# Wikidata "instance of" (P31) class → thematic Domain. Deterministic and intentionally small;
-# anything unmapped falls back to DOMAIN_FALLBACK. Extend this table as the harvest set grows.
+# Wikidata "instance of" (P31) class → thematic Domain. Deterministic and grown from the classes
+# that actually recur near the seed's themes; anything unmapped falls back to DOMAIN_FALLBACK. Every
+# QID here is verified against Wikidata (label in the comment) — a wrong QID silently mis-domains a
+# whole class of nodes, the ADR 0008 failure mode. Extend as the harvest set grows.
 INSTANCE_OF_DOMAIN: dict[str, Domain] = {
+    # -- geography -----------------------------------------------------------------------------
     "Q6256": Domain.GEOGRAPHY,  # country
     "Q515": Domain.GEOGRAPHY,  # city
     "Q1549591": Domain.GEOGRAPHY,  # big city
     "Q5119": Domain.GEOGRAPHY,  # capital city
     "Q486972": Domain.GEOGRAPHY,  # human settlement
+    "Q3957": Domain.GEOGRAPHY,  # small town
+    "Q532": Domain.GEOGRAPHY,  # village
+    "Q15284": Domain.GEOGRAPHY,  # municipality
+    "Q34876": Domain.GEOGRAPHY,  # province
+    "Q56061": Domain.GEOGRAPHY,  # administrative territorial entity
     "Q82794": Domain.GEOGRAPHY,  # geographic region
     "Q1620908": Domain.GEOGRAPHY,  # historical region
     "Q839954": Domain.GEOGRAPHY,  # archaeological site
     "Q4022": Domain.GEOGRAPHY,  # river
+    "Q23397": Domain.GEOGRAPHY,  # lake
+    "Q165": Domain.GEOGRAPHY,  # sea
     "Q23442": Domain.GEOGRAPHY,  # island
+    "Q34763": Domain.GEOGRAPHY,  # peninsula
     "Q8502": Domain.GEOGRAPHY,  # mountain
+    "Q46831": Domain.GEOGRAPHY,  # mountain range
+    "Q39816": Domain.GEOGRAPHY,  # valley
+    "Q8514": Domain.GEOGRAPHY,  # desert
     "Q107425": Domain.GEOGRAPHY,  # landscape
+    # -- history -------------------------------------------------------------------------------
     "Q3624078": Domain.HISTORY,  # sovereign state
+    "Q7275": Domain.HISTORY,  # state
+    "Q417175": Domain.HISTORY,  # kingdom
     "Q3024240": Domain.HISTORY,  # historical country
     "Q28171280": Domain.HISTORY,  # ancient civilization
     "Q48349": Domain.HISTORY,  # empire
     "Q11514315": Domain.HISTORY,  # historical period
+    "Q13418847": Domain.HISTORY,  # historical event
     "Q178561": Domain.HISTORY,  # battle
+    "Q188055": Domain.HISTORY,  # siege
     "Q198": Domain.HISTORY,  # war
+    "Q124734": Domain.HISTORY,  # rebellion
+    "Q10931": Domain.HISTORY,  # revolution
+    "Q131569": Domain.HISTORY,  # treaty
     "Q5": Domain.HISTORY,  # human
+    # -- genealogy -----------------------------------------------------------------------------
     "Q7269": Domain.GENEALOGY,  # dynasty
     "Q164950": Domain.GENEALOGY,  # noble family
+    # -- language ------------------------------------------------------------------------------
     "Q34770": Domain.LANGUAGE,  # language
     "Q25295": Domain.LANGUAGE,  # language family
+    "Q33384": Domain.LANGUAGE,  # dialect
+    "Q8192": Domain.LANGUAGE,  # writing system
+    # -- religion ------------------------------------------------------------------------------
     "Q9174": Domain.RELIGION,  # religion
     "Q1530022": Domain.RELIGION,  # religious concept
+    "Q13414953": Domain.RELIGION,  # religious denomination
+    "Q1370598": Domain.RELIGION,  # structure of worship
+    "Q44539": Domain.RELIGION,  # temple
+    "Q16970": Domain.RELIGION,  # church building
+    "Q44613": Domain.RELIGION,  # monastery
+    # -- myth ----------------------------------------------------------------------------------
     "Q178885": Domain.MYTH,  # deity
     "Q22988604": Domain.MYTH,  # mythological figure
+    "Q9134": Domain.MYTH,  # mythology
+    "Q2239243": Domain.MYTH,  # mythical creature
+    # -- science -------------------------------------------------------------------------------
+    "Q11862829": Domain.SCIENCE,  # academic discipline
+    "Q2465832": Domain.SCIENCE,  # branch of science
+    "Q395": Domain.SCIENCE,  # mathematics
+    "Q333": Domain.SCIENCE,  # astronomy
+    "Q65943": Domain.SCIENCE,  # theorem
+    "Q17737": Domain.SCIENCE,  # theory
+    "Q3099911": Domain.SCIENCE,  # scientific instrument
+    "Q62832": Domain.SCIENCE,  # observatory
+    "Q47574": Domain.SCIENCE,  # unit of measurement
+    # -- art -----------------------------------------------------------------------------------
+    "Q735": Domain.ART,  # art
+    "Q968159": Domain.ART,  # art movement
+    "Q838948": Domain.ART,  # work of art
+    "Q3305213": Domain.ART,  # painting
+    "Q860861": Domain.ART,  # sculpture
+    "Q2188189": Domain.ART,  # musical work
+    "Q11424": Domain.ART,  # film
+    # -- culture -------------------------------------------------------------------------------
     "Q41710": Domain.CULTURE,  # ethnic group
     "Q1002697": Domain.CULTURE,  # periodical / publication
     "Q571": Domain.CULTURE,  # book
     "Q47461344": Domain.CULTURE,  # written work
+    # -- trade ---------------------------------------------------------------------------------
     "Q133311": Domain.TRADE,  # trade route
     "Q11446": Domain.TRADE,  # ship (proxy for trade artefacts)
+    "Q28877": Domain.TRADE,  # good/s (commodity)
 }
 
 # Domain assigned when no P31 class maps (broad, non-committal — never guesses a specific field).
@@ -124,6 +180,27 @@ def domain_for(instance_of: tuple[str, ...]) -> Domain:
         if domain is not None:
             return domain
     return DOMAIN_FALLBACK
+
+
+def temporal_extent(
+    *,
+    inception_year: int | None,
+    birth_year: int | None,
+    death_year: int | None,
+    dissolved_year: int | None,
+) -> tuple[int | None, int | None]:
+    """Fold Wikidata's several date properties into one signed ``(start_year, end_year)`` extent.
+
+    Start is inception (P571) for a thing or birth (P569) for a person; end is dissolution (P576)
+    for a thing or death (P570) for a person. Inception/dissolution win if a pair somehow co-occurs,
+    but it is effectively unambiguous: a person's item carries no P571/P576 and a place's no
+    P569/P570, so at most one of each pair is set. This is what lets harvested *people* be dated at
+    all (P571 alone left them undated) — the temporal-gap surprise term and the date validators both
+    rely on it. Years are signed (BCE < 0).
+    """
+    start = inception_year if inception_year is not None else birth_year
+    end = dissolved_year if dissolved_year is not None else death_year
+    return start, end
 
 
 def make_source(

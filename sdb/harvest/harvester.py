@@ -14,6 +14,7 @@ from sdb.harvest.mapping import (
     WIKIDATA_PREDICATE,
     domain_for,
     make_source,
+    temporal_extent,
 )
 from sdb.schema.models import Node, SeedData, Statement
 
@@ -84,7 +85,18 @@ def harvest(
 
 
 def _node(facts: EntityFacts) -> Node:
-    """Build a :class:`Node` from harvested entity facts (domain via the P31→Domain table)."""
+    """Build a :class:`Node` from harvested entity facts.
+
+    Domain comes from the P31→Domain table; the temporal extent folds inception/birth (start) and
+    dissolution/death (end) so people are dated too. ``time_precision`` is left unset: it is not
+    consumed by any score, and reading it would need a heavier per-statement precision query.
+    """
+    start_year, end_year = temporal_extent(
+        inception_year=facts.inception_year,
+        birth_year=facts.birth_year,
+        death_year=facts.death_year,
+        dissolved_year=facts.dissolved_year,
+    )
     return Node(
         id=facts.qid,
         label=facts.label,
@@ -92,7 +104,8 @@ def _node(facts: EntityFacts) -> Node:
         type=facts.instance_of[0] if facts.instance_of else "entity",
         wikidata_qid=facts.qid,
         summary=facts.description,
-        start_year=facts.inception_year,
+        start_year=start_year,
+        end_year=end_year,
         time_precision=None,
     )
 

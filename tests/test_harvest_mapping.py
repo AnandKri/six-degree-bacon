@@ -8,11 +8,13 @@ from sdb.harvest.mapping import (
     HARVEST_EXCLUDED_PROPERTIES,
     HARVEST_PREDICATE_ALIASES,
     HARVEST_PROPERTIES,
+    INSTANCE_OF_DOMAIN,
     WIKIDATA_PREDICATE,
     domain_for,
     make_source,
     parse_rank,
     source_type_for_references,
+    temporal_extent,
 )
 from sdb.schema.enums import PREDICATE_WIKIDATA, Domain, Predicate, SourceType, WikidataRank
 
@@ -77,3 +79,38 @@ def test_domain_for_takes_first_known_class_then_falls_back() -> None:
     assert domain_for(("Q99999999", "Q9174")) is Domain.RELIGION  # skips unknown, finds religion
     assert domain_for(()) is Domain.CULTURE  # documented fallback
     assert domain_for(("Q99999999",)) is Domain.CULTURE
+
+
+def test_domain_table_now_covers_science_and_art() -> None:
+    # These two Domains had no P31 mapping before enrichment, so every such node fell to `culture`.
+    assert domain_for(("Q2465832",)) is Domain.SCIENCE  # branch of science
+    assert domain_for(("Q62832",)) is Domain.SCIENCE  # observatory
+    assert domain_for(("Q735",)) is Domain.ART  # art
+    assert domain_for(("Q3305213",)) is Domain.ART  # painting
+    # And common subtypes of existing domains no longer fall through.
+    assert domain_for(("Q34876",)) is Domain.GEOGRAPHY  # province
+    assert domain_for(("Q131569",)) is Domain.HISTORY  # treaty
+    assert domain_for(("Q33384",)) is Domain.LANGUAGE  # dialect
+
+
+def test_domain_table_keys_are_unique_wikidata_qids() -> None:
+    # A duplicate key would silently drop a mapping; every key is a QID.
+    assert all(qid.startswith("Q") and qid[1:].isdigit() for qid in INSTANCE_OF_DOMAIN)
+
+
+def test_temporal_extent_folds_thing_and_person_dates() -> None:
+    # A thing: inception -> start, dissolution -> end.
+    assert temporal_extent(
+        inception_year=-27, birth_year=None, death_year=None, dissolved_year=476
+    ) == (-27, 476)
+    # A person: birth -> start, death -> end (P571 alone used to leave them undated).
+    assert temporal_extent(
+        inception_year=None, birth_year=-323, death_year=-283, dissolved_year=None
+    ) == (-323, -283)
+    # Nothing known -> both None; inception/dissolution win if a pair somehow co-occurs.
+    assert temporal_extent(
+        inception_year=None, birth_year=None, death_year=None, dissolved_year=None
+    ) == (None, None)
+    assert temporal_extent(
+        inception_year=100, birth_year=50, death_year=90, dissolved_year=200
+    ) == (100, 200)

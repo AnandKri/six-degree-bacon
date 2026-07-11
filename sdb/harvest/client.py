@@ -40,13 +40,22 @@ class NeighborEdge:
 
 @dataclass(frozen=True)
 class EntityFacts:
-    """The descriptive facts needed to build a :class:`~sdb.schema.models.Node` for one item."""
+    """The descriptive facts needed to build a :class:`~sdb.schema.models.Node` for one item.
+
+    The four date fields are the raw Wikidata signals (all signed, negative = BCE); the harvester
+    folds them into one ``(start_year, end_year)`` extent via
+    :func:`~sdb.harvest.mapping.temporal_extent`. Things carry ``inception_year`` /
+    ``dissolved_year``, people carry ``birth_year`` / ``death_year``; an item never carries both.
+    """
 
     qid: str
     label: str
     description: str = ""
     instance_of: tuple[str, ...] = ()
     inception_year: int | None = None
+    birth_year: int | None = None
+    death_year: int | None = None
+    dissolved_year: int | None = None
 
 
 @runtime_checkable
@@ -125,27 +134,52 @@ class WikidataClient:
         return tuple(edges)
 
     def entities(self, qids: Sequence[str]) -> dict[str, EntityFacts]:
-        """Fetch labels, descriptions, ``P31`` classes and ``P571`` inception for ``qids``."""
+        """Fetch labels, descriptions, ``P31`` classes and the date properties for ``qids``.
+
+        Dates: inception (P571) and dissolution (P576) for things, birth (P569) and death (P570) for
+        people. Each is optional and independently multi-valued; the ``(item x p31 x dates)`` row
+        product is collapsed by :func:`_fold_entities` (earliest start, latest end; order-free).
+        """
         if not qids:
             return {}
         values = " ".join(f"wd:{qid}" for qid in dict.fromkeys(qids))
         query = f"""
-        SELECT ?item ?label ?description ?p31 ?inception WHERE {{
+        SELECT ?item ?label ?description ?p31 ?inception ?birth ?death ?dissolved WHERE {{
           VALUES ?item {{ {values} }}
           OPTIONAL {{ ?item rdfs:label ?label . FILTER(LANG(?label) = "en") }}
           OPTIONAL {{ ?item schema:description ?description . FILTER(LANG(?description) = "en") }}
           OPTIONAL {{ ?item wdt:P31 ?p31Node . BIND(STRAFTER(STR(?p31Node), "entity/") AS ?p31) }}
           OPTIONAL {{ ?item wdt:P571 ?inc . BIND(YEAR(?inc) AS ?inception) }}
+          OPTIONAL {{ ?item wdt:P569 ?dob . BIND(YEAR(?dob) AS ?birth) }}
+          OPTIONAL {{ ?item wdt:P570 ?dod . BIND(YEAR(?dod) AS ?death) }}
+          OPTIONAL {{ ?item wdt:P576 ?dis . BIND(YEAR(?dis) AS ?dissolved) }}
         }}
         """
         return _fold_entities(self._run(query))
 
 
+def _keep_year(store: dict[str, int], qid: str, value: int, *, latest: bool) -> None:
+    """Fold one year into ``store`` deterministically: keep the latest if ``latest`` else earliest.
+
+    A single item can expose several values for a date property (disputed births, staged
+    dissolutions); picking min for starts and max for ends makes the harvest independent of SPARQL
+    row order.
+    """
+    current = store.get(qid)
+    if current is None:
+        store[qid] = value
+    else:
+        store[qid] = max(current, value) if latest else min(current, value)
+
+
 def _fold_entities(rows: list[dict[str, Any]]) -> dict[str, EntityFacts]:
-    """Collapse the (item x P31) row product from the entities query into one record per item."""
+    """Collapse the (item x P31 x dates) row product from the entities query into one record."""
     labels: dict[str, str] = {}
     descriptions: dict[str, str] = {}
     inceptions: dict[str, int] = {}
+    births: dict[str, int] = {}
+    deaths: dict[str, int] = {}
+    dissolutions: dict[str, int] = {}
     classes: dict[str, list[str]] = {}
     for row in rows:
         qid = _iri_tail(row["item"]["value"])
@@ -154,11 +188,26 @@ def _fold_entities(rows: list[dict[str, Any]]) -> dict[str, EntityFacts]:
         if "description" in row:
             descriptions[qid] = row["description"]["value"]
         if "inception" in row:
-            inceptions.setdefault(qid, int(row["inception"]["value"]))
+            _keep_year(inceptions, qid, int(row["inception"]["value"]), latest=False)
+        if "birth" in row:
+            _keep_year(births, qid, int(row["birth"]["value"]), latest=False)
+        if "death" in row:
+            _keep_year(deaths, qid, int(row["death"]["value"]), latest=True)
+        if "dissolved" in row:
+            _keep_year(dissolutions, qid, int(row["dissolved"]["value"]), latest=True)
         if "p31" in row:
             bucket = classes.setdefault(qid, [])
             if row["p31"]["value"] not in bucket:
                 bucket.append(row["p31"]["value"])
+    seen = (
+        set(labels)
+        | set(descriptions)
+        | set(classes)
+        | set(inceptions)
+        | set(births)
+        | set(deaths)
+        | set(dissolutions)
+    )
     return {
         qid: EntityFacts(
             qid=qid,
@@ -166,8 +215,11 @@ def _fold_entities(rows: list[dict[str, Any]]) -> dict[str, EntityFacts]:
             description=descriptions.get(qid, ""),
             instance_of=tuple(classes.get(qid, ())),
             inception_year=inceptions.get(qid),
+            birth_year=births.get(qid),
+            death_year=deaths.get(qid),
+            dissolved_year=dissolutions.get(qid),
         )
-        for qid in set(labels) | set(descriptions) | set(classes) | set(inceptions)
+        for qid in seen
     }
 
 

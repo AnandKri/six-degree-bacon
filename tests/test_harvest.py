@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sdb.harvest.client import EntityFacts, FakeSparqlClient, NeighborEdge
+from sdb.harvest.client import EntityFacts, FakeSparqlClient, NeighborEdge, _fold_entities
 from sdb.harvest.harvester import harvest
 from sdb.harvest.snapshot import load_snapshot, save_snapshot
 from sdb.schema.enums import Domain, Predicate, SourceType
@@ -66,8 +66,50 @@ def test_node_enrichment_maps_domain_and_dates() -> None:
     nodes = {n.id: n for n in harvest(_client(), "Q1", hops=2).nodes}
     assert nodes["Q1"].domain is Domain.GEOGRAPHY  # city
     assert nodes["Q1"].start_year == -753
+    assert nodes["Q1"].end_year is None  # a city has no dissolution/death date
     assert nodes["Q2"].domain is Domain.LANGUAGE
     assert nodes["Q1"].wikidata_qid == "Q1"
+
+
+def test_people_and_dissolved_entities_get_full_extents() -> None:
+    # A person is dated by birth/death (P569/P570); a state by inception/dissolution (P571/P576).
+    client = FakeSparqlClient(
+        edges={"Q100": (NeighborEdge("P737", "Q200", "normal", 1),)},  # influenced_by
+        facts={
+            "Q100": EntityFacts(
+                "Q100", "Euclid", "mathematician", ("Q5",), birth_year=-323, death_year=-283
+            ),
+            "Q200": EntityFacts(
+                "Q200",
+                "Roman Empire",
+                "empire",
+                ("Q48349",),
+                inception_year=-27,
+                dissolved_year=476,
+            ),
+        },
+    )
+    nodes = {n.id: n for n in harvest(client, "Q100", hops=1).nodes}
+    assert (nodes["Q100"].start_year, nodes["Q100"].end_year) == (-323, -283)  # birth, death
+    assert nodes["Q100"].domain is Domain.HISTORY  # human
+    assert (nodes["Q200"].start_year, nodes["Q200"].end_year) == (-27, 476)  # inception, dissolved
+    assert nodes["Q200"].midpoint_year == (-27 + 476) / 2.0  # extent now feeds temporal surprise
+
+
+def test_fold_entities_picks_earliest_start_latest_end_deterministically() -> None:
+    # A multi-valued item (e.g. disputed birth) must fold the same regardless of SPARQL row order.
+    def row(qid: str, key: str, value: str) -> dict[str, dict[str, str]]:
+        return {"item": {"value": f"http://www.wikidata.org/entity/{qid}"}, key: {"value": value}}
+
+    rows = [
+        row("Q1", "birth", "-100"),
+        row("Q1", "birth", "-90"),  # later birth claim; earliest must win
+        row("Q1", "death", "-40"),
+        row("Q1", "death", "-45"),  # earlier death claim; latest must win
+    ]
+    facts = _fold_entities(rows)
+    assert (facts["Q1"].birth_year, facts["Q1"].death_year) == (-100, -40)
+    assert _fold_entities(list(reversed(rows))) == facts  # order-independent
 
 
 def test_described_by_source_clutter_is_excluded() -> None:

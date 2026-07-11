@@ -1,25 +1,25 @@
 {
-  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. History: adding the science subgraph shifted Roman Empire's top from Qin Shi Huang to Mithra. The Hellenistic-India-Buddhism bridge (ADR 0011: added India, Buddhism, Alexander the Great, Alexandria + short cross-cultural links) then connected the formerly-isolated science/India cluster into the Rome-Silk Road-China web, so the longest *meaningful* journeys now span Eurasia: Roman Empire -> Buddhism (via Silk Road -> Persia -> Alexander -> India), Christianity -> Rigveda, and a now-un-isolated Euclid -> Persia. Winners lead their runners-up by >=1.3 wow, so they are stable.",
+  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. History: the science subgraph shifted Roman Empire's top to Mithra; the Hellenistic-India-Buddhism bridge (ADR 0011) then connected the science/India cluster into the Rome-Silk Road-China web; and the default journey cap was cut 6->4 (ADR 0012) for punchier, higher-trust chains. At cap 4 the winners are Roman Empire -> India (Rigveda a close 2nd, ~0.35 wow behind - a deterministic near-tie), Christianity -> Alexander the Great (leads by ~1.5), and a now-un-isolated Euclid -> Buddhism (leads by ~2.3). Re-characterise after any seed/co-occurrence/scoring change.",
   "cases": [
     {
       "topic": "Roman Empire",
       "top": 1,
-      "expected_endpoint": "Buddhism",
-      "expected_hops": 5,
+      "expected_endpoint": "India",
+      "expected_hops": 4,
       "expected_possibly": false
     },
     {
       "topic": "Christianity",
       "top": 1,
-      "expected_endpoint": "Rigveda",
-      "expected_hops": 6,
+      "expected_endpoint": "Alexander the Great",
+      "expected_hops": 4,
       "expected_possibly": false
     },
     {
       "topic": "Euclid",
       "top": 1,
-      "expected_endpoint": "Persia",
-      "expected_hops": 6,
+      "expected_endpoint": "Buddhism",
+      "expected_hops": 4,
       "expected_possibly": false
     }
   ]

@@ -50,7 +50,7 @@ def discover(
 ) -> list[DiscoveryResult]:
     """Discover the highest-scoring paths from ``topic`` for a given archetype.
 
-    ``JOURNEY`` scores each path ``surprise x trust`` over ``[3, 6]`` hops; ``UNLIKELY`` (the
+    ``JOURNEY`` scores each path ``surprise x trust`` over ``[3, 4]`` hops; ``UNLIKELY`` (the
     improbable adjacency) scores ``endpoint_unexpectedness x trust`` over ``[1, 3]`` hops so the
     improbability of the *destination* decides it. Results are ranked by that score and deduplicated
     to the best path per endpoint. Paths below ``min_trust`` are dropped — the default

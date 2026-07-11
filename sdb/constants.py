@@ -81,7 +81,10 @@ COOCCURRENCE_ALPHA = 0.5
 # Traversal defaults
 # ---------------------------------------------------------------------------
 MIN_HOPS_DEFAULT = 3
-MAX_HOPS_DEFAULT = 6  # up to six degrees
+# Default journey cap. Trust decays multiplicatively per hop, so beyond ~4 hops chains ramble and
+# lose trust for little extra surprise; 4 keeps results punchy and well-evidenced. Users can still
+# request deeper chains per query via `--max-hops` (the engine supports the full "six degrees").
+MAX_HOPS_DEFAULT = 4
 TOP_DEFAULT = 1
 
 # The "improbable adjacency" archetype (ADR 0007) looks at *short* paths only — its wow is a

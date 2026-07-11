@@ -88,3 +88,18 @@ TOP_DEFAULT = 1
 # destination that feels worlds apart yet connects directly, not distance travelled.
 MIN_HOPS_UNLIKELY = 1
 MAX_HOPS_UNLIKELY = 3
+
+# ---------------------------------------------------------------------------
+# Search budgets — exact-when-tractable, guided-when-explosive (ADR 0010)
+# ---------------------------------------------------------------------------
+# Exhaustive simple-path enumeration is exact but exponential in degree x depth. The pipeline
+# enumerates exhaustively while that stays cheap and switches to a guided best-first walk only when
+# a search would exceed EXACT_PATH_BUDGET candidate paths. The seed's worst case is ~189 paths, so
+# the seed is always enumerated exhaustively (identical results); only large harvests go guided.
+EXACT_PATH_BUDGET = 5000
+
+# The guided walk's own bounds: how many candidate paths it may emit, and a hard cap on frontier
+# expansions so even a pathological graph terminates. Guidance orders *which* paths are found under
+# budget; it never changes how a found path is scored (that stays surprise x trust, reproducible).
+GUIDED_CANDIDATE_BUDGET = 2000
+GUIDED_EXPANSION_BUDGET = 50_000

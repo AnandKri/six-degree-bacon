@@ -13,7 +13,7 @@ from sdb.constants import (
 from sdb.engine.confidence import score_trust
 from sdb.engine.narrate import narrate
 from sdb.engine.surprise import score_surprise
-from sdb.engine.traversal import enumerate_paths
+from sdb.engine.traversal import find_paths
 from sdb.graph.build import KnowledgeGraph
 from sdb.schema.enums import Archetype
 from sdb.schema.models import DiscoveryResult
@@ -66,7 +66,7 @@ def discover(
 
     low, high = _hop_range(archetype, min_hops, max_hops)
     best_by_endpoint: dict[str, DiscoveryResult] = {}
-    for path in enumerate_paths(graph, source, low, high):
+    for path in find_paths(graph, source, low, high):
         trust = score_trust(graph, path).total
         if trust < min_trust:
             continue

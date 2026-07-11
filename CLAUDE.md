@@ -22,11 +22,13 @@ deterministic rank/reference→reliability mapping and pinned local snapshots, a
 **endpoint-surprise term** — `−log P(endpoint | start)` from real Wikipedia-link co-occurrence — so
 *unexpected destinations* win (Rome no longer tops out at the obvious "Latin"). Phase-2 increments add
 **harvest→curated merge** (`discover --harvest`, QID unification + corroboration), harvest
-noise-filtering, a **wow-score rebalance** (rank by `surprise × trust`, gated on evidence), and a
-**seed-QID repair** (16 hallucinated QIDs fixed), and **two archetypes** (a *journey* + an
-*improbable pair*). Tight, well-sourced cross-culture connections win — e.g. Euclid → al-Tusi's
-Persia → Silk Road → the Roman Republic. Still zero-LLM, deterministic, reproducible by hand. All
-checks green (ruff, format, mypy, 59 tests).
+noise-filtering, a **wow-score rebalance** (rank by `surprise × trust`, gated on evidence), a
+**seed-QID repair** (16 hallucinated QIDs fixed), **two archetypes** (a *journey* + an *improbable
+pair*), **harvest node enrichment** (P31→Domain coverage incl. `SCIENCE`/`ART`, and a full temporal
+extent so harvested people are dated), and a **Hellenistic–India–Buddhism seed bridge** that connects
+the science/India cluster into the Rome–Silk Road–China web. Tight, well-sourced cross-culture
+connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
+zero-LLM, deterministic, reproducible by hand. All checks green (ruff, format, mypy, 72 tests).
 
 ## How to run
 
@@ -58,10 +60,11 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `sdb/constants.py` — **the scoring rubric**: the single source of truth for every weight/threshold.
 - `sdb/graph/` — `build.py` (`KnowledgeGraph`: networkx graph + cached degree/rarity/counts + topic
   lookup) and `loader.py`.
-- `sdb/engine/` — `traversal.py` (exhaustive simple-path enumeration), `surprise.py`
-  (information-theoretic + **endpoint-unexpectedness** from co-occurrence), `confidence.py` (source
-  rubric → noisy-OR corroboration → link quality → validators → weakest-link path trust),
-  `narrate.py` (template TIL + `Possibly:` flag), `pipeline.py` (`discover()`).
+- `sdb/engine/` — `traversal.py` (`find_paths`: exact enumeration under a budget, else a bounded
+  best-first **guided walk** — ADR 0010), `surprise.py` (information-theoretic +
+  **endpoint-unexpectedness** from co-occurrence), `confidence.py` (source rubric → noisy-OR
+  corroboration → link quality → validators → weakest-link path trust), `narrate.py` (template TIL +
+  `Possibly:` flag), `pipeline.py` (`discover()`).
 - `sdb/harvest/` — ingestion (all deterministic given a snapshot): `client.py`
   (`SparqlClient` protocol + live `WikidataClient` + offline `FakeSparqlClient`), `mapping.py`
   (Wikidata rank/reference → `Source`, `P31` → `Domain`, PID → `Predicate` incl. alias PIDs),
@@ -70,16 +73,20 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   corroboration), `snapshot.py` (pin to `data/harvest/`, git-ignored).
 - `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
   `validate-qids`). `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
-- `data/seed.json` — curated 37-node / 46-statement graph across 9 domains, full provenance (incl. a
-  science subgraph: Euclid → al-Tusi → Jagannatha Samrat → Jai Singh II).
+- `data/seed.json` — curated 41-node / 54-statement graph across 8 domains, full provenance (incl. a
+  science subgraph Euclid → al-Tusi → Jagannatha Samrat → Jai Singh II, and a Hellenistic–India–
+  Buddhism bridge: Euclid → Alexandria → Alexander → India → Buddhism → Silk Road).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
-  0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair).
-  `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce. `docs/reference/`
+  0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair, 0009 harvest
+  node enrichment, 0010 guided-walk scaling, 0011 Hellenistic–India–Buddhism bridge, 0012 default
+  hop cap 6→4). `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
+  `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 59 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
-  2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, and both
-  archetypes; `eval/golden.json` — ranker regression (characterization values).
+- `tests/` — 72 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+  2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
+  the Hellenistic–India–Buddhism bridge, and a guided-walk scaling/perf test; `eval/golden.json` —
+  ranker regression (characterization values).
 
 ## Scoring in one paragraph
 
@@ -88,7 +95,7 @@ quality → × validator penalties; path trust = product of edge confidences. **
 interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap +
 **endpoint unexpectedness** (`−log2 P(endpoint | start)` from Wikipedia-link co-occurrence) − hub
 penalty (length is *not* rewarded). Results come in two **archetypes** (ADR 0007), surfaced together:
-a **journey** (3–6 hops, ranked `surprise × trust`) and an **improbable pair** (1–3 hops, ranked
+a **journey** (3–4 hops, ranked `surprise × trust`) and an **improbable pair** (1–3 hops, ranked
 `endpoint_unexpectedness × trust`). Both gate at `trust ≥ 0.50` by default (`--include-possibly`
 lowers the gate and flags `Possibly:`).
 
@@ -111,15 +118,27 @@ mypy + pytest must stay green (CI enforces it).
 
 ## Phase 2 — in progress
 
+- ✅ **Harvest node enrichment** (ADR 0009): grew `INSTANCE_OF_DOMAIN` (P31→Domain) by ~44 verified
+  classes — first-class `SCIENCE`/`ART` coverage (both previously had *zero* mappings) plus common
+  geography/history/religion/language/myth subtypes — so fewer harvested nodes fall to the `culture`
+  fallback and cross-domain surprise reflects real structure. Pulled a full temporal extent:
+  `entities()` now also reads birth/death (P569/P570) and dissolution (P576), folded by
+  `mapping.temporal_extent` (`start = inception ?? birth`, `end = dissolution ?? death`), so
+  **harvested people are dated** (were `None` — P571 doesn't apply to humans; live Euclid harvest now
+  gives (-333, -284)). Every added QID verified against Wikidata (one "Hurricane"/city mismatch
+  dropped, the ADR 0008 failure mode). `time_precision` left unset (no score consumes it).
 - ✅ **Seed-QID repair** (ADR 0008): 16 of 31 curated `wikidata_qid`s were hallucinated (silk_road →
   "Russian Empire", proto_indo_european → "Secure Shell"), faking provenance and poisoning
   co-occurrence. Repaired deterministically (label → Wikipedia article → `wikibase_item`, verified),
   co-occurrence rebuilt. De-artifacted results (Mithraism correctly reads as expected-from-Rome, not
   a false surprise). A `validate-qids` guard + `tests/test_validate.py` prevent recurrence.
-- ✅ **Type-B seed coverage:** added a science subgraph (Euclid → al-Tusi → Jagannatha Samrat → Jai
-  Singh II) so the graph spans Greek maths ↔ Mughal-era India. Nuance found: Jai Singh ↔ Euclid *is*
-  documented together on Wikipedia, so the improbable-pair archetype correctly does **not** flag it —
-  it isn't fooled by a famous-but-documented link.
+- ✅ **Type-B seed coverage** (ADR 0011): added a science subgraph (Euclid → al-Tusi → Jagannatha
+  Samrat → Jai Singh II) and then a **Hellenistic–India–Buddhism bridge** (India, Buddhism, Alexander
+  the Great, Alexandria + 8 sourced links) that connects the formerly-isolated science/India cluster
+  into the Rome–Silk Road–China web. New flagship journey **Roman Empire → … → Buddhism** (5 hops) and
+  genuinely worlds-apart improbable pairs (Buddhism ↔ Rome/Great Wall, Alexander ↔ Rigveda). Nuance
+  found earlier: Jai Singh ↔ Euclid *is* documented together on Wikipedia, so the improbable-pair
+  archetype correctly does **not** flag it — it isn't fooled by a famous-but-documented link.
 - ✅ **Wow-score rebalance** (ADR 0006): rank by `surprise × trust`, gate at `trust ≥ 0.50` by default
   (`--include-possibly` to see speculative), and drop the length reward. Tight, well-evidenced
   connections now win over long low-trust rambles; topics with no confident connection honestly
@@ -142,6 +161,13 @@ mypy + pytest must stay green (CI enforces it).
   apart, ranked `endpoint_unexpectedness × trust`). Rome → Great Wall of China (2 hops) is a genuine
   Type-B wow; obvious neighbours (Rome → Latin) correctly rank low. Richer Type-B destinations await
   broader seed coverage.
-- Still open: a **guided/seeded walk** to replace exhaustive enumeration at scale (ADR 0001);
-  richer node enrichment (fewer `culture`-fallback domains); higher-fidelity endpoint co-occurrence.
-  Neo4j, a web UI, an optional free/local LLM narrator remain graduations — adopt only when earned.
+- ✅ **Guided walk for scale (ADR 0010):** `find_paths` enumerates exhaustively while cheap and
+  switches to a bounded best-first **`guided_paths`** only when a search would exceed `EXACT_PATH_BUDGET`
+  (5000; seed worst case ~189, so the seed stays exact — all golden/planted/archetype tests
+  unchanged). The walk is guided by a prefix *promise* mirroring the surprise score (rarity + domain
+  jumps + endpoint-unexpectedness − hub penalty, same weights), deterministic, and bounded by
+  candidate/expansion budgets. Guidance orders discovery only; scoring is unchanged. A perf test
+  proves it: a dense 1500-node graph overflows exhaustive `[3,6]` while `find_paths` stays ≤ budget.
+- Still open: higher-fidelity endpoint co-occurrence; neighbourhood pre-pruning + a tuned promise
+  heuristic if guided-only recall needs it on real harvests. Neo4j (NL→Cypher for ~10k+ nodes), a
+  web UI, an optional free/local LLM narrator remain graduations — adopt only when earned.

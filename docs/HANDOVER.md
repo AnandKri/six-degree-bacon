@@ -2,7 +2,7 @@
 
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 in progress**, `main` @ pushed,
-all checks green (**59 tests**).
+all checks green (**72 tests**).
 
 ## 1. What it is (one paragraph)
 
@@ -28,18 +28,20 @@ Unicode (the `sdb` CLI already degrades to ASCII safely; this only bites ad-hoc 
 - `sdb/schema/` — `enums.py` (Domain, Predicate→Wikidata props, SourceType, **Archetype**),
   `models.py` (Pydantic; `DiscoveryResult` has `archetype`, `score`, `endpoint_unexpectedness`).
 - `sdb/constants.py` — **the rubric**: every weight/threshold. `wow = surprise × trust`; default gate
-  `trust ≥ 0.50`; UNLIKELY hop range `[1,3]`; JOURNEY `[3,6]`. No length reward.
+  `trust ≥ 0.50`; UNLIKELY hop range `[1,3]`; JOURNEY `[3,4]` (default cap cut 6→4, ADR 0012, still
+  `--max-hops`-overridable). No length reward.
 - `sdb/graph/build.py` — `KnowledgeGraph`: networkx graph + cached rarity/degree + **co-occurrence**
   (`endpoint_unexpectedness`). `loader.py` — `load_seed`, `load_cooccurrence`.
-- `sdb/engine/` — `traversal.py` (exhaustive simple paths), `surprise.py`, `confidence.py` (trust),
-  `narrate.py` (template TIL), `pipeline.py` (`discover(..., archetype=...)`).
+- `sdb/engine/` — `traversal.py` (`find_paths`: exact `enumerate_paths` under budget, else bounded
+  best-first `guided_paths` — ADR 0010), `surprise.py`, `confidence.py` (trust), `narrate.py`
+  (template TIL), `pipeline.py` (`discover(..., archetype=...)`).
 - `sdb/harvest/` — `client.py` (SPARQL, live + fake), `mapping.py` (rank/ref→Source, P31→Domain,
   PID→Predicate + aliases, `HARVEST_EXCLUDED_PROPERTIES`), `harvester.py` (k-hop BFS→SeedData),
   `cooccurrence.py` (Wikipedia-link matrix), `merge.py` (overlay harvest onto seed + corroboration),
   `snapshot.py` (pin to git-ignored `data/harvest/`), `validate.py` (QID guard).
 - `sdb/cli.py` — `discover` (`--archetype`, `--include-possibly`, `--harvest`), `harvest`,
   `build-cooccurrence`, `validate-qids`.
-- `data/seed.json` (33 nodes / 40 statements, repaired QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (41 nodes / 54 statements, verified QIDs) + `data/cooccurrence.json` (committed).
 - `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -58,21 +60,34 @@ independent source **plus** a predicate-alignment layer to pay off. Merge's real
 
 ## 5. Remaining work (priority order)
 
-1. **Seed coverage for genuine improbable pairs (Type B).** *Partly done:* the Euclid → al-Tusi →
-   Jagannatha Samrat → Jai Singh II science subgraph is in (spans Greek maths ↔ Mughal India). A
-   finding: that flagship pair (Jai Singh ↔ Euclid) is **documented together on Wikipedia**, so
-   co-occurrence rightly rates it *expected* — it is not an "improbable adjacency" by our signal. To
-   make Type B pop, add pairs that are genuinely **not** co-occurring yet short-linked (check with
-   `graph.endpoint_unexpectedness`). Remaining caveat: obscure nodes have thin Wikipedia co-occurrence
-   → occasional false "improbable" (e.g. Jai Singh → his own court astronomer). **Process after any
+1. ✅ **Seed coverage for genuine improbable pairs (Type B) (ADR 0011).** Added a Hellenistic–India–
+   Buddhism bridge (India, Buddhism, Alexander the Great, Alexandria + 8 short cross-cultural links,
+   all sourced, QIDs verified) that connects the formerly-isolated science/India cluster into the
+   Rome–Silk Road–China web. New flagship journey: Roman Empire → Silk Road → Persia → Alexander →
+   India → Buddhism (5 hops); new worlds-apart pairs Buddhism ↔ Rome/Great Wall/Persia, Alexander ↔
+   Buddhism/Rigveda. Re-ran `validate-qids` (41/41) → `build-cooccurrence` (41 nodes) →
+   re-characterised `eval/golden.json`. **Remaining caveat (unchanged):** intrinsically obscure nodes
+   have thin Wikipedia co-occurrence → occasional false "improbable" (e.g. Jai Singh → his own court
+   astronomer); mitigate by bridging through well-documented nodes. **Process after any
    `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → re-check `eval/golden.json`
    (adding edges shifts global predicate rarity, so journey winners can move).
-2. **Node enrichment on the harvest path.** ~30% of harvested nodes fall to the `culture` Domain
-   fallback (weakens cross-domain surprise). Grow `INSTANCE_OF_DOMAIN` (P31→Domain) and pull better
-   dates. Deterministic, bounded.
-3. **Guided/seeded walk (scale).** `traversal.py` enumerates *all* simple paths — fine at 33 nodes,
-   hopeless for harvested graphs. Replace with a beam/priority walk toward rare, cross-domain,
-   high-endpoint-surprise nodes (ADR 0001 flagged this). The largest item; needs care + a perf test.
+2. ✅ **Node enrichment on the harvest path (ADR 0009).** Grew `INSTANCE_OF_DOMAIN` (P31→Domain) by
+   ~44 verified classes — first-class `SCIENCE`/`ART` coverage (both had *zero* mappings) plus common
+   geography/history/religion/language/myth subtypes — so fewer harvested nodes fall to the `culture`
+   fallback. Pulled a full temporal extent: `entities()` now reads birth/death (P569/P570) and
+   dissolution (P576) alongside inception (P571), folded by `mapping.temporal_extent`
+   (`start = inception ?? birth`, `end = dissolution ?? death`). **Harvested people are now dated**
+   (were `None` — P571 doesn't apply to humans): a live 1-hop Euclid harvest yields (-333, -284).
+   Every added QID verified against Wikidata (one "Hurricane"/city mismatch dropped). `time_precision`
+   left unset (no score consumes it). Seed untouched → no validate-qids/co-occurrence/golden churn.
+3. ✅ **Guided/seeded walk (scale) (ADR 0010).** `find_paths` now enumerates exhaustively while that
+   stays cheap and switches to a bounded **best-first `guided_paths`** only when a search would exceed
+   `EXACT_PATH_BUDGET` (5000; seed worst case is ~189, so the seed is always exact — golden/planted/
+   archetype tests unchanged). The walk is guided by a prefix *promise* mirroring the surprise score
+   (rarity + domain jumps + endpoint-unexpectedness − hub penalty, same weights), bounded by
+   `GUIDED_CANDIDATE_BUDGET`/`GUIDED_EXPANSION_BUDGET`, deterministic (monotonic-counter heap ties).
+   Guidance orders discovery only; scoring is unchanged. Perf test locks it: on a dense 1500-node
+   graph exhaustive `[3,6]` overflows while `find_paths` returns ≤ budget in ~67 ms, deterministically.
 4. **Corroboration, only if earned:** a second *independent* source (DBpedia/Wikipedia-text) **with**
    a deterministic predicate-alignment table. See §4 — don't build without the alignment layer.
 5. **Wire `validate-qids` into CI** (a network-enabled job) so hallucinated QIDs can't reappear.

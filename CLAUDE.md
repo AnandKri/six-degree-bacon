@@ -84,8 +84,8 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair, 0009 harvest
   node enrichment, 0010 guided-walk scaling, 0011 Hellenistic–India–Buddhism bridge, 0012 default
-  hop cap 6→4, 0013 web UI). `docs/confidence-rubric.md` — the rubric, with worked examples the tests
-  reproduce.
+  hop cap 6→4, 0013 web UI, 0014 corroboration spike/defer). `docs/confidence-rubric.md` — the rubric,
+  with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
 - `tests/` — 79 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs

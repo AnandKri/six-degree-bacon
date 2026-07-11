@@ -90,8 +90,12 @@ independent source **plus** a predicate-alignment layer to pay off. Merge's real
    `GUIDED_CANDIDATE_BUDGET`/`GUIDED_EXPANSION_BUDGET`, deterministic (monotonic-counter heap ties).
    Guidance orders discovery only; scoring is unchanged. Perf test locks it: on a dense 1500-node
    graph exhaustive `[3,6]` overflows while `find_paths` returns ≤ budget in ~67 ms, deterministically.
-4. **Corroboration, only if earned:** a second *independent* source (DBpedia/Wikipedia-text) **with**
-   a deterministic predicate-alignment table. See §4 — don't build without the alignment layer.
+4. ⏸️ **Corroboration — spiked and deferred (ADR 0014).** A time-boxed offline spike quantified the
+   ceiling: trust is already high (mean 0.81; 49/54 edges clear the gate), the only sub-gate edges are
+   *speculative/mythic* ones a structured KB can't attest, and the candidate second sources
+   (DBpedia/Wikipedia-text) are *derived from* Wikipedia — feeding them into noisy-OR would inflate
+   trust dishonestly, not corroborate it. Build only with (1) a source genuinely independent of
+   Wikipedia **and** (2) a deterministic predicate-alignment table. Breadth is higher-leverage.
 5. ✅ **Wired `validate-qids` into CI** — a separate network-enabled workflow
    (`.github/workflows/qid-validation.yaml`, `make validate`) that runs on `data/seed.json` changes,
    weekly, and on demand (with a 3× retry for network flakiness), kept out of the offline `ci` gate.

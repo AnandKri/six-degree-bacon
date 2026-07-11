@@ -166,14 +166,36 @@ def main(argv: list[str] | None = None) -> int:
         "--seed", type=Path, default=_DEFAULT_SEED, help="Seed graph to validate."
     )
 
+    serve_parser = subparsers.add_parser("serve", help="Serve the interactive web UI locally.")
+    serve_parser.add_argument("--host", default="127.0.0.1", help="Bind host (deploy: 0.0.0.0).")
+    serve_parser.add_argument(
+        "--port", type=int, default=8000, help="Bind port (or the PORT env var; default 8000)."
+    )
+    serve_parser.add_argument("--seed", type=Path, default=_DEFAULT_SEED, help="Seed graph JSON.")
+    serve_parser.add_argument(
+        "--cooccurrence", type=Path, default=_DEFAULT_COOCCURRENCE, help="Co-occurrence JSON."
+    )
+
     args = parser.parse_args(argv)
     dispatch = {
         "discover": _run_discover,
         "harvest": _run_harvest,
         "build-cooccurrence": _run_build_cooccurrence,
         "validate-qids": _run_validate_qids,
+        "serve": _run_serve,
     }
     return dispatch[args.command](args)
+
+
+def _run_serve(args: argparse.Namespace) -> int:
+    """Serve the local web UI (deferred import so the CLI's other commands stay lightweight)."""
+    from sdb.web import serve
+
+    if not args.seed.exists():
+        print(f"seed file not found: {args.seed}", file=sys.stderr)
+        return 2
+    serve(args.host, args.port, seed_path=args.seed, cooccurrence_path=args.cooccurrence)
+    return 0
 
 
 def _run_discover(args: argparse.Namespace) -> int:

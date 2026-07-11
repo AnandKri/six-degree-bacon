@@ -118,30 +118,38 @@ class LiveWikipediaClient:
         return titles
 
     def outbound_links(self, title: str, candidates: Sequence[str]) -> frozenset[str]:
-        """Return the subset of ``candidates`` that ``title`` links to (following redirects)."""
+        """Return the subset of ``candidates`` that ``title`` links to (following redirects).
+
+        ``pltitles`` accepts at most 50 values per query, so candidates are chunked by 50 (otherwise
+        an over-long list is silently rejected and no links come back — which breaks once the seed
+        grows past 50 nodes); the per-chunk results are unioned.
+        """
         if not candidates:
             return frozenset()
         found: set[str] = set()
-        plcontinue: str | None = None
-        for _ in range(_MAX_CONTINUATIONS):
-            params = {
-                "action": "query",
-                "format": "json",
-                "prop": "links",
-                "titles": title,
-                "plnamespace": "0",
-                "pltitles": "|".join(candidates),
-                "pllimit": "max",
-                "redirects": "1",
-            }
-            if plcontinue is not None:
-                params["plcontinue"] = plcontinue
-            payload = self._get(_WIKIPEDIA_API, params)
-            for page in payload.get("query", {}).get("pages", {}).values():
-                for link in page.get("links", []):
-                    found.add(link["title"])
-            cont = payload.get("continue")
-            if cont is None:
-                break
-            plcontinue = cont.get("plcontinue")
+        unique = list(dict.fromkeys(candidates))
+        for start in range(0, len(unique), 50):
+            chunk = unique[start : start + 50]
+            plcontinue: str | None = None
+            for _ in range(_MAX_CONTINUATIONS):
+                params = {
+                    "action": "query",
+                    "format": "json",
+                    "prop": "links",
+                    "titles": title,
+                    "plnamespace": "0",
+                    "pltitles": "|".join(chunk),
+                    "pllimit": "max",
+                    "redirects": "1",
+                }
+                if plcontinue is not None:
+                    params["plcontinue"] = plcontinue
+                payload = self._get(_WIKIPEDIA_API, params)
+                for page in payload.get("query", {}).get("pages", {}).values():
+                    for link in page.get("links", []):
+                        found.add(link["title"])
+                cont = payload.get("continue")
+                if cont is None:
+                    break
+                plcontinue = cont.get("plcontinue")
         return frozenset(found)

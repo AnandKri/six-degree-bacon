@@ -2,7 +2,7 @@
 
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 in progress**, `main` @ pushed,
-all checks green (**86 tests**).
+all checks green (**87 tests**).
 
 ## 1. What it is (one paragraph)
 
@@ -46,7 +46,7 @@ Unicode (the `sdb` CLI already degrades to ASCII safely; this only bites ad-hoc 
   — the zero-dep web UI (ADR 0013): `discover_payload()` (pure/testable) + a stdlib `http.server`
   wrapper; the page is dual-mode. `sdb/site.py` — `build_site()` pre-renders that page + a `data.json`
   bundle to `site/` for free static hosting (ADR 0015).
-- `data/seed.json` (57 nodes / 79 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (61 nodes / 85 statements, verified QIDs) + `data/cooccurrence.json` (committed).
 - `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -102,12 +102,13 @@ independent source **plus** a predicate-alignment layer to pay off. Merge's real
 5. ✅ **Wired `validate-qids` into CI** — a separate network-enabled workflow
    (`.github/workflows/qid-validation.yaml`, `make validate`) that runs on `data/seed.json` changes,
    weekly, and on demand (with a 3× retry for network flakiness), kept out of the offline `ci` gate.
-6. ✅ **Breadth — the three planned clusters are done** (one commit each; verify QIDs → source →
-   `validate-qids` → `build-cooccurrence` → re-check golden): **Ancient Greece** (ADR 0016), **Ancient
-   Egypt** (ADR 0017; also fixed a co-occurrence harvester bug that broke seeds > 50 nodes), **Islamic
-   Golden Age** (ADR 0018; math lineage Algebra → al-Khwarizmi → al-Tusi → Euclid). Seed 37 → 57 nodes
-   this arc. More breadth is always welcome; candidate next clusters: Mesoamerica, East Asia beyond
-   China, Norse/Celtic myth, the Enlightenment/Scientific Revolution.
+6. ✅ **Breadth (ongoing)** — coherent, well-connected clusters, one commit each (verify QIDs → source
+   → `validate-qids` → `build-cooccurrence` → re-check golden): **Ancient Greece** (0016), **Ancient
+   Egypt** (0017; also fixed a co-occurrence bug that broke seeds > 50 nodes), **Islamic Golden Age**
+   (0018), **Scientific Revolution** (0019; the 2000-year lineage Newton → Euclid → al-Tusi →
+   Copernicus). Seed 37 → 61 nodes this arc. Candidate next clusters: East Asia beyond China,
+   Norse/Celtic myth (both connect via existing hubs); avoid Mesoamerica (pre-Columbian → would
+   island). See memory `sdb-breadth-paused` for the reusable process.
 
 Documented graduations: ✅ a web UI (`sdb serve`, ADR 0013) and ✅ a static-export site for free
 GitHub Pages hosting (`sdb build-site`, ADR 0015) — both done. Still open (adopt only when earned):

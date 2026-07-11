@@ -138,3 +138,17 @@ def test_islamic_cluster_bridges_greek_and_indian_science(seed_graph: KnowledgeG
         "Rigveda",
         "Persia",
     }
+
+
+def test_scientific_revolution_extends_the_lineage_back_to_antiquity(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0019: the modern astronomers reach back across the 2000-year science lineage — Newton via
+    # Euclid, Copernicus via al-Tusi (the Tusi couple) — into the Greek/Islamic world.
+    newton = discover(seed_graph, "Isaac Newton", top=1)
+    assert newton
+    assert "Euclid" in [seed_graph.node(n).label for n in newton[0].path.node_ids]
+
+    copernicus = discover(seed_graph, "Nicolaus Copernicus", top=1)
+    assert copernicus
+    assert "Nasir al-Din al-Tusi" in [seed_graph.node(n).label for n in copernicus[0].path.node_ids]

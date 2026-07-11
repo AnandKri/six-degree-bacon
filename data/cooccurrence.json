@@ -133,10 +133,13 @@
       "christianity",
       "constantine_the_great",
       "constantinople",
+      "copernicus",
+      "galileo",
       "han_dynasty",
       "homer",
       "julius_caesar",
       "latin",
+      "ptolemy",
       "qin_dynasty",
       "roman_empire",
       "roman_republic",
@@ -159,7 +162,10 @@
       "byzantine_empire",
       "constantine_the_great",
       "constantinople",
+      "copernicus",
+      "galileo",
       "india",
+      "isaac_newton",
       "latin",
       "mithraism",
       "persia",
@@ -276,6 +282,7 @@
       "byzantine_empire",
       "chang_an",
       "china",
+      "ptolemy",
       "qin_dynasty",
       "qin_shi_huang",
       "roman_empire",
@@ -387,6 +394,7 @@
       "byzantine_empire",
       "constantinople",
       "hadrians_wall",
+      "isaac_newton",
       "julius_caesar",
       "proto_indo_european",
       "roman_empire",
@@ -421,21 +429,26 @@
       "ancient_greece",
       "athens",
       "byzantine_empire",
-      "plato"
+      "plato",
+      "ptolemy"
     ],
     "al_tusi": [
       "al_khwarizmi",
       "aristotle",
       "baghdad",
       "constantinople",
+      "copernicus",
       "euclid",
+      "galileo",
       "house_of_wisdom",
-      "persia"
+      "persia",
+      "ptolemy"
     ],
     "jagannatha_samrat": [
       "al_tusi",
       "euclid",
       "india",
+      "ptolemy",
       "rigveda"
     ],
     "jai_singh_ii": [
@@ -487,6 +500,7 @@
       "china",
       "christianity",
       "persia",
+      "ptolemy",
       "rigveda",
       "zoroastrianism"
     ],
@@ -537,8 +551,10 @@
       "alexandria",
       "ancient_greece",
       "athens",
+      "galileo",
       "greek_mythology",
       "homer",
+      "isaac_newton",
       "plato"
     ],
     "plato": [
@@ -547,7 +563,8 @@
       "athens",
       "byzantine_empire",
       "greek_mythology",
-      "homer"
+      "homer",
+      "isaac_newton"
     ],
     "homer": [
       "aeneas",
@@ -610,6 +627,7 @@
       "egyptian_hieroglyphs",
       "greek_mythology",
       "latin",
+      "ptolemy",
       "roman_empire"
     ],
     "great_pyramid_of_giza": [
@@ -628,6 +646,7 @@
       "algebra",
       "baghdad",
       "house_of_wisdom",
+      "ptolemy",
       "zoroastrianism"
     ],
     "house_of_wisdom": [
@@ -639,7 +658,8 @@
       "constantinople",
       "euclid",
       "persia",
-      "plato"
+      "plato",
+      "ptolemy"
     ],
     "baghdad": [
       "abbasid_caliphate",
@@ -666,6 +686,7 @@
       "han_dynasty",
       "house_of_wisdom",
       "nile",
+      "ptolemy",
       "qin_dynasty",
       "roman_empire",
       "silk_road",
@@ -675,6 +696,38 @@
       "al_khwarizmi",
       "ancient_egypt",
       "ancient_greece"
+    ],
+    "ptolemy": [
+      "alexander_the_great",
+      "alexandria",
+      "china",
+      "euclid",
+      "greek_mythology",
+      "roman_empire",
+      "silk_road"
+    ],
+    "copernicus": [
+      "al_tusi",
+      "aristotle",
+      "byzantine_empire",
+      "euclid",
+      "galileo",
+      "isaac_newton",
+      "latin",
+      "plato",
+      "ptolemy"
+    ],
+    "galileo": [
+      "aristotle",
+      "copernicus",
+      "euclid",
+      "isaac_newton"
+    ],
+    "isaac_newton": [
+      "aristotle",
+      "galileo",
+      "latin",
+      "plato"
     ]
   }
 }

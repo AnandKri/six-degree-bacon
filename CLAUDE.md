@@ -30,7 +30,7 @@ the science/India cluster into the Rome–Silk Road–China web. Tight, well-sou
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
 plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
-(ruff, format, mypy, 86 tests).
+(ruff, format, mypy, 87 tests).
 
 ## How to run
 
@@ -80,19 +80,19 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change; the page is
   dual-mode, so `sdb/site.py` (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page
   for free GitHub Pages hosting. `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
-- `data/seed.json` — curated 57-node / 79-statement graph across 9 domains, full provenance (incl. a
-  science subgraph, a Hellenistic–India–Buddhism bridge, and Ancient Greece / Ancient Egypt / Islamic
-  Golden Age clusters — e.g. the math lineage Algebra → al-Khwarizmi → al-Tusi → Euclid → Jagannatha).
+- `data/seed.json` — curated 61-node / 85-statement graph across 9 domains, full provenance (incl. a
+  Hellenistic–India–Buddhism bridge and Ancient Greece / Ancient Egypt / Islamic Golden Age /
+  Scientific Revolution clusters — e.g. the 2000-year lineage Newton → Euclid → al-Tusi → Copernicus).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair, 0009 harvest
   node enrichment, 0010 guided-walk scaling, 0011 Hellenistic–India–Buddhism bridge, 0012 default
   hop cap 6→4, 0013 web UI, 0014 corroboration spike/defer, 0015 static-site export, 0016 Ancient
-  Greece cluster, 0017 Ancient Egypt cluster, 0018 Islamic Golden Age cluster).
-  `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
+  Greece cluster, 0017 Ancient Egypt cluster, 0018 Islamic Golden Age cluster, 0019 Scientific
+  Revolution cluster). `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 86 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 87 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
   static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —

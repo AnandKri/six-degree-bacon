@@ -323,7 +323,7 @@ def _run_discover(args: argparse.Namespace) -> int:
 
 
 _ARCHETYPE_HEADING: dict[Archetype, str] = {
-    Archetype.JOURNEY: "THE JOURNEY  (a long, surprising chain)",
+    Archetype.JOURNEY: "THE JOURNEY  (a surprising cross-domain chain)",
     Archetype.UNLIKELY: "THE IMPROBABLE PAIR  (worlds apart, yet a short hop away)",
 }
 

@@ -25,7 +25,8 @@
       "roman_republic",
       "romance_languages",
       "rome",
-      "silk_road"
+      "silk_road",
+      "tang_dynasty"
     ],
     "roman_republic": [
       "alexander_the_great",
@@ -145,7 +146,8 @@
       "roman_republic",
       "romance_languages",
       "rome",
-      "silk_road"
+      "silk_road",
+      "tang_dynasty"
     ],
     "constantinople": [
       "athens",
@@ -160,6 +162,7 @@
       "baghdad",
       "buddhism",
       "byzantine_empire",
+      "confucianism",
       "constantine_the_great",
       "constantinople",
       "copernicus",
@@ -171,6 +174,8 @@
       "persia",
       "roman_empire",
       "rome",
+      "tang_dynasty",
+      "zen",
       "zoroastrianism"
     ],
     "mithraism": [
@@ -178,12 +183,14 @@
       "augustus",
       "buddhism",
       "christianity",
+      "confucianism",
       "greek_mythology",
       "mithra",
       "rigveda",
       "roman_empire",
       "roman_republic",
       "rome",
+      "zen",
       "zoroastrianism"
     ],
     "mithra": [
@@ -201,13 +208,16 @@
       "buddhism",
       "china",
       "christianity",
+      "confucianism",
       "constantine_the_great",
       "india",
       "mithra",
       "mithraism",
       "persia",
       "rigveda",
-      "roman_empire"
+      "roman_empire",
+      "tang_dynasty",
+      "zen"
     ],
     "rigveda": [
       "homer",
@@ -221,6 +231,7 @@
       "china",
       "christianity",
       "india",
+      "japan",
       "roman_empire",
       "zoroastrianism"
     ],
@@ -237,6 +248,7 @@
       "chang_an",
       "china",
       "christianity",
+      "confucianism",
       "constantinople",
       "great_wall_of_china",
       "han_dynasty",
@@ -244,6 +256,7 @@
       "persia",
       "roman_empire",
       "rome",
+      "tang_dynasty",
       "zhang_qian",
       "zoroastrianism"
     ],
@@ -259,9 +272,11 @@
       "han_dynasty",
       "india",
       "qin_dynasty",
-      "silk_road"
+      "silk_road",
+      "tang_dynasty"
     ],
     "qin_shi_huang": [
+      "confucianism",
       "great_wall_of_china",
       "han_dynasty",
       "qin_dynasty"
@@ -271,10 +286,12 @@
       "ancient_egypt",
       "byzantine_empire",
       "china",
+      "confucius",
       "great_wall_of_china",
       "han_dynasty",
       "qin_shi_huang",
-      "roman_empire"
+      "roman_empire",
+      "tang_dynasty"
     ],
     "han_dynasty": [
       "abbasid_caliphate",
@@ -282,11 +299,14 @@
       "byzantine_empire",
       "chang_an",
       "china",
+      "confucianism",
+      "confucius",
       "ptolemy",
       "qin_dynasty",
       "qin_shi_huang",
       "roman_empire",
       "silk_road",
+      "tang_dynasty",
       "zhang_qian"
     ],
     "zhang_qian": [
@@ -305,6 +325,7 @@
       "persia",
       "qin_dynasty",
       "silk_road",
+      "tang_dynasty",
       "zhang_qian",
       "zoroastrianism"
     ],
@@ -312,13 +333,17 @@
       "buddhism",
       "chang_an",
       "christianity",
+      "confucianism",
+      "confucius",
       "great_wall_of_china",
       "han_dynasty",
       "india",
+      "japan",
       "persia",
       "qin_dynasty",
       "qin_shi_huang",
-      "silk_road"
+      "silk_road",
+      "tang_dynasty"
     ],
     "romulus": [
       "aeneas",
@@ -381,6 +406,7 @@
       "christianity",
       "constantine_the_great",
       "constantinople",
+      "japan",
       "julio_claudian_dynasty",
       "julius_caesar",
       "latin",
@@ -407,6 +433,7 @@
       "constantinople",
       "homer",
       "india",
+      "japan",
       "latin",
       "proto_indo_european",
       "rigveda",
@@ -499,6 +526,7 @@
       "buddhism",
       "china",
       "christianity",
+      "japan",
       "persia",
       "ptolemy",
       "rigveda",
@@ -507,9 +535,13 @@
     "buddhism": [
       "china",
       "christianity",
+      "confucianism",
+      "japan",
       "mithraism",
       "rigveda",
       "silk_road",
+      "tang_dynasty",
+      "zen",
       "zoroastrianism"
     ],
     "ancient_greece": [
@@ -551,6 +583,8 @@
       "alexandria",
       "ancient_greece",
       "athens",
+      "confucianism",
+      "confucius",
       "galileo",
       "greek_mythology",
       "homer",
@@ -562,6 +596,8 @@
       "aristotle",
       "athens",
       "byzantine_empire",
+      "confucianism",
+      "confucius",
       "greek_mythology",
       "homer",
       "isaac_newton"
@@ -603,7 +639,8 @@
       "julius_caesar",
       "nile",
       "qin_dynasty",
-      "roman_empire"
+      "roman_empire",
+      "tang_dynasty"
     ],
     "cleopatra": [
       "alexander_the_great",
@@ -668,6 +705,7 @@
       "china",
       "house_of_wisdom",
       "india",
+      "japan",
       "mithra",
       "persia"
     ],
@@ -690,6 +728,7 @@
       "qin_dynasty",
       "roman_empire",
       "silk_road",
+      "tang_dynasty",
       "zoroastrianism"
     ],
     "algebra": [
@@ -728,6 +767,68 @@
       "galileo",
       "latin",
       "plato"
+    ],
+    "confucius": [
+      "aristotle",
+      "confucianism",
+      "han_dynasty",
+      "plato",
+      "qin_dynasty",
+      "qin_shi_huang",
+      "tang_dynasty"
+    ],
+    "confucianism": [
+      "aristotle",
+      "buddhism",
+      "china",
+      "christianity",
+      "confucius",
+      "han_dynasty",
+      "japan",
+      "latin",
+      "mithraism",
+      "plato",
+      "qin_dynasty",
+      "tang_dynasty",
+      "zen",
+      "zoroastrianism"
+    ],
+    "tang_dynasty": [
+      "abbasid_caliphate",
+      "ancient_egypt",
+      "buddhism",
+      "byzantine_empire",
+      "chang_an",
+      "china",
+      "confucianism",
+      "confucius",
+      "constantinople",
+      "han_dynasty",
+      "india",
+      "japan",
+      "qin_dynasty",
+      "roman_empire",
+      "silk_road",
+      "zoroastrianism"
+    ],
+    "japan": [
+      "ancient_egypt",
+      "buddhism",
+      "china",
+      "india",
+      "zen"
+    ],
+    "zen": [
+      "buddhism",
+      "china",
+      "christianity",
+      "confucianism",
+      "han_dynasty",
+      "india",
+      "japan",
+      "mithraism",
+      "tang_dynasty",
+      "zoroastrianism"
     ]
   }
 }

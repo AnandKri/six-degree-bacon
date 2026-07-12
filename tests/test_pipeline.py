@@ -130,14 +130,11 @@ def test_islamic_cluster_bridges_greek_and_indian_science(seed_graph: KnowledgeG
     assert algebra
     assert "Euclid" in [seed_graph.node(n).label for n in algebra[0].path.node_ids]
 
+    # Baghdad reaches the wider Eurasian world through the Silk Road hub — every top journey routes
+    # via the Silk Road, so it is a bridge, not an island (property-based, robust to the hop cap).
     baghdad = discover(seed_graph, "Baghdad", top=3)
     assert baghdad
-    assert {seed_graph.node(r.path.node_ids[-1]).label for r in baghdad} & {
-        "Buddhism",
-        "India",
-        "Rigveda",
-        "Persia",
-    }
+    assert all("Silk Road" in [seed_graph.node(n).label for n in r.path.node_ids] for r in baghdad)
 
 
 def test_scientific_revolution_extends_the_lineage_back_to_antiquity(
@@ -152,3 +149,48 @@ def test_scientific_revolution_extends_the_lineage_back_to_antiquity(
     copernicus = discover(seed_graph, "Nicolaus Copernicus", top=1)
     assert copernicus
     assert "Nasir al-Din al-Tusi" in [seed_graph.node(n).label for n in copernicus[0].path.node_ids]
+
+
+def test_east_asia_cluster_connects_via_china_buddhism_and_silk_road(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0020: the East Asia cluster (Confucius/Confucianism, Tang dynasty, Japan, Zen) is not an
+    # island — it ties into three existing hubs. Japan reaches the wider Eurasian web (via Tang ->
+    # China -> Silk Road, and via Zen -> Buddhism), not just its East-Asian neighbours.
+    east_asia = {
+        "Japan",
+        "China",
+        "Tang dynasty",
+        "Zen",
+        "Confucius",
+        "Confucianism",
+        "Great Wall of China",
+        "Chang'an",
+        "Qin dynasty",
+        "Qin Shi Huang",
+        "Han dynasty",
+        "Zhang Qian",
+    }
+    journeys = discover(seed_graph, "Japan", top=5)
+    assert journeys
+    endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in journeys}
+    # Japan's journeys leave the East-Asian neighbourhood entirely — it is a bridge, not an island.
+    assert endpoints - east_asia
+
+    # Zen bridges the Buddhism hub to Japan, so it descends from Buddhism on the way to Japan.
+    zen = discover(seed_graph, "Zen", top=5)
+    assert zen
+    assert any("Buddhism" in [seed_graph.node(n).label for n in r.path.node_ids] for r in zen)
+
+    # Confucius's improbable partners are worlds-apart (the Mediterranean / Indian / Persian world),
+    # short, and more unexpected than his obvious neighbours (China, Confucianism) — property-based,
+    # not a hardcoded label, since the top tie keeps shifting as the seed grows.
+    pairs = discover(seed_graph, "Confucius", archetype=Archetype.UNLIKELY, top=3)
+    assert pairs
+    for result in pairs:
+        assert result.path.length <= MAX_HOPS_UNLIKELY
+    pair_endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in pairs}
+    assert pair_endpoints - {"China", "Confucianism"}
+    obvious = seed_graph.endpoint_unexpectedness("confucius", "china")
+    for result in pairs:
+        assert result.endpoint_unexpectedness >= obvious

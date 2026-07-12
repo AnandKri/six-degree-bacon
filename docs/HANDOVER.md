@@ -1,8 +1,9 @@
 # Hand-over — Six Degree Bacon (for the next session)
 
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
-and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 in progress**, `main` @ pushed,
-all checks green (**87 tests**).
+and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
+(public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
+green (**88 tests**). Seed: **66 nodes / 93 statements**, 9 domains.
 
 ## 1. What it is (one paragraph)
 
@@ -11,7 +12,7 @@ connection, each result carrying a **reproducible trust score and surprise score
 **correctness never depends on an LLM** — every score is deterministic and reproducible by hand from
 [`docs/confidence-rubric.md`](confidence-rubric.md). Local-first, zero external services at runtime.
 
-## 2. Run & verify
+## 2. Run, verify & deploy
 
 ```sh
 uv sync --extra dev
@@ -19,109 +20,104 @@ uv run sdb discover "Roman Empire"           # two archetypes: a journey + an im
 uv run sdb discover "Trojan War" --include-possibly
 uv run sdb serve                             # interactive web UI (zero-dep, ADR 0013) at :8000
 uv run sdb build-site                        # static export -> site/ for free hosting (ADR 0015)
-uv run sdb validate-qids                      # network: checks seed QIDs resolve (guard for ADR 0008)
+uv run sdb validate-qids                     # network: checks seed QIDs resolve (guard for ADR 0008)
 uv run ruff check . && uv run ruff format --check . && uv run mypy sdb && uv run pytest
 ```
-Windows note: prefix console-printing scripts with `PYTHONUTF8=1` or the cp1252 console chokes on
-Unicode (the `sdb` CLI already degrades to ASCII safely; this only bites ad-hoc `python -c` scripts).
+
+**Deployment (all live/ready):**
+- **GitHub Pages** — auto-builds + deploys on every push to `main` (`.github/workflows/pages.yaml`);
+  live at `https://anandkri.github.io/six-degree-bacon/`. Repo setting already on (Pages → Actions).
+- **Live server** — `sdb serve --host 0.0.0.0` reads `$PORT`, so Render / HF Docker Space / Fly / Cloud
+  Run run it as-is.
+- **React embed** — the page is dual-mode; `build-site --theme <css>` injects a theme override. A
+  themed bundle already lives in the user's separate repo at `<personal-site>/public/six-degrees/`
+  (theme `six-degrees-theme.css`, notes `six-degrees-README.md`). **Regenerate after any seed change:**
+  `sdb build-site --out <personal-site>/public/six-degrees --theme <personal-site>/six-degrees-theme.css`.
+  See memory `sdb-deployment-react` (that repo has no CLAUDE.md/memory; point its Claude at the README).
+
+Windows note: prefix ad-hoc `python -c` scripts with `PYTHONUTF8=1` or the cp1252 console chokes on
+Unicode labels (the `sdb` CLI already degrades to ASCII safely).
 
 ## 3. Architecture map
 
 - `sdb/schema/` — `enums.py` (Domain, Predicate→Wikidata props, SourceType, **Archetype**),
   `models.py` (Pydantic; `DiscoveryResult` has `archetype`, `score`, `endpoint_unexpectedness`).
 - `sdb/constants.py` — **the rubric**: every weight/threshold. `wow = surprise × trust`; default gate
-  `trust ≥ 0.50`; UNLIKELY hop range `[1,3]`; JOURNEY `[3,4]` (default cap cut 6→4, ADR 0012, still
-  `--max-hops`-overridable). No length reward.
+  `trust ≥ 0.50`; UNLIKELY hop range `[1,3]`; JOURNEY `[3,3]` — a fixed-length 3-hop chain (cap cut
+  6→4 ADR 0012, then 4→3 ADR 0021; still `--max-hops`-overridable). No length reward.
 - `sdb/graph/build.py` — `KnowledgeGraph`: networkx graph + cached rarity/degree + **co-occurrence**
   (`endpoint_unexpectedness`). `loader.py` — `load_seed`, `load_cooccurrence`.
 - `sdb/engine/` — `traversal.py` (`find_paths`: exact `enumerate_paths` under budget, else bounded
   best-first `guided_paths` — ADR 0010), `surprise.py`, `confidence.py` (trust), `narrate.py`
   (template TIL), `pipeline.py` (`discover(..., archetype=...)`).
 - `sdb/harvest/` — `client.py` (SPARQL, live + fake), `mapping.py` (rank/ref→Source, P31→Domain,
-  PID→Predicate + aliases, `HARVEST_EXCLUDED_PROPERTIES`), `harvester.py` (k-hop BFS→SeedData),
-  `cooccurrence.py` (Wikipedia-link matrix), `merge.py` (overlay harvest onto seed + corroboration),
-  `snapshot.py` (pin to git-ignored `data/harvest/`), `validate.py` (QID guard).
-- `sdb/cli.py` — `discover` (`--archetype`, `--include-possibly`, `--harvest`), `harvest`,
-  `build-cooccurrence`, `validate-qids`, `serve`, `build-site`. `sdb/web.py` + `sdb/static/index.html`
-  — the zero-dep web UI (ADR 0013): `discover_payload()` (pure/testable) + a stdlib `http.server`
-  wrapper; the page is dual-mode. `sdb/site.py` — `build_site()` pre-renders that page + a `data.json`
-  bundle to `site/` for free static hosting (ADR 0015).
-- `data/seed.json` (61 nodes / 85 statements, verified QIDs) + `data/cooccurrence.json` (committed).
-- `eval/golden.json` — ranker regression (characterization values, not hand-picked).
+  temporal extent, PID→Predicate + aliases), `harvester.py` (k-hop BFS→SeedData), `cooccurrence.py`
+  (Wikipedia-link matrix; **chunks `pltitles` by 50 — MediaWiki caps it, ADR 0017**), `merge.py`,
+  `snapshot.py` (git-ignored `data/harvest/`), `validate.py` (QID guard).
+- `sdb/cli.py` — `discover`, `harvest`, `build-cooccurrence`, `validate-qids`, `serve`, `build-site`
+  (`--theme`). `sdb/web.py` + `sdb/static/index.html` — zero-dep dual-mode web UI (ADR 0013):
+  `discover_payload()` (pure/testable) behind a stdlib `http.server`. `sdb/site.py` — `build_site()`
+  pre-renders that page + a `data.json` bundle to `site/` (git-ignored) for free static hosting
+  (ADR 0015).
+- `.github/workflows/` — `ci.yaml` (offline lint/type/test on every push), `pages.yaml` (build+deploy
+  Pages), `qid-validation.yaml` (network QID guard on `data/seed.json` changes + weekly + manual).
+- `data/seed.json` (66 nodes / 93 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+  `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
 
-Phase 0 deterministic engine · Phase 1 (ADR 0003 endpoint-surprise from co-occurrence, 0004 Wikidata
-harvester) · Phase 2 so far: 0005 harvest→curated merge+corroboration, **0006 wow = surprise × trust
-+ evidence gate**, **0007 two archetypes (journey + improbable pair)**, **0008 seed-QID repair**
-(16 hallucinated QIDs fixed). Plus harvest noise-filtering (exclude bibliographic P1343) and the
-QID-validation guard.
+Phase 0 deterministic engine · Phase 1 (0003 endpoint-surprise from co-occurrence, 0004 Wikidata
+harvester) · **Phase 2:** 0005 harvest→curated merge, **0006 wow = surprise × trust + evidence gate**,
+**0007 two archetypes**, **0008 seed-QID repair** (+ the `validate-qids` guard), **0009 harvest node
+enrichment** (P31→Domain incl. SCIENCE/ART; birth/death/dissolution dates), **0010 guided walk for
+scale**, **0011 Hellenistic–India–Buddhism bridge**, **0012 default hop cap 6→4**, **0013 web UI**,
+**0014 corroboration spike → deferred**, **0015 static-site export**, **0016 Ancient Greece**, **0017
+Ancient Egypt** (+ the co-occurrence `pltitles` fix), **0018 Islamic Golden Age**, **0019 Scientific
+Revolution**, **0020 East Asia** (Confucius/Confucianism, Tang dynasty, Japan, Zen), **0021 journey
+hop cap 4→3** (fixed-length 3-hop journeys — punchier, distinct from the improbable pair). Plus:
+theme-able embed (`build-site --theme`), CI for QID-validation + Pages, and the push to a public
+GitHub repo with Pages live.
 
-**Key finding (do not re-litigate):** cross-source *corroboration* is low-yield on this seed — the
-curated relations are hand-modelled abstractions ("Rome *located_in* it") that structured KBs encode
-differently (`capital`, `birthPlace`) or not at all. Proven via a DBpedia spike. It needs a genuinely
-independent source **plus** a predicate-alignment layer to pay off. Merge's real win today is
-**breadth**, not corroboration.
+**Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
+is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and
+candidate second sources (DBpedia/Wikipedia-text) *derive from* Wikipedia, so noisy-OR would inflate
+trust dishonestly. Build only with (1) a source genuinely independent of Wikipedia **and** (2) a
+deterministic predicate-alignment table. **Breadth is the higher-leverage investment.**
 
-## 5. Remaining work (priority order)
+## 5. What's next (forward-looking)
 
-1. ✅ **Seed coverage for genuine improbable pairs (Type B) (ADR 0011).** Added a Hellenistic–India–
-   Buddhism bridge (India, Buddhism, Alexander the Great, Alexandria + 8 short cross-cultural links,
-   all sourced, QIDs verified) that connects the formerly-isolated science/India cluster into the
-   Rome–Silk Road–China web. New flagship journey: Roman Empire → Silk Road → Persia → Alexander →
-   India → Buddhism (5 hops); new worlds-apart pairs Buddhism ↔ Rome/Great Wall/Persia, Alexander ↔
-   Buddhism/Rigveda. Re-ran `validate-qids` (41/41) → `build-cooccurrence` (41 nodes) →
-   re-characterised `eval/golden.json`. **Remaining caveat (unchanged):** intrinsically obscure nodes
-   have thin Wikipedia co-occurrence → occasional false "improbable" (e.g. Jai Singh → his own court
-   astronomer); mitigate by bridging through well-documented nodes. **Process after any
-   `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → re-check `eval/golden.json`
-   (adding edges shifts global predicate rarity, so journey winners can move).
-2. ✅ **Node enrichment on the harvest path (ADR 0009).** Grew `INSTANCE_OF_DOMAIN` (P31→Domain) by
-   ~44 verified classes — first-class `SCIENCE`/`ART` coverage (both had *zero* mappings) plus common
-   geography/history/religion/language/myth subtypes — so fewer harvested nodes fall to the `culture`
-   fallback. Pulled a full temporal extent: `entities()` now reads birth/death (P569/P570) and
-   dissolution (P576) alongside inception (P571), folded by `mapping.temporal_extent`
-   (`start = inception ?? birth`, `end = dissolution ?? death`). **Harvested people are now dated**
-   (were `None` — P571 doesn't apply to humans): a live 1-hop Euclid harvest yields (-333, -284).
-   Every added QID verified against Wikidata (one "Hurricane"/city mismatch dropped). `time_precision`
-   left unset (no score consumes it). Seed untouched → no validate-qids/co-occurrence/golden churn.
-3. ✅ **Guided/seeded walk (scale) (ADR 0010).** `find_paths` now enumerates exhaustively while that
-   stays cheap and switches to a bounded **best-first `guided_paths`** only when a search would exceed
-   `EXACT_PATH_BUDGET` (5000; seed worst case is ~189, so the seed is always exact — golden/planted/
-   archetype tests unchanged). The walk is guided by a prefix *promise* mirroring the surprise score
-   (rarity + domain jumps + endpoint-unexpectedness − hub penalty, same weights), bounded by
-   `GUIDED_CANDIDATE_BUDGET`/`GUIDED_EXPANSION_BUDGET`, deterministic (monotonic-counter heap ties).
-   Guidance orders discovery only; scoring is unchanged. Perf test locks it: on a dense 1500-node
-   graph exhaustive `[3,6]` overflows while `find_paths` returns ≤ budget in ~67 ms, deterministically.
-4. ⏸️ **Corroboration — spiked and deferred (ADR 0014).** A time-boxed offline spike quantified the
-   ceiling: trust is already high (mean 0.81; 49/54 edges clear the gate), the only sub-gate edges are
-   *speculative/mythic* ones a structured KB can't attest, and the candidate second sources
-   (DBpedia/Wikipedia-text) are *derived from* Wikipedia — feeding them into noisy-OR would inflate
-   trust dishonestly, not corroborate it. Build only with (1) a source genuinely independent of
-   Wikipedia **and** (2) a deterministic predicate-alignment table. Breadth is higher-leverage.
-5. ✅ **Wired `validate-qids` into CI** — a separate network-enabled workflow
-   (`.github/workflows/qid-validation.yaml`, `make validate`) that runs on `data/seed.json` changes,
-   weekly, and on demand (with a 3× retry for network flakiness), kept out of the offline `ci` gate.
-6. ✅ **Breadth (ongoing)** — coherent, well-connected clusters, one commit each (verify QIDs → source
-   → `validate-qids` → `build-cooccurrence` → re-check golden): **Ancient Greece** (0016), **Ancient
-   Egypt** (0017; also fixed a co-occurrence bug that broke seeds > 50 nodes), **Islamic Golden Age**
-   (0018), **Scientific Revolution** (0019; the 2000-year lineage Newton → Euclid → al-Tusi →
-   Copernicus). Seed 37 → 61 nodes this arc. Candidate next clusters: East Asia beyond China,
-   Norse/Celtic myth (both connect via existing hubs); avoid Mesoamerica (pre-Columbian → would
-   island). See memory `sdb-breadth-paused` for the reusable process.
-
-Documented graduations: ✅ a web UI (`sdb serve`, ADR 0013) and ✅ a static-export site for free
-GitHub Pages hosting (`sdb build-site`, ADR 0015) — both done. Still open (adopt only when earned):
-Neo4j (scale/NL→Cypher), an optional free/local LLM narrator behind the existing template seam.
+1. **Breadth — the main ongoing thread.** Add coherent, well-connected clusters, **one commit each**,
+   following the process in §6. **East Asia beyond China is done** (ADR 0020: Confucius/Confucianism,
+   Tang dynasty, Japan, Zen — via China/Silk Road/Buddhism). Remaining candidate that connects via an
+   existing hub: **Norse/Celtic myth** (via Proto-Indo-European, like Mithra) — could extend it with
+   more Chinese tech (woodblock printing, papermaking) or a Japan/Korea sub-thread. **Avoid
+   Mesoamerica** — pre-Columbian, it would be an island. Reusable recipe in memory `sdb-breadth-paused`.
+2. **Deploy polish (small, optional).** (a) Add a `<personal-site>/CLAUDE.md` pointer so that repo's
+   Claude auto-picks-up the `/six-degrees` embed, and wire its SPA-rewrite to exclude `/six-degrees/*`
+   (else the CRA fallback serves the React app instead of the static files — the one real gotcha).
+   (b) A custom domain / nav link for the Pages site. (c) **CORS headers on `sdb/web.py`'s `_Handler`**
+   — only needed if someone builds a native React UI that calls a *live* `sdb serve` API cross-origin.
+3. **Corroboration** — deferred (ADR 0014); only if both prerequisites in §4 are genuinely met.
+4. **Documented graduations (adopt only when earned):** Neo4j (scale / NL→Cypher for ~10k+ nodes), an
+   optional free/local LLM narrator behind the existing template seam. The guided walk (0010) already
+   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 66 nodes.
 
 ## 6. Conventions / gotchas
 
-- **Commit only when asked.** Conventional Commits; identity `AnandKri <anand.krishna0802@gmail.com>`;
-  end messages with the `Co-Authored-By: Claude …` trailer. `main`, push only when asked.
-- **Tests are offline & deterministic.** Network clients sit behind protocols with fakes
-  (`FakeSparqlClient`, fake resolvers). Never add a network-dependent unit test.
-- **Harvest snapshots** go to `data/harvest/` (git-ignored). `data/seed.json` +
-  `data/cooccurrence.json` are the tracked, authoritative data.
-- **Scores must stay hand-reproducible** — if you add a scoring term, document it in the rubric with a
-  worked example the tests reproduce, and record the decision in a new ADR.
-- After changing `data/seed.json`, always: `validate-qids` → `build-cooccurrence` → re-check golden.
+- **Commit only when asked; push only when asked.** Conventional Commits; identity `AnandKri
+  <anand.krishna0802@gmail.com>`; end messages with the `Co-Authored-By: Claude …` trailer. `main`,
+  now tracking `origin/main` (public).
+- **After ANY `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → run tests →
+  re-characterise `eval/golden.json` if a winner shifted (adding edges shifts predicate rarity). This
+  pushing to `main` also triggers the `qid-validation` CI job. Regenerate the personal-site embed too.
+- **Verify every new QID** — resolve label → Wikipedia article → `wikibase_item` (validate.py does
+  this). My from-memory QID guesses are frequently wrong (a fish family, Jean-Claude Killy, a military
+  school…); never trust memory for a QID.
+- **Keep improbable-pair tests property-based**, not hardcoded-label: Rome's trans-Eurasian top tie
+  keeps growing as the seed grows. Assert "short + more unexpected than the obvious Latin neighbour".
+- **Tests are offline & deterministic.** Network clients sit behind protocols with fakes; never add a
+  network-dependent unit test. (The web round-trip test uses a localhost socket, not external net.)
+- **Scores stay hand-reproducible** — a new scoring term needs a rubric worked example + a new ADR.
+- **Co-occurrence scales past 50 nodes now** (the `pltitles`-chunking fix, ADR 0017) — earlier it
+  silently wrote an empty matrix and disabled the surprise term. If `build-cooccurrence` ever writes
+  "0 nodes", suspect a network/API issue and retry (it hits Wikipedia live).

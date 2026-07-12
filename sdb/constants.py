@@ -81,10 +81,13 @@ COOCCURRENCE_ALPHA = 0.5
 # Traversal defaults
 # ---------------------------------------------------------------------------
 MIN_HOPS_DEFAULT = 3
-# Default journey cap. Trust decays multiplicatively per hop, so beyond ~4 hops chains ramble and
-# lose trust for little extra surprise; 4 keeps results punchy and well-evidenced. Users can still
-# request deeper chains per query via `--max-hops` (the engine supports the full "six degrees").
-MAX_HOPS_DEFAULT = 4
+# Default journey range. With MIN=MAX=3 the journey is a fixed-length 3-hop chain: long enough to
+# cross a couple of domains and read as a genuine "journey", but tight enough to stay punchy and
+# well-evidenced (trust decays multiplicatively, so 4-hop chains rambled for little extra surprise;
+# ADR 0021). 3 also keeps the journey distinct from the 1-3 hop improbable pair, which owns the
+# short "worlds apart" wow. Users can still request deeper chains per query via `--max-hops` (the
+# engine supports the full "six degrees").
+MAX_HOPS_DEFAULT = 3
 TOP_DEFAULT = 1
 
 # The "improbable adjacency" archetype (ADR 0007) looks at *short* paths only — its wow is a

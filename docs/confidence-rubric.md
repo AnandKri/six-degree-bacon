@@ -28,7 +28,7 @@ Results come in two shapes, ranked on their own scales and surfaced together:
 
 | Archetype | Hops | Ranking score |
 |---|---|---|
-| **Journey** — a long cross-domain chain | 3–4 | `surprise × trust` (the wow score above) |
+| **Journey** — a fixed-length cross-domain chain | 3 | `surprise × trust` (the wow score above) |
 | **Improbable pair** — a short link between entities that feel worlds apart | 1–3 | `endpoint_unexpectedness × trust` |
 
 The improbable pair ranks by the *destination's* improbability (not the route's length or total

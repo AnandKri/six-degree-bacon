@@ -30,7 +30,7 @@ the science/India cluster into the Rome–Silk Road–China web. Tight, well-sou
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
 plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
-(ruff, format, mypy, 87 tests).
+(ruff, format, mypy, 88 tests).
 
 ## How to run
 
@@ -80,19 +80,21 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change; the page is
   dual-mode, so `sdb/site.py` (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page
   for free GitHub Pages hosting. `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
-- `data/seed.json` — curated 61-node / 85-statement graph across 9 domains, full provenance (incl. a
+- `data/seed.json` — curated 66-node / 93-statement graph across 9 domains, full provenance (incl. a
   Hellenistic–India–Buddhism bridge and Ancient Greece / Ancient Egypt / Islamic Golden Age /
-  Scientific Revolution clusters — e.g. the 2000-year lineage Newton → Euclid → al-Tusi → Copernicus).
+  Scientific Revolution / East Asia clusters — e.g. the 2000-year lineage Newton → Euclid → al-Tusi →
+  Copernicus, and Zen → Buddhism → India → Alexander).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair, 0009 harvest
   node enrichment, 0010 guided-walk scaling, 0011 Hellenistic–India–Buddhism bridge, 0012 default
   hop cap 6→4, 0013 web UI, 0014 corroboration spike/defer, 0015 static-site export, 0016 Ancient
   Greece cluster, 0017 Ancient Egypt cluster, 0018 Islamic Golden Age cluster, 0019 Scientific
-  Revolution cluster). `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
+  Revolution cluster, 0020 East Asia cluster, 0021 journey hop cap 4→3). `docs/confidence-rubric.md`
+  — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 87 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 88 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
   static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —
@@ -105,9 +107,9 @@ quality → × validator penalties; path trust = product of edge confidences. **
 interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap +
 **endpoint unexpectedness** (`−log2 P(endpoint | start)` from Wikipedia-link co-occurrence) − hub
 penalty (length is *not* rewarded). Results come in two **archetypes** (ADR 0007), surfaced together:
-a **journey** (3–4 hops, ranked `surprise × trust`) and an **improbable pair** (1–3 hops, ranked
-`endpoint_unexpectedness × trust`). Both gate at `trust ≥ 0.50` by default (`--include-possibly`
-lowers the gate and flags `Possibly:`).
+a **journey** (a fixed 3-hop chain, ranked `surprise × trust`) and an **improbable pair** (1–3 hops,
+ranked `endpoint_unexpectedness × trust`). Both gate at `trust ≥ 0.50` by default
+(`--include-possibly` lowers the gate and flags `Possibly:`).
 
 ## Conventions (strict — see git history)
 

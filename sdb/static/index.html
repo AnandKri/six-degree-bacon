@@ -234,7 +234,7 @@ async function run(topic) {
     return;
   }
   const res = data.results || {};
-  const html = sectionHtml("The journey — a long, surprising chain", res.journey, "journey")
+  const html = sectionHtml("The journey — a surprising cross-domain chain", res.journey, "journey")
     + sectionHtml("The improbable pair — worlds apart, one short hop", res.unlikely, "unlikely");
   if (!html) {
     status.innerHTML = 'No confident connection for <strong>' + esc(topic)

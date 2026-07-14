@@ -245,14 +245,17 @@
       "baghdad",
       "buddhism",
       "byzantine_empire",
+      "cai_lun",
       "chang_an",
       "china",
       "christianity",
       "confucianism",
       "constantinople",
       "great_wall_of_china",
+      "gunpowder",
       "han_dynasty",
       "india",
+      "paper",
       "persia",
       "roman_empire",
       "rome",
@@ -297,6 +300,7 @@
       "abbasid_caliphate",
       "ancient_egypt",
       "byzantine_empire",
+      "cai_lun",
       "chang_an",
       "china",
       "confucianism",
@@ -333,9 +337,11 @@
       "buddhism",
       "chang_an",
       "christianity",
+      "compass",
       "confucianism",
       "confucius",
       "great_wall_of_china",
+      "gunpowder",
       "han_dynasty",
       "india",
       "japan",
@@ -464,6 +470,7 @@
       "al_khwarizmi",
       "aristotle",
       "baghdad",
+      "compass",
       "constantinople",
       "copernicus",
       "euclid",
@@ -474,6 +481,7 @@
     ],
     "jagannatha_samrat": [
       "al_tusi",
+      "compass",
       "euclid",
       "india",
       "ptolemy",
@@ -685,6 +693,7 @@
       "al_tusi",
       "algebra",
       "baghdad",
+      "compass",
       "house_of_wisdom",
       "ptolemy",
       "zoroastrianism"
@@ -724,6 +733,7 @@
       "christianity",
       "constantinople",
       "euclid",
+      "gunpowder",
       "han_dynasty",
       "house_of_wisdom",
       "nile",
@@ -763,6 +773,7 @@
       "aristotle",
       "copernicus",
       "euclid",
+      "gunpowder",
       "isaac_newton"
     ],
     "isaac_newton": [
@@ -812,6 +823,7 @@
       "qin_dynasty",
       "roman_empire",
       "silk_road",
+      "woodblock_printing",
       "zoroastrianism"
     ],
     "japan": [
@@ -831,6 +843,7 @@
       "japan",
       "mithraism",
       "tang_dynasty",
+      "woodblock_printing",
       "zoroastrianism"
     ],
     "norse_mythology": [
@@ -869,6 +882,40 @@
       "julius_caesar",
       "norse_mythology",
       "roman_empire"
+    ],
+    "paper": [
+      "ancient_egypt",
+      "baghdad",
+      "cai_lun",
+      "china",
+      "latin",
+      "tang_dynasty"
+    ],
+    "cai_lun": [
+      "abbasid_caliphate",
+      "buddhism",
+      "compass",
+      "gunpowder",
+      "han_dynasty",
+      "india",
+      "japan",
+      "paper",
+      "silk_road",
+      "tang_dynasty"
+    ],
+    "woodblock_printing": [
+      "byzantine_empire",
+      "china",
+      "han_dynasty",
+      "japan",
+      "paper",
+      "tang_dynasty"
+    ],
+    "gunpowder": [
+      "tang_dynasty"
+    ],
+    "compass": [
+      "han_dynasty"
     ]
   }
 }

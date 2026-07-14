@@ -221,6 +221,30 @@ def test_norse_celtic_cluster_connects_via_proto_indo_european(
     assert any(
         "Proto-Indo-European" in [seed_graph.node(n).label for n in r.path.node_ids] for r in celtic
     )
+
+
+def test_chinese_tech_cluster_connects_via_dynasties_and_silk_road(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0023: the Four Great Inventions (paper, printing, gunpowder, compass) tie into Han/Tang
+    # China, the Silk Road, and Buddhism — not an island. Paper reaches the wider Eurasian world
+    # through the Silk Road; woodblock printing descends from Buddhist demand for scriptures.
+    china_tech = {"Paper", "Cai Lun", "Woodblock printing", "Gunpowder", "Compass"}
+    chinese_hubs = china_tech | {"Silk Road", "China", "Han dynasty", "Tang dynasty"}
+    paper = discover(seed_graph, "Paper", top=5)
+    assert paper
+    # At least one Paper journey routes via the Silk Road hub, and its journeys leave the China/tech
+    # neighbourhood entirely — a bridge, not an island.
+    assert any("Silk Road" in [seed_graph.node(n).label for n in r.path.node_ids] for r in paper)
+    assert {seed_graph.node(r.path.node_ids[-1]).label for r in paper} - chinese_hubs
+
+    # Woodblock printing's improbable partners are worlds apart from a printing technique (the
+    # Buddhism hub it descends from, India), not another Chinese invention — property-based.
+    pairs = discover(seed_graph, "Woodblock printing", archetype=Archetype.UNLIKELY, top=3)
+    assert pairs
+    for result in pairs:
+        assert result.path.length <= MAX_HOPS_UNLIKELY
+    assert {seed_graph.node(r.path.node_ids[-1]).label for r in pairs} - china_tech
     obvious = seed_graph.endpoint_unexpectedness("confucius", "china")
     for result in pairs:
         assert result.endpoint_unexpectedness >= obvious

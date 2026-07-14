@@ -1,5 +1,5 @@
 {
-  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. History: science subgraph -> Mithra; Hellenistic-India-Buddhism bridge (0011); default cap cut 6->4 (0012); breadth clusters Greece (0016), Egypt (0017), Islamic Golden Age (0018), Scientific Revolution (0019), East Asia (0020); journey cap cut 4->3 (0021, fixed-length 3-hop journeys). At the 3-hop cap the winners are Roman Empire -> India (via Silk Road -> Buddhism), Christianity -> Great Wall of China (via Roman Empire -> Silk Road), and Euclid -> India (via Alexandria -> Alexander the Great). Re-characterise after any seed/co-occurrence/scoring change.",
+  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. History: science subgraph -> Mithra; Hellenistic-India-Buddhism bridge (0011); default cap cut 6->4 (0012); breadth clusters Greece (0016), Egypt (0017), Islamic Golden Age (0018), Scientific Revolution (0019), East Asia (0020); journey cap cut 4->3 (0021, fixed-length 3-hop journeys); Norse/Celtic (0022); Chinese tech (0023). At the 3-hop cap the winners are Roman Empire -> India (via Silk Road -> Buddhism), Christianity -> Paper (via Roman Empire -> Silk Road; the Chinese-tech cluster's paper->silk_road edge just edges out Great Wall of China, ~0.5 wow behind), and Euclid -> India (via Alexandria -> Alexander the Great). Re-characterise after any seed/co-occurrence/scoring change.",
   "cases": [
     {
       "topic": "Roman Empire",
@@ -11,7 +11,7 @@
     {
       "topic": "Christianity",
       "top": 1,
-      "expected_endpoint": "Great Wall of China",
+      "expected_endpoint": "Paper",
       "expected_hops": 3,
       "expected_possibly": false
     },

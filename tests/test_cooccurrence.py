@@ -77,6 +77,28 @@ def test_unlinked_endpoint_is_more_surprising_than_linked() -> None:
     assert unlinked > linked
 
 
+def test_shared_neighbour_reduces_unexpectedness() -> None:
+    # Second-order co-occurrence (ADR 0025): `a` and `c` both link `b` (a shared neighbour) but
+    # never link each other; `d` shares nothing. With gamma=0.25, alpha=0.5, N=4 the effective
+    # strengths are eff(a,b)=1, eff(a,c)=0.25 (0 + 0.25*1), eff(a,d)=0; denom[a]=1.5+0.75+0.5=2.75.
+    # The shared-context node `c` is thus less surprising than the isolated `d`, but more than the
+    # directly-linked `b` — de-saturating the strength-0 bucket that ties every unlinked pair.
+    nodes = (
+        _node("a", "QA", "A"),
+        _node("b", "QB", "B"),
+        _node("c", "QC", "C"),
+        _node("d", "QD", "D"),
+    )
+    graph = KnowledgeGraph(nodes, (), cooccurrence={"a": ["b"], "c": ["b"]})
+    linked = graph.endpoint_unexpectedness("a", "b")
+    shared = graph.endpoint_unexpectedness("a", "c")
+    isolated = graph.endpoint_unexpectedness("a", "d")
+    assert linked == pytest.approx(math.log2(2.75 / 1.5))
+    assert shared == pytest.approx(math.log2(2.75 / 0.75))
+    assert isolated == pytest.approx(math.log2(2.75 / 0.5))
+    assert isolated > shared > linked
+
+
 def test_endpoint_term_is_zero_without_cooccurrence_data() -> None:
     graph = _cooc_graph()
     bare = KnowledgeGraph(graph.nodes(), graph.statements)

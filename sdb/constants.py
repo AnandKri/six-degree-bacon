@@ -77,6 +77,17 @@ HUB_DEGREE_THRESHOLD = 6
 # gap. Without co-occurrence data the term is 0 (the engine still runs on seed.json alone).
 COOCCURRENCE_ALPHA = 0.5
 
+# Second-order co-occurrence (ADR 0025). Direct link strength is only 0, 1, or 2, so on a sparse
+# graph the vast majority of pairs sit at strength 0 and tie at the maximum unexpectedness — leaving
+# the improbable-pair ranking to be decided by trust, not by how genuinely worlds-apart the
+# destination is. We add a graded second-order signal: two nodes that link the *same* other articles
+# share context even if they never link each other. The effective strength is
+#   strength(a, b) + COOCCURRENCE_NEIGHBOUR_WEIGHT * |shared co-occurrence neighbours(a, b)|
+# so among unlinked destinations, those with more shared context score less surprising and the truly
+# isolated (zero shared neighbours) rise to the top. The weight is < 1 so a *direct* link still
+# outweighs shared context; 0.25 means four shared neighbours ≈ one direct link direction.
+COOCCURRENCE_NEIGHBOUR_WEIGHT = 0.25
+
 # ---------------------------------------------------------------------------
 # Traversal defaults
 # ---------------------------------------------------------------------------

@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**93 tests**). Seed: **81 nodes / 116 statements**, 9 domains.
+green (**94 tests**). Seed: **81 nodes / 116 statements**, 9 domains.
 
 ## 1. What it is (one paragraph)
 
@@ -79,8 +79,10 @@ Norse/Celtic myth** (Odin, Thor, Loki, Norse & Celtic mythology — via Proto-In
 Thor↔Rigveda thunder-god cognate), **0023 Chinese tech** (paper, Cai Lun, woodblock printing,
 gunpowder, compass — the Four Great Inventions, via Han/Tang/Silk Road/Buddhism), **0024
 West-Africa/Islam** (Mali, Mansa Musa, Timbuktu, trans-Saharan trade + a new Islam hub — via Islam →
-Zoroastrianism/Persia and the Abbasid caliphate). Plus: theme-able embed (`build-site --theme`), CI
-for QID-validation + Pages, and the push to a public GitHub repo with Pages live.
+Zoroastrianism/Persia and the Abbasid caliphate), **0025 second-order co-occurrence** (a graded
+shared-neighbour term de-saturates the endpoint surprise so the improbable pair surfaces genuinely
+worlds-apart destinations — e.g. Mansa Musa ⇢ Zoroastrianism). Plus: theme-able embed (`build-site
+--theme`), CI for QID-validation + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
 is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and
@@ -89,6 +91,21 @@ trust dishonestly. Build only with (1) a source genuinely independent of Wikiped
 deterministic predicate-alignment table. **Breadth is the higher-leverage investment.**
 
 ## 5. What's next (forward-looking)
+
+**Just done (ADR 0025):** the endpoint-surprise term saturated on the sparse seed (most pairs tied at
+max unexpectedness), so the improbable pair was effectively ranked by trust. A graded second-order
+**shared-neighbour** term de-saturates it; the pair now surfaces genuinely worlds-apart destinations
+(Mansa Musa ⇢ Zoroastrianism, Buddhism ⇢ Thor). `γ = COOCCURRENCE_NEIGHBOUR_WEIGHT = 0.25` is a first
+pass tuned against the seed — revisit if it ever surfaces weak pairs, or if a richer co-occurrence
+source (link counts / full-text) lands.
+
+**Product direction (owner's steer):** a TIL should read as **one quantized surprising fact**
+(e.g. "Japan's imperial line traces to the sun goddess", "Elizabeth II descends from Odin"), not a
+narrated walking tour. The **improbable pair** already has that shape and is the archetype to lean
+into. Likely evolution: narrate the (start → endpoint) claim as a single sentence with the connecting
+path demoted to collapsible *evidence*; then the **journey** either becomes "a surprising
+lineage/origin stated as one fact" or is dropped. A natural breadth target for that flavour is
+genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_from`).
 
 1. **Breadth — the main ongoing thread.** Add coherent, well-connected clusters, **one commit each**,
    following the process in §6. Done this round: **East Asia** (ADR 0020), **Norse/Celtic myth**

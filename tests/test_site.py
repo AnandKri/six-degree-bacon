@@ -35,11 +35,14 @@ def test_strict_is_confident_and_loose_is_a_superset(
     seed_graph: KnowledgeGraph, tmp_path: Path
 ) -> None:
     data = _build(seed_graph, tmp_path)
-    # Speculative topic: the strict gate may show fewer journeys than the loose one, never more.
+    # Speculative topic: lowering the gate is strictly additive — the loose journey endpoints are a
+    # proper superset of the strict ones (not merely "not fewer", which a no-op would also satisfy).
     strict = data["results"]["trojan_war"]["strict"]["journey"]
     loose = data["results"]["trojan_war"]["loose"]["journey"]
     assert all(not card["possibly"] for card in strict)  # strict = confident only
-    assert len(loose) >= len(strict)
+    strict_endpoints = {card["endpoint"] for card in strict}
+    loose_endpoints = {card["endpoint"] for card in loose}
+    assert strict_endpoints < loose_endpoints
 
 
 def test_index_html_is_the_packaged_page(seed_graph: KnowledgeGraph, tmp_path: Path) -> None:

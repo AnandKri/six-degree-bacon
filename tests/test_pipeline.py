@@ -7,7 +7,33 @@ import pytest
 from sdb.constants import MAX_HOPS_UNLIKELY, POSSIBLY_THRESHOLD, TRUST_FLOOR
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
-from sdb.schema.enums import Archetype
+from sdb.schema.enums import Archetype, Domain, Predicate, SourceType
+from sdb.schema.models import DiscoveryResult, Node, Source, Statement
+
+
+def _obvious_endpoint(graph: KnowledgeGraph, start_id: str) -> str:
+    """The start's most co-occurring ("most obvious") node — its minimal endpoint_unexpectedness."""
+    others = [node.id for node in graph.nodes() if node.id != start_id]
+    return min(others, key=lambda nid: graph.endpoint_unexpectedness(start_id, nid))
+
+
+def _assert_worlds_apart(
+    graph: KnowledgeGraph, start_id: str, pairs: list[DiscoveryResult]
+) -> None:
+    """Property-based check that an UNLIKELY result set is genuinely "worlds apart", not obvious.
+
+    Robust to seed growth (no hardcoded far labels): every pair is short, the start's single most
+    co-occurring node is never surfaced, and the top pair is strictly more unexpected than it. A
+    regression that let the archetype rank obvious co-occurring neighbours would fail this — unlike
+    a "some endpoint is outside a hardcoded in-cluster set" check, which is satisfied by almost any
+    node because endpoint-unexpectedness saturates for sparsely-linked starts.
+    """
+    assert pairs
+    for result in pairs:
+        assert result.path.length <= MAX_HOPS_UNLIKELY
+    obvious = _obvious_endpoint(graph, start_id)
+    assert obvious not in {result.path.node_ids[-1] for result in pairs}
+    assert pairs[0].endpoint_unexpectedness > graph.endpoint_unexpectedness(start_id, obvious)
 
 
 def test_topic_not_found_has_suggestions(seed_graph: KnowledgeGraph) -> None:
@@ -30,16 +56,20 @@ def test_discover_ranked_by_wow_score_unique_endpoints(seed_graph: KnowledgeGrap
 
 
 def test_default_gate_surfaces_only_confident_results(seed_graph: KnowledgeGraph) -> None:
-    # Default is the "wow with evidence" gate: every surfaced path clears POSSIBLY_THRESHOLD.
-    confident = discover(seed_graph, "Roman Empire", top=10)
+    # Default is the "wow with evidence" gate: every surfaced path clears POSSIBLY_THRESHOLD. Use
+    # the *same* wide `top` for both calls so the comparison isolates the gate, not the result cap.
+    confident = discover(seed_graph, "Roman Empire", top=99)
     assert confident
     assert all(result.trust >= POSSIBLY_THRESHOLD for result in confident)
     assert all(not result.possibly for result in confident)
 
-    # Lowering the gate admits speculative, lower-trust paths (down to the hard floor).
-    speculative = discover(seed_graph, "Roman Empire", top=50, min_trust=TRUST_FLOOR)
-    assert len(speculative) > len(confident)
+    # Lowering the gate to the floor is strictly additive: it admits new (speculative) endpoints and
+    # drops none of the confident ones — a real superset, not just "not fewer".
+    speculative = discover(seed_graph, "Roman Empire", top=99, min_trust=TRUST_FLOOR)
     assert all(result.trust >= TRUST_FLOOR for result in speculative)
+    confident_endpoints = {result.path.node_ids[-1] for result in confident}
+    speculative_endpoints = {result.path.node_ids[-1] for result in speculative}
+    assert confident_endpoints < speculative_endpoints  # strict superset
 
 
 def test_unlikely_archetype_is_short_and_scored_by_improbability(
@@ -59,16 +89,13 @@ def test_unlikely_archetype_is_short_and_scored_by_improbability(
 def test_improbable_pair_is_worlds_apart_not_an_obvious_neighbour(
     seed_graph: KnowledgeGraph,
 ) -> None:
-    # Rome's most improbable short adjacencies are trans-Eurasian and tie at the top (Great Wall,
-    # Buddhism, Baghdad, House of Wisdom — all 2 hops via the Silk Road, none co-occurring w/ Rome).
-    # The exact tie winner is immaterial and grows with the seed, so the invariant is a *property*:
-    # the top pair is short and far more unexpected than an obvious co-occurring neighbour.
-    top = discover(seed_graph, "Roman Empire", archetype=Archetype.UNLIKELY)[0]
-    endpoint = seed_graph.node(top.path.node_ids[-1]).label
-    assert top.path.length <= MAX_HOPS_UNLIKELY
-    assert endpoint != "Latin"  # not the obvious directly-linked neighbour
-    latin_eu = seed_graph.endpoint_unexpectedness("roman_empire", "latin")
-    assert top.endpoint_unexpectedness > latin_eu  # genuinely worlds-apart
+    # The UNLIKELY archetype must surface a genuinely improbable destination, not an obvious
+    # co-occurring neighbour. Property-based (the exact tie winner grows with the seed): the most
+    # co-occurring node is never surfaced, and the top pair is strictly more unexpected than it.
+    pairs = discover(seed_graph, "Roman Empire", archetype=Archetype.UNLIKELY, top=5)
+    _assert_worlds_apart(seed_graph, "roman_empire", pairs)
+    # Concretely, Latin — Rome's obvious directly-linked neighbour — never wins.
+    assert seed_graph.node(pairs[0].path.node_ids[-1]).label != "Latin"
 
 
 def test_bridge_connects_buddhism_to_the_greco_roman_world(seed_graph: KnowledgeGraph) -> None:
@@ -130,11 +157,12 @@ def test_islamic_cluster_bridges_greek_and_indian_science(seed_graph: KnowledgeG
     assert algebra
     assert "Euclid" in [seed_graph.node(n).label for n in algebra[0].path.node_ids]
 
-    # Baghdad reaches the wider Eurasian world through the Silk Road hub — every top journey routes
-    # via the Silk Road, so it is a bridge, not an island (property-based, robust to the hop cap).
+    # Baghdad reaches the wider Eurasian world through the Silk Road hub — at least one top journey
+    # routes via it, so it is a bridge, not an island. `any` (not `all`) stays robust if a second
+    # bridge out of Baghdad is ever seeded.
     baghdad = discover(seed_graph, "Baghdad", top=3)
     assert baghdad
-    assert all("Silk Road" in [seed_graph.node(n).label for n in r.path.node_ids] for r in baghdad)
+    assert any("silk_road" in r.path.node_ids for r in baghdad)
 
 
 def test_scientific_revolution_extends_the_lineage_back_to_antiquity(
@@ -155,45 +183,22 @@ def test_east_asia_cluster_connects_via_china_buddhism_and_silk_road(
     seed_graph: KnowledgeGraph,
 ) -> None:
     # ADR 0020: the East Asia cluster (Confucius/Confucianism, Tang dynasty, Japan, Zen) is not an
-    # island — it ties into three existing hubs. Japan reaches the wider Eurasian web (via Tang ->
-    # China -> Silk Road, and via Zen -> Buddhism), not just its East-Asian neighbours.
-    east_asia = {
-        "Japan",
-        "China",
-        "Tang dynasty",
-        "Zen",
-        "Confucius",
-        "Confucianism",
-        "Great Wall of China",
-        "Chang'an",
-        "Qin dynasty",
-        "Qin Shi Huang",
-        "Han dynasty",
-        "Zhang Qian",
-    }
+    # island — it ties into three existing hubs. Japan's top journeys route out through one of its
+    # bridges (Silk Road via Tang, or Buddhism via Zen), the structural claim rather than "some
+    # endpoint is outside a hardcoded in-cluster set".
+    japan_bridges = {"silk_road", "buddhism"}
     journeys = discover(seed_graph, "Japan", top=5)
     assert journeys
-    endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in journeys}
-    # Japan's journeys leave the East-Asian neighbourhood entirely — it is a bridge, not an island.
-    assert endpoints - east_asia
+    assert any(japan_bridges & set(r.path.node_ids) for r in journeys)
 
     # Zen bridges the Buddhism hub to Japan, so it descends from Buddhism on the way to Japan.
     zen = discover(seed_graph, "Zen", top=5)
     assert zen
-    assert any("Buddhism" in [seed_graph.node(n).label for n in r.path.node_ids] for r in zen)
+    assert any("buddhism" in r.path.node_ids for r in zen)
 
-    # Confucius's improbable partners are worlds-apart (the Mediterranean / Indian / Persian world),
-    # short, and more unexpected than his obvious neighbours (China, Confucianism) — property-based,
-    # not a hardcoded label, since the top tie keeps shifting as the seed grows.
-    pairs = discover(seed_graph, "Confucius", archetype=Archetype.UNLIKELY, top=3)
-    assert pairs
-    for result in pairs:
-        assert result.path.length <= MAX_HOPS_UNLIKELY
-    pair_endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in pairs}
-    assert pair_endpoints - {"China", "Confucianism"}
-    obvious = seed_graph.endpoint_unexpectedness("confucius", "china")
-    for result in pairs:
-        assert result.endpoint_unexpectedness >= obvious
+    # Confucius's improbable partners are genuinely worlds apart, not his obvious neighbours.
+    pairs = discover(seed_graph, "Confucius", archetype=Archetype.UNLIKELY, top=5)
+    _assert_worlds_apart(seed_graph, "confucius", pairs)
 
 
 def test_norse_celtic_cluster_connects_via_proto_indo_european(
@@ -203,27 +208,21 @@ def test_norse_celtic_cluster_connects_via_proto_indo_european(
     # Proto-Indo-European (the hub that also anchors Mithra), and Thor is cognate with the Vedic
     # thunder-god Indra of the Rigveda, so the Norse pantheon reaches the wider Indo-European world
     # (India, the Rigveda, Buddhism), not just its own gods.
-    norse = {"Odin", "Thor", "Loki", "Norse mythology", "Celtic mythology"}
+    # Thor's top journeys route through the cluster's bridge hubs — Proto-Indo-European, or the
+    # Rigveda via the thunder-god cognate — the structural claim, not a hardcoded endpoint list.
+    thor_bridges = {"proto_indo_european", "rigveda"}
     journeys = discover(seed_graph, "Thor", top=5)
     assert journeys
-    endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in journeys}
-    # Thor's journeys leave the Norse/PIE neighbourhood entirely — a bridge, not an island.
-    assert endpoints - norse - {"Proto-Indo-European"}
+    assert any(thor_bridges & set(r.path.node_ids) for r in journeys)
 
-    # Thor's improbable partners are the eastern Indo-European world (Rigveda/India), not another
-    # Norse god — property-based, since the top tie keeps shifting as the seed grows.
-    pairs = discover(seed_graph, "Thor", archetype=Archetype.UNLIKELY, top=3)
-    assert pairs
-    for result in pairs:
-        assert result.path.length <= MAX_HOPS_UNLIKELY
-    assert {seed_graph.node(r.path.node_ids[-1]).label for r in pairs} - norse
+    # Thor's improbable partners are genuinely worlds apart, not another Norse god.
+    pairs = discover(seed_graph, "Thor", archetype=Archetype.UNLIKELY, top=5)
+    _assert_worlds_apart(seed_graph, "thor", pairs)
 
     # Both mythologies descend from Proto-Indo-European, so Celtic myth routes through that hub.
     celtic = discover(seed_graph, "Celtic mythology", top=3)
     assert celtic
-    assert any(
-        "Proto-Indo-European" in [seed_graph.node(n).label for n in r.path.node_ids] for r in celtic
-    )
+    assert any("proto_indo_european" in r.path.node_ids for r in celtic)
 
 
 def test_chinese_tech_cluster_connects_via_dynasties_and_silk_road(
@@ -232,22 +231,15 @@ def test_chinese_tech_cluster_connects_via_dynasties_and_silk_road(
     # ADR 0023: the Four Great Inventions (paper, printing, gunpowder, compass) tie into Han/Tang
     # China, the Silk Road, and Buddhism — not an island. Paper reaches the wider Eurasian world
     # through the Silk Road; woodblock printing descends from Buddhist demand for scriptures.
-    china_tech = {"Paper", "Cai Lun", "Woodblock printing", "Gunpowder", "Compass"}
-    chinese_hubs = china_tech | {"Silk Road", "China", "Han dynasty", "Tang dynasty"}
+    # Paper's top journeys route out through the Silk Road hub — the structural bridge claim.
     paper = discover(seed_graph, "Paper", top=5)
     assert paper
-    # At least one Paper journey routes via the Silk Road hub, and its journeys leave the China/tech
-    # neighbourhood entirely — a bridge, not an island.
-    assert any("Silk Road" in [seed_graph.node(n).label for n in r.path.node_ids] for r in paper)
-    assert {seed_graph.node(r.path.node_ids[-1]).label for r in paper} - chinese_hubs
+    assert any("silk_road" in r.path.node_ids for r in paper)
 
-    # Woodblock printing's improbable partners are worlds apart from a printing technique (the
-    # Buddhism hub it descends from, India), not another Chinese invention — property-based.
-    pairs = discover(seed_graph, "Woodblock printing", archetype=Archetype.UNLIKELY, top=3)
-    assert pairs
-    for result in pairs:
-        assert result.path.length <= MAX_HOPS_UNLIKELY
-    assert {seed_graph.node(r.path.node_ids[-1]).label for r in pairs} - china_tech
+    # Woodblock printing's improbable partners are genuinely worlds apart from a printing technique,
+    # not another Chinese invention.
+    pairs = discover(seed_graph, "Woodblock printing", archetype=Archetype.UNLIKELY, top=5)
+    _assert_worlds_apart(seed_graph, "woodblock_printing", pairs)
 
 
 def test_west_africa_cluster_connects_via_the_islam_hub(
@@ -256,17 +248,64 @@ def test_west_africa_cluster_connects_via_the_islam_hub(
     # ADR 0024: the West African cluster (Mali, Mansa Musa, Timbuktu, trans-Saharan trade) is not an
     # island — the new Islam node bridges it into the existing graph (Islam succeeded Zoroastrianism
     # in Persia; the Abbasid caliphate belongs to it), so Mansa Musa reaches the wider world.
-    west_africa = {"Mali Empire", "Mansa Musa", "Timbuktu", "Trans-Saharan trade"}
+    # Mansa Musa's top journeys route through the new Islam hub — the bridge, not an island.
     musa = discover(seed_graph, "Mansa Musa", top=5)
     assert musa
-    # Mansa Musa routes through the Islam hub and lands outside West Africa entirely.
-    assert any("Islam" in [seed_graph.node(n).label for n in r.path.node_ids] for r in musa)
-    assert {seed_graph.node(r.path.node_ids[-1]).label for r in musa} - west_africa - {"Islam"}
+    assert any("islam" in r.path.node_ids for r in musa)
 
     # The new Islam hub ties into the existing Persia/Zoroastrian thread (and thence the Silk Road).
     islam = discover(seed_graph, "Islam", top=5)
     assert islam
     reached: set[str] = set()
     for r in islam:
-        reached |= {seed_graph.node(n).label for n in r.path.node_ids}
-    assert {"Zoroastrianism", "Persia", "Silk Road"} & reached
+        reached |= set(r.path.node_ids)
+    assert {"zoroastrianism", "persia", "silk_road"} & reached
+
+
+def test_no_confident_connection_honestly_returns_nothing() -> None:
+    # The project's honesty promise: a topic with only low-trust paths returns nothing at the
+    # default gate. Uses a *constructed* graph (not a seed label, which drifts): a 3-hop chain of
+    # Wikipedia-sourced edges has path trust 0.75**3 = 0.42 — below POSSIBLY_THRESHOLD (0.50) but
+    # above TRUST_FLOOR (0.15). So the default gate returns [], while lowering the gate to the floor
+    # surfaces the same path — proving the emptiness is the *gate*, not a missing connection.
+    nodes = tuple(
+        Node(id=f"n{i}", label=f"N{i}", domain=Domain.HISTORY, type="node") for i in range(4)
+    )
+    statements = tuple(
+        Statement(
+            subject=f"n{i}",
+            predicate=Predicate.PART_OF,
+            object=f"n{i + 1}",
+            sources=(Source(id=f"s{i}", source_type=SourceType.WIKIPEDIA),),
+        )
+        for i in range(3)
+    )
+    graph = KnowledgeGraph(nodes, statements)
+
+    assert discover(graph, "N0") == []  # nothing clears the default trust gate
+
+    speculative = discover(graph, "N0", min_trust=TRUST_FLOOR)
+    assert len(speculative) == 1  # the 3-hop path exists; it just isn't confident
+    assert speculative[0].possibly  # and it is flagged speculative
+    assert speculative[0].trust == pytest.approx(0.75**3)
+
+
+def test_journey_and_unlikely_are_ranked_on_different_bases(seed_graph: KnowledgeGraph) -> None:
+    # The two archetypes optimise different things, so they must surface different tops and score on
+    # their own basis. A swapped/collapsed `basis` (JOURNEY ranked by endpoint-unexpectedness, say)
+    # would fail the score-formula assertions below even though each archetype still returns paths.
+    journey = discover(seed_graph, "Roman Empire", archetype=Archetype.JOURNEY, top=3)
+    unlikely = discover(seed_graph, "Roman Empire", archetype=Archetype.UNLIKELY, top=3)
+    assert journey and unlikely
+
+    # Different rankings: the journey and the improbable pair do not agree on the top destination.
+    assert journey[0].path.node_ids[-1] != unlikely[0].path.node_ids[-1]
+
+    # Each winner is scored on, and by construction optimal for, its own declared basis.
+    assert journey[0].score == pytest.approx(journey[0].surprise * journey[0].trust)
+    assert unlikely[0].score == pytest.approx(
+        unlikely[0].endpoint_unexpectedness * unlikely[0].trust
+    )
+    # The improbable pair is short by construction; the journey is a full fixed-length 3-hop chain.
+    assert unlikely[0].path.length <= MAX_HOPS_UNLIKELY
+    assert journey[0].path.length == 3

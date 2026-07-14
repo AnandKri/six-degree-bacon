@@ -41,10 +41,13 @@ def test_empty_topic_is_rejected_without_searching(seed_graph: KnowledgeGraph) -
 
 
 def test_include_possibly_widens_results(seed_graph: KnowledgeGraph) -> None:
-    strict = discover_payload(seed_graph, "Trojan War", top=10, include_possibly=False)
-    loose = discover_payload(seed_graph, "Trojan War", top=10, include_possibly=True)
-    # The speculative gate can only add (never remove) journey candidates.
-    assert len(loose["results"]["journey"]) >= len(strict["results"]["journey"])
+    # Same wide `top` for both, so this isolates the gate. Lowering it is strictly additive: the
+    # loose journey endpoints are a proper superset of the strict ones (not merely "not fewer").
+    strict = discover_payload(seed_graph, "Trojan War", top=99, include_possibly=False)
+    loose = discover_payload(seed_graph, "Trojan War", top=99, include_possibly=True)
+    strict_endpoints = {card["endpoint"] for card in strict["results"]["journey"]}
+    loose_endpoints = {card["endpoint"] for card in loose["results"]["journey"]}
+    assert strict_endpoints < loose_endpoints
 
 
 def test_page_is_self_contained_no_external_assets() -> None:

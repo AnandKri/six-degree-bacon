@@ -30,7 +30,7 @@ the science/India cluster into the Rome–Silk Road–China web. Tight, well-sou
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
 plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
-(ruff, format, mypy, 91 tests).
+(ruff, format, mypy, 93 tests).
 
 ## How to run
 
@@ -96,7 +96,7 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 91 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 93 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
   static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —

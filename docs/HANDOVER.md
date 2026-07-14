@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**91 tests**). Seed: **81 nodes / 116 statements**, 9 domains.
+green (**93 tests**). Seed: **81 nodes / 116 statements**, 9 domains.
 
 ## 1. What it is (one paragraph)
 

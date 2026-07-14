@@ -21,6 +21,7 @@
       "julio_claudian_dynasty",
       "julius_caesar",
       "latin",
+      "mali_empire",
       "qin_dynasty",
       "roman_republic",
       "romance_languages",
@@ -140,6 +141,7 @@
       "homer",
       "julius_caesar",
       "latin",
+      "mali_empire",
       "ptolemy",
       "qin_dynasty",
       "roman_empire",
@@ -153,6 +155,7 @@
       "athens",
       "byzantine_empire",
       "constantine_the_great",
+      "islam",
       "roman_empire",
       "silk_road"
     ],
@@ -169,6 +172,7 @@
       "galileo",
       "india",
       "isaac_newton",
+      "islam",
       "latin",
       "mithraism",
       "persia",
@@ -185,6 +189,7 @@
       "christianity",
       "confucianism",
       "greek_mythology",
+      "islam",
       "mithra",
       "rigveda",
       "roman_empire",
@@ -211,6 +216,7 @@
       "confucianism",
       "constantine_the_great",
       "india",
+      "islam",
       "mithra",
       "mithraism",
       "persia",
@@ -231,6 +237,7 @@
       "china",
       "christianity",
       "india",
+      "islam",
       "japan",
       "roman_empire",
       "zoroastrianism"
@@ -255,17 +262,20 @@
       "gunpowder",
       "han_dynasty",
       "india",
+      "islam",
       "paper",
       "persia",
       "roman_empire",
       "rome",
       "tang_dynasty",
+      "trans_saharan_trade",
       "zhang_qian",
       "zoroastrianism"
     ],
     "amber_road": [
       "roman_empire",
-      "silk_road"
+      "silk_road",
+      "trans_saharan_trade"
     ],
     "great_wall_of_china": [
       "alexander_the_great",
@@ -292,6 +302,7 @@
       "confucius",
       "great_wall_of_china",
       "han_dynasty",
+      "mali_empire",
       "qin_shi_huang",
       "roman_empire",
       "tang_dynasty"
@@ -305,6 +316,7 @@
       "china",
       "confucianism",
       "confucius",
+      "mali_empire",
       "ptolemy",
       "qin_dynasty",
       "qin_shi_huang",
@@ -344,6 +356,7 @@
       "gunpowder",
       "han_dynasty",
       "india",
+      "islam",
       "japan",
       "persia",
       "qin_dynasty",
@@ -476,6 +489,7 @@
       "euclid",
       "galileo",
       "house_of_wisdom",
+      "islam",
       "persia",
       "ptolemy"
     ],
@@ -507,6 +521,7 @@
       "hadrian",
       "homer",
       "india",
+      "islam",
       "julius_caesar",
       "persia",
       "plato",
@@ -535,6 +550,7 @@
       "buddhism",
       "china",
       "christianity",
+      "islam",
       "japan",
       "persia",
       "ptolemy",
@@ -545,6 +561,7 @@
       "china",
       "christianity",
       "confucianism",
+      "islam",
       "japan",
       "mithraism",
       "rigveda",
@@ -647,7 +664,9 @@
       "egyptian_hieroglyphs",
       "great_pyramid_of_giza",
       "han_dynasty",
+      "islam",
       "julius_caesar",
+      "mali_empire",
       "nile",
       "qin_dynasty",
       "roman_empire",
@@ -736,6 +755,8 @@
       "gunpowder",
       "han_dynasty",
       "house_of_wisdom",
+      "islam",
+      "mali_empire",
       "nile",
       "ptolemy",
       "qin_dynasty",
@@ -798,6 +819,7 @@
       "christianity",
       "confucius",
       "han_dynasty",
+      "islam",
       "japan",
       "latin",
       "mithraism",
@@ -819,7 +841,9 @@
       "constantinople",
       "han_dynasty",
       "india",
+      "islam",
       "japan",
+      "mali_empire",
       "qin_dynasty",
       "roman_empire",
       "silk_road",
@@ -831,6 +855,7 @@
       "buddhism",
       "china",
       "india",
+      "mali_empire",
       "zen"
     ],
     "zen": [
@@ -840,6 +865,7 @@
       "confucianism",
       "han_dynasty",
       "india",
+      "islam",
       "japan",
       "mithraism",
       "tang_dynasty",
@@ -912,10 +938,61 @@
       "tang_dynasty"
     ],
     "gunpowder": [
+      "islam",
       "tang_dynasty"
     ],
     "compass": [
       "han_dynasty"
+    ],
+    "mali_empire": [
+      "abbasid_caliphate",
+      "ancient_egypt",
+      "byzantine_empire",
+      "han_dynasty",
+      "islam",
+      "mansa_musa",
+      "qin_dynasty",
+      "roman_empire",
+      "tang_dynasty",
+      "timbuktu",
+      "trans_saharan_trade"
+    ],
+    "mansa_musa": [
+      "mali_empire",
+      "timbuktu"
+    ],
+    "timbuktu": [
+      "athens",
+      "islam",
+      "latin",
+      "mali_empire",
+      "mansa_musa",
+      "trans_saharan_trade"
+    ],
+    "trans_saharan_trade": [
+      "amber_road",
+      "ancient_greece",
+      "mali_empire",
+      "nile",
+      "roman_empire",
+      "rome",
+      "silk_road",
+      "timbuktu"
+    ],
+    "islam": [
+      "abbasid_caliphate",
+      "al_tusi",
+      "algebra",
+      "buddhism",
+      "christianity",
+      "confucianism",
+      "confucius",
+      "house_of_wisdom",
+      "india",
+      "mithraism",
+      "persia",
+      "zen",
+      "zoroastrianism"
     ]
   }
 }

@@ -30,7 +30,7 @@ the science/India cluster into the Rome–Silk Road–China web. Tight, well-sou
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
 plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
-(ruff, format, mypy, 90 tests).
+(ruff, format, mypy, 91 tests).
 
 ## How to run
 
@@ -80,11 +80,11 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change; the page is
   dual-mode, so `sdb/site.py` (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page
   for free GitHub Pages hosting. `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
-- `data/seed.json` — curated 76-node / 107-statement graph across 9 domains, full provenance (incl. a
+- `data/seed.json` — curated 81-node / 116-statement graph across 9 domains, full provenance (incl. a
   Hellenistic–India–Buddhism bridge and Ancient Greece / Ancient Egypt / Islamic Golden Age /
-  Scientific Revolution / East Asia / Norse–Celtic myth / Chinese-tech clusters — e.g. Newton → Euclid
-  → al-Tusi → Copernicus, Zen → Buddhism → India → Alexander, Thor → Rigveda → India, and Paper →
-  Silk Road → Buddhism → India).
+  Scientific Revolution / East Asia / Norse–Celtic myth / Chinese-tech / West-Africa clusters — e.g.
+  Newton → Euclid → al-Tusi → Copernicus, Zen → Buddhism → India → Alexander, Thor → Rigveda → India,
+  Paper → Silk Road → Buddhism → India, and Mansa Musa → Islam → Zoroastrianism → Mithra).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair, 0009 harvest
@@ -92,11 +92,11 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   hop cap 6→4, 0013 web UI, 0014 corroboration spike/defer, 0015 static-site export, 0016 Ancient
   Greece cluster, 0017 Ancient Egypt cluster, 0018 Islamic Golden Age cluster, 0019 Scientific
   Revolution cluster, 0020 East Asia cluster, 0021 journey hop cap 4→3, 0022 Norse/Celtic myth
-  cluster, 0023 Chinese-tech cluster). `docs/confidence-rubric.md` — the rubric, with worked examples
-  the tests reproduce.
+  cluster, 0023 Chinese-tech cluster, 0024 West-Africa/Islam cluster). `docs/confidence-rubric.md` —
+  the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 90 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 91 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
   static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —

@@ -191,6 +191,9 @@ def test_east_asia_cluster_connects_via_china_buddhism_and_silk_road(
         assert result.path.length <= MAX_HOPS_UNLIKELY
     pair_endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in pairs}
     assert pair_endpoints - {"China", "Confucianism"}
+    obvious = seed_graph.endpoint_unexpectedness("confucius", "china")
+    for result in pairs:
+        assert result.endpoint_unexpectedness >= obvious
 
 
 def test_norse_celtic_cluster_connects_via_proto_indo_european(
@@ -245,6 +248,25 @@ def test_chinese_tech_cluster_connects_via_dynasties_and_silk_road(
     for result in pairs:
         assert result.path.length <= MAX_HOPS_UNLIKELY
     assert {seed_graph.node(r.path.node_ids[-1]).label for r in pairs} - china_tech
-    obvious = seed_graph.endpoint_unexpectedness("confucius", "china")
-    for result in pairs:
-        assert result.endpoint_unexpectedness >= obvious
+
+
+def test_west_africa_cluster_connects_via_the_islam_hub(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0024: the West African cluster (Mali, Mansa Musa, Timbuktu, trans-Saharan trade) is not an
+    # island — the new Islam node bridges it into the existing graph (Islam succeeded Zoroastrianism
+    # in Persia; the Abbasid caliphate belongs to it), so Mansa Musa reaches the wider world.
+    west_africa = {"Mali Empire", "Mansa Musa", "Timbuktu", "Trans-Saharan trade"}
+    musa = discover(seed_graph, "Mansa Musa", top=5)
+    assert musa
+    # Mansa Musa routes through the Islam hub and lands outside West Africa entirely.
+    assert any("Islam" in [seed_graph.node(n).label for n in r.path.node_ids] for r in musa)
+    assert {seed_graph.node(r.path.node_ids[-1]).label for r in musa} - west_africa - {"Islam"}
+
+    # The new Islam hub ties into the existing Persia/Zoroastrian thread (and thence the Silk Road).
+    islam = discover(seed_graph, "Islam", top=5)
+    assert islam
+    reached: set[str] = set()
+    for r in islam:
+        reached |= {seed_graph.node(n).label for n in r.path.node_ids}
+    assert {"Zoroastrianism", "Persia", "Silk Road"} & reached

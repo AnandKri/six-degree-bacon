@@ -191,6 +191,36 @@ def test_east_asia_cluster_connects_via_china_buddhism_and_silk_road(
         assert result.path.length <= MAX_HOPS_UNLIKELY
     pair_endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in pairs}
     assert pair_endpoints - {"China", "Confucianism"}
+
+
+def test_norse_celtic_cluster_connects_via_proto_indo_european(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0022: the Norse/Celtic myth cluster is not an island — both mythologies descend from
+    # Proto-Indo-European (the hub that also anchors Mithra), and Thor is cognate with the Vedic
+    # thunder-god Indra of the Rigveda, so the Norse pantheon reaches the wider Indo-European world
+    # (India, the Rigveda, Buddhism), not just its own gods.
+    norse = {"Odin", "Thor", "Loki", "Norse mythology", "Celtic mythology"}
+    journeys = discover(seed_graph, "Thor", top=5)
+    assert journeys
+    endpoints = {seed_graph.node(r.path.node_ids[-1]).label for r in journeys}
+    # Thor's journeys leave the Norse/PIE neighbourhood entirely — a bridge, not an island.
+    assert endpoints - norse - {"Proto-Indo-European"}
+
+    # Thor's improbable partners are the eastern Indo-European world (Rigveda/India), not another
+    # Norse god — property-based, since the top tie keeps shifting as the seed grows.
+    pairs = discover(seed_graph, "Thor", archetype=Archetype.UNLIKELY, top=3)
+    assert pairs
+    for result in pairs:
+        assert result.path.length <= MAX_HOPS_UNLIKELY
+    assert {seed_graph.node(r.path.node_ids[-1]).label for r in pairs} - norse
+
+    # Both mythologies descend from Proto-Indo-European, so Celtic myth routes through that hub.
+    celtic = discover(seed_graph, "Celtic mythology", top=3)
+    assert celtic
+    assert any(
+        "Proto-Indo-European" in [seed_graph.node(n).label for n in r.path.node_ids] for r in celtic
+    )
     obvious = seed_graph.endpoint_unexpectedness("confucius", "china")
     for result in pairs:
         assert result.endpoint_unexpectedness >= obvious

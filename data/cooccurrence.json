@@ -363,6 +363,7 @@
       "mithraism",
       "rome",
       "romulus",
+      "thor",
       "trojan_war",
       "troy"
     ],
@@ -618,9 +619,11 @@
       "aeneas",
       "ancient_greece",
       "aristotle",
+      "celtic_mythology",
       "christianity",
       "homer",
       "mithraism",
+      "norse_mythology",
       "plato",
       "roman_empire",
       "trojan_war",
@@ -829,6 +832,43 @@
       "mithraism",
       "tang_dynasty",
       "zoroastrianism"
+    ],
+    "norse_mythology": [
+      "celtic_mythology",
+      "greek_mythology",
+      "latin",
+      "loki",
+      "odin",
+      "thor"
+    ],
+    "odin": [
+      "julius_caesar",
+      "latin",
+      "loki",
+      "norse_mythology",
+      "roman_empire",
+      "thor"
+    ],
+    "thor": [
+      "celtic_mythology",
+      "loki",
+      "norse_mythology",
+      "odin",
+      "proto_indo_european",
+      "roman_empire",
+      "troy"
+    ],
+    "loki": [
+      "norse_mythology",
+      "odin",
+      "thor"
+    ],
+    "celtic_mythology": [
+      "christianity",
+      "greek_mythology",
+      "julius_caesar",
+      "norse_mythology",
+      "roman_empire"
     ]
   }
 }

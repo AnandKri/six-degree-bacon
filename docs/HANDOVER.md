@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**88 tests**). Seed: **66 nodes / 93 statements**, 9 domains.
+green (**89 tests**). Seed: **71 nodes / 100 statements**, 9 domains.
 
 ## 1. What it is (one paragraph)
 
@@ -61,7 +61,7 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   (ADR 0015).
 - `.github/workflows/` — `ci.yaml` (offline lint/type/test on every push), `pages.yaml` (build+deploy
   Pages), `qid-validation.yaml` (network QID guard on `data/seed.json` changes + weekly + manual).
-- `data/seed.json` (66 nodes / 93 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (71 nodes / 100 statements, verified QIDs) + `data/cooccurrence.json` (committed).
   `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -74,9 +74,10 @@ scale**, **0011 Hellenistic–India–Buddhism bridge**, **0012 default hop cap 
 **0014 corroboration spike → deferred**, **0015 static-site export**, **0016 Ancient Greece**, **0017
 Ancient Egypt** (+ the co-occurrence `pltitles` fix), **0018 Islamic Golden Age**, **0019 Scientific
 Revolution**, **0020 East Asia** (Confucius/Confucianism, Tang dynasty, Japan, Zen), **0021 journey
-hop cap 4→3** (fixed-length 3-hop journeys — punchier, distinct from the improbable pair). Plus:
-theme-able embed (`build-site --theme`), CI for QID-validation + Pages, and the push to a public
-GitHub repo with Pages live.
+hop cap 4→3** (fixed-length 3-hop journeys — punchier, distinct from the improbable pair), **0022
+Norse/Celtic myth** (Odin, Thor, Loki, Norse & Celtic mythology — via Proto-Indo-European + the
+Thor↔Rigveda thunder-god cognate). Plus: theme-able embed (`build-site --theme`), CI for
+QID-validation + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
 is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and
@@ -87,11 +88,12 @@ deterministic predicate-alignment table. **Breadth is the higher-leverage invest
 ## 5. What's next (forward-looking)
 
 1. **Breadth — the main ongoing thread.** Add coherent, well-connected clusters, **one commit each**,
-   following the process in §6. **East Asia beyond China is done** (ADR 0020: Confucius/Confucianism,
-   Tang dynasty, Japan, Zen — via China/Silk Road/Buddhism). Remaining candidate that connects via an
-   existing hub: **Norse/Celtic myth** (via Proto-Indo-European, like Mithra) — could extend it with
-   more Chinese tech (woodblock printing, papermaking) or a Japan/Korea sub-thread. **Avoid
-   Mesoamerica** — pre-Columbian, it would be an island. Reusable recipe in memory `sdb-breadth-paused`.
+   following the process in §6. Done: **East Asia** (ADR 0020) and **Norse/Celtic myth** (ADR 0022:
+   Odin/Thor/Loki, Norse & Celtic mythology — via Proto-Indo-European + the Thor↔Rigveda cognate).
+   Next candidates that connect via existing hubs: **Chinese tech** (paper/printing/gunpowder/compass
+   — via Han/Tang/Silk Road/Buddhism) and **West Africa** (Mali, Mansa Musa, Timbuktu, trans-Saharan
+   trade — via a new Islam hub). **Avoid Mesoamerica** — pre-Columbian, it would be an island.
+   Reusable recipe in memory `sdb-breadth-paused`.
 2. **Deploy polish (small, optional).** (a) Add a `<personal-site>/CLAUDE.md` pointer so that repo's
    Claude auto-picks-up the `/six-degrees` embed, and wire its SPA-rewrite to exclude `/six-degrees/*`
    (else the CRA fallback serves the React app instead of the static files — the one real gotcha).
@@ -100,7 +102,7 @@ deterministic predicate-alignment table. **Breadth is the higher-leverage invest
 3. **Corroboration** — deferred (ADR 0014); only if both prerequisites in §4 are genuinely met.
 4. **Documented graduations (adopt only when earned):** Neo4j (scale / NL→Cypher for ~10k+ nodes), an
    optional free/local LLM narrator behind the existing template seam. The guided walk (0010) already
-   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 66 nodes.
+   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 71 nodes.
 
 ## 6. Conventions / gotchas
 

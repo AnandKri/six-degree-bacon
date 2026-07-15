@@ -33,7 +33,7 @@ topic ─▶ graph (networkx) ─▶ traverse ─▶ score surprise ─▶ rank 
 - **Rank** — two **archetypes**, surfaced together (ADR 0007):
   - a **journey** — a fixed-length 3-hop cross-domain chain, ranked by the wow score
     `surprise × trust`;
-  - an **improbable pair** — a short 1–3 hop link between entities that feel worlds apart, ranked by
+  - an **improbable pair** — a short 1–2 hop link between entities that feel worlds apart, ranked by
     `endpoint_unexpectedness × trust` (so the *destination's* improbability decides it, not distance).
 
   Both gate at `trust ≥ 0.50` by default, so tight, well-evidenced connections win — or an honest
@@ -100,7 +100,7 @@ data/seed.json          the curated graph (verified QIDs, full provenance)
 data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-surprise term
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        95 tests: human-vs-code confidence, surprise & endpoint checks, harvester, both
+tests/        96 tests: human-vs-code confidence, surprise & endpoint checks, harvester, both
               archetypes, the clusters, the web round-trip, and a guided-walk scaling/perf test
 ```
 

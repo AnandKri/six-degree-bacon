@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pytest
 
-from sdb.constants import MAX_HOPS_UNLIKELY, POSSIBLY_THRESHOLD, TRUST_FLOOR
+from sdb.constants import (
+    MAX_HOPS_UNLIKELY,
+    MIN_HOPS_DEFAULT,
+    POSSIBLY_THRESHOLD,
+    TRUST_FLOOR,
+)
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
 from sdb.schema.enums import Archetype, Domain, Predicate, SourceType
@@ -22,17 +27,21 @@ def _assert_worlds_apart(
 ) -> None:
     """Property-based check that an UNLIKELY result set is genuinely "worlds apart", not obvious.
 
-    Robust to seed growth (no hardcoded far labels): every pair is short, the start's single most
-    co-occurring node is never surfaced, and the top pair is strictly more unexpected than it. A
-    regression that let the archetype rank obvious co-occurring neighbours would fail this — unlike
-    a "some endpoint is outside a hardcoded in-cluster set" check, which is satisfied by almost any
-    node because endpoint-unexpectedness saturates for sparsely-linked starts.
+    Robust to seed growth (no hardcoded far labels): every pair is short, and the *winner* is
+    neither the start's single most co-occurring node nor less unexpected than it. A regression that
+    let the archetype rank obvious co-occurring neighbours first would fail this — unlike a "some
+    endpoint is outside a hardcoded in-cluster set" check, which is satisfied by almost any node
+    because endpoint-unexpectedness saturates for sparsely-linked starts.
+
+    Deliberately asserts on the winner rather than the whole list: a start with few 1-2 hop
+    neighbours has a small candidate pool, so an obvious node can legitimately appear far down a
+    `top=n` list. What must never happen is it *winning*.
     """
     assert pairs
     for result in pairs:
         assert result.path.length <= MAX_HOPS_UNLIKELY
     obvious = _obvious_endpoint(graph, start_id)
-    assert obvious not in {result.path.node_ids[-1] for result in pairs}
+    assert pairs[0].path.node_ids[-1] != obvious
     assert pairs[0].endpoint_unexpectedness > graph.endpoint_unexpectedness(start_id, obvious)
 
 
@@ -312,14 +321,13 @@ def test_no_confident_connection_honestly_returns_nothing() -> None:
 
 
 def test_journey_and_unlikely_are_ranked_on_different_bases(seed_graph: KnowledgeGraph) -> None:
-    # The two archetypes optimise different things, so each winner is scored on its own basis and
-    # they disagree on the top destination for at least some starts. A swapped/collapsed `basis`
-    # would make every start's tops coincide *and* fail the score-formula checks below.
+    # The two archetypes optimise different things, so each winner is scored on its own basis. A
+    # swapped/collapsed `basis` (JOURNEY ranked by endpoint-unexpectedness, say) would fail these
+    # score-formula checks even though each archetype still returns paths.
     journey = discover(seed_graph, "Euclid", archetype=Archetype.JOURNEY, top=1)
     unlikely = discover(seed_graph, "Euclid", archetype=Archetype.UNLIKELY, top=1)
     assert journey and unlikely
 
-    # Each winner is scored on, and by construction optimal for, its own declared basis.
     assert journey[0].score == pytest.approx(journey[0].surprise * journey[0].trust)
     assert unlikely[0].score == pytest.approx(
         unlikely[0].endpoint_unexpectedness * unlikely[0].trust
@@ -328,11 +336,15 @@ def test_journey_and_unlikely_are_ranked_on_different_bases(seed_graph: Knowledg
     assert unlikely[0].path.length <= MAX_HOPS_UNLIKELY
     assert journey[0].path.length == 3
 
-    # Behaviourally distinct: across several starts, at least one has different journey/pair tops
-    # (they cannot all coincide unless the two bases are the same).
-    def tops_differ(topic: str) -> bool:
-        j = discover(seed_graph, topic, archetype=Archetype.JOURNEY, top=1)
-        u = discover(seed_graph, topic, archetype=Archetype.UNLIKELY, top=1)
-        return bool(j and u and j[0].path.node_ids[-1] != u[0].path.node_ids[-1])
 
-    assert any(tops_differ(t) for t in ("Euclid", "Buddhism", "Silk Road", "Roman Empire"))
+def test_archetypes_never_return_the_same_path(seed_graph: KnowledgeGraph) -> None:
+    # ADR 0027: the two archetypes are different delights (ADR 0007), so surfacing one path twice
+    # under two labels is a bug — it happened for Roman Empire and Christianity while the ranges
+    # overlapped at 3 hops. The journey [3,3] and the pair [1,2] are now disjoint by construction;
+    # this locks that invariant (widening MAX_HOPS_UNLIKELY back to 3 would fail here).
+    assert MAX_HOPS_UNLIKELY < MIN_HOPS_DEFAULT  # the ranges cannot overlap
+    for topic in ("Roman Empire", "Christianity", "Great Wall of China", "Buddhism", "Silk Road"):
+        journey = discover(seed_graph, topic, archetype=Archetype.JOURNEY, top=1)
+        unlikely = discover(seed_graph, topic, archetype=Archetype.UNLIKELY, top=1)
+        if journey and unlikely:
+            assert journey[0].path.node_ids != unlikely[0].path.node_ids, topic

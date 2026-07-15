@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**95 tests**). Seed: **88 nodes / 123 statements**, 9 domains.
+green (**96 tests**). Seed: **88 nodes / 123 statements**, 9 domains.
 
 ## 1. What it is (one paragraph)
 
@@ -43,7 +43,7 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
 - `sdb/schema/` — `enums.py` (Domain, Predicate→Wikidata props, SourceType, **Archetype**),
   `models.py` (Pydantic; `DiscoveryResult` has `archetype`, `score`, `endpoint_unexpectedness`).
 - `sdb/constants.py` — **the rubric**: every weight/threshold. `wow = surprise × trust`; default gate
-  `trust ≥ 0.50`; UNLIKELY hop range `[1,3]`; JOURNEY `[3,3]` — a fixed-length 3-hop chain (cap cut
+  `trust ≥ 0.50`; UNLIKELY hop range `[1,2]`; JOURNEY `[3,3]` — a fixed-length 3-hop chain (cap cut
   6→4 ADR 0012, then 4→3 ADR 0021; still `--max-hops`-overridable). No length reward.
 - `sdb/graph/build.py` — `KnowledgeGraph`: networkx graph + cached rarity/degree + **co-occurrence**
   (`endpoint_unexpectedness`). `loader.py` — `load_seed`, `load_cooccurrence`.
@@ -82,9 +82,10 @@ West-Africa/Islam** (Mali, Mansa Musa, Timbuktu, trans-Saharan trade + a new Isl
 Zoroastrianism/Persia and the Abbasid caliphate), **0025 second-order co-occurrence** (a graded
 shared-neighbour term de-saturates the endpoint surprise so the improbable pair surfaces genuinely
 worlds-apart destinations — e.g. Mansa Musa ⇢ Zoroastrianism), **0026 divine descent** (Elizabeth II
-→ Alfred → House of Wessex → Odin; Naruhito → Jimmu → Amaterasu → Shinto — the lineage TILs). Plus:
-theme-able embed (`build-site --theme`), CI for QID-validation + Pages, and the push to a public
-GitHub repo with Pages live.
+→ Alfred → House of Wessex → Odin; Naruhito → Jimmu → Amaterasu → Shinto — the lineage TILs), **0027
+disjoint archetype hop ranges** (pair cap 3→2 so journey `[3,3]` and pair `[1,2]` can never return the
+same path — they collided on Roman Empire/Christianity). Plus: theme-able embed (`build-site
+--theme`), CI for QID-validation + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
 is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and

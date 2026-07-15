@@ -29,7 +29,7 @@ Results come in two shapes, ranked on their own scales and surfaced together:
 | Archetype | Hops | Ranking score |
 |---|---|---|
 | **Journey** — a fixed-length cross-domain chain | 3 | `surprise × trust` (the wow score above) |
-| **Improbable pair** — a short link between entities that feel worlds apart | 1–3 | `endpoint_unexpectedness × trust` |
+| **Improbable pair** — a short link between entities that feel worlds apart | 1–2 | `endpoint_unexpectedness × trust` |
 
 The improbable pair ranks by the *destination's* improbability (not the route's length or total
 surprise), so an obvious one-hop neighbour never wins: e.g. "Roman Empire → Great Wall of China"

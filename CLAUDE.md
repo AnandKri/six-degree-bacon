@@ -30,7 +30,7 @@ the science/India cluster into the Rome–Silk Road–China web. Tight, well-sou
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
 plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
-(ruff, format, mypy, 95 tests).
+(ruff, format, mypy, 96 tests).
 
 ## How to run
 
@@ -94,11 +94,11 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   Greece cluster, 0017 Ancient Egypt cluster, 0018 Islamic Golden Age cluster, 0019 Scientific
   Revolution cluster, 0020 East Asia cluster, 0021 journey hop cap 4→3, 0022 Norse/Celtic myth
   cluster, 0023 Chinese-tech cluster, 0024 West-Africa/Islam cluster, 0025 second-order co-occurrence,
-  0026 divine-descent cluster).
+  0026 divine-descent cluster, 0027 disjoint archetype hop ranges).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 95 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 96 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
   static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —
@@ -111,7 +111,7 @@ quality → × validator penalties; path trust = product of edge confidences. **
 interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap +
 **endpoint unexpectedness** (`−log2 P(endpoint | start)` from Wikipedia-link co-occurrence) − hub
 penalty (length is *not* rewarded). Results come in two **archetypes** (ADR 0007), surfaced together:
-a **journey** (a fixed 3-hop chain, ranked `surprise × trust`) and an **improbable pair** (1–3 hops,
+a **journey** (a fixed 3-hop chain, ranked `surprise × trust`) and an **improbable pair** (1–2 hops,
 ranked `endpoint_unexpectedness × trust`). Both gate at `trust ≥ 0.50` by default
 (`--include-possibly` lowers the gate and flags `Possibly:`).
 
@@ -173,7 +173,7 @@ mypy + pytest must stay green (CI enforces it).
   already Wikidata-sourced wherever Wikidata agrees. Its value needs a **genuinely independent second
   source** (DBpedia / Wikipedia-text extraction) — a documented graduation, built only when earned.
 - ✅ **"Improbable adjacency" archetype (ADR 0007):** `sdb discover` now surfaces two archetypes —
-  a **journey** and an **improbable pair** (short 1–3 hop link between entities that feel worlds
+  a **journey** and an **improbable pair** (short 1–2 hop link between entities that feel worlds
   apart, ranked `endpoint_unexpectedness × trust`). Rome → Great Wall of China (2 hops) is a genuine
   Type-B wow; obvious neighbours (Rome → Latin) correctly rank low. Richer Type-B destinations await
   broader seed coverage.

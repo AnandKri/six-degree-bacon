@@ -95,16 +95,22 @@ MIN_HOPS_DEFAULT = 3
 # Default journey range. With MIN=MAX=3 the journey is a fixed-length 3-hop chain: long enough to
 # cross a couple of domains and read as a genuine "journey", but tight enough to stay punchy and
 # well-evidenced (trust decays multiplicatively, so 4-hop chains rambled for little extra surprise;
-# ADR 0021). 3 also keeps the journey distinct from the 1-3 hop improbable pair, which owns the
-# short "worlds apart" wow. Users can still request deeper chains per query via `--max-hops` (the
-# engine supports the full "six degrees").
+# ADR 0021). Users can still request deeper chains per query via `--max-hops` (the engine supports
+# the full "six degrees").
 MAX_HOPS_DEFAULT = 3
 TOP_DEFAULT = 1
 
 # The "improbable adjacency" archetype (ADR 0007) looks at *short* paths only — its wow is a
 # destination that feels worlds apart yet connects directly, not distance travelled.
+#
+# The cap is 2, not 3, so the ranges are **disjoint by construction**: the journey is exactly [3, 3]
+# and the pair is [1, 2], which makes it impossible for the two archetypes to select the same path.
+# At 3 they overlapped and collided on real topics (Roman Empire and Christianity both surfaced the
+# identical chain under both labels — the same TIL twice), defeating ADR 0007's premise that these
+# are two different kinds of delight. 1-2 hops is also truer to "improbable *adjacency*": a thin,
+# short link. See ADR 0027.
 MIN_HOPS_UNLIKELY = 1
-MAX_HOPS_UNLIKELY = 3
+MAX_HOPS_UNLIKELY = 2
 
 # ---------------------------------------------------------------------------
 # Search budgets — exact-when-tractable, guided-when-explosive (ADR 0010)

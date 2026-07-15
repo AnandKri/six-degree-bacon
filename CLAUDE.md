@@ -30,7 +30,7 @@ the science/India cluster into the Rome–Silk Road–China web. Tight, well-sou
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
 plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
-(ruff, format, mypy, 96 tests).
+(ruff, format, mypy, 98 tests).
 
 ## How to run
 
@@ -67,8 +67,8 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `sdb/engine/` — `traversal.py` (`find_paths`: exact enumeration under a budget, else a bounded
   best-first **guided walk** — ADR 0010), `surprise.py` (information-theoretic +
   **endpoint-unexpectedness** from co-occurrence), `confidence.py` (source rubric → noisy-OR
-  corroboration → link quality → validators → weakest-link path trust), `narrate.py` (template TIL +
-  `Possibly:` flag), `pipeline.py` (`discover()`).
+  corroboration → link quality → validators → weakest-link path trust), `narrate.py` (template TIL — a
+  single quantized claim, ADR 0028; + `Possibly:` flag), `pipeline.py` (`discover()`).
 - `sdb/harvest/` — ingestion (all deterministic given a snapshot): `client.py`
   (`SparqlClient` protocol + live `WikidataClient` + offline `FakeSparqlClient`), `mapping.py`
   (Wikidata rank/reference → `Source`, `P31` → `Domain`, PID → `Predicate` incl. alias PIDs),
@@ -94,11 +94,11 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   Greece cluster, 0017 Ancient Egypt cluster, 0018 Islamic Golden Age cluster, 0019 Scientific
   Revolution cluster, 0020 East Asia cluster, 0021 journey hop cap 4→3, 0022 Norse/Celtic myth
   cluster, 0023 Chinese-tech cluster, 0024 West-Africa/Islam cluster, 0025 second-order co-occurrence,
-  0026 divine-descent cluster, 0027 disjoint archetype hop ranges).
+  0026 divine-descent cluster, 0027 disjoint archetype hop ranges, 0028 single-claim TIL).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 96 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 98 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
   static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —

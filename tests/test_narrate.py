@@ -48,6 +48,43 @@ def test_til_low_trust_is_possibly() -> None:
     assert possibly
 
 
+def _chain(middle_type: str) -> tuple[KnowledgeGraph, Path]:
+    """A 2-hop path a -> b -> c, with `b`'s node type controlling the relative pronoun."""
+    nodes = (
+        Node(id="a", label="Alpha", domain=Domain.HISTORY, type="king"),
+        Node(id="b", label="Beta", domain=Domain.MYTH, type=middle_type),
+        Node(id="c", label="Gamma", domain=Domain.GEOGRAPHY, type="city"),
+    )
+    source = Source(id="w", source_type=SourceType.WIKIPEDIA)
+    first = Statement(subject="a", predicate=Predicate.PART_OF, object="b", sources=(source,))
+    second = Statement(subject="b", predicate=Predicate.PART_OF, object="c", sources=(source,))
+    path = Path(
+        node_ids=("a", "b", "c"),
+        hops=(
+            Hop(from_id="a", to_id="b", statement=first, is_reversed=False),
+            Hop(from_id="b", to_id="c", statement=second, is_reversed=False),
+        ),
+    )
+    return KnowledgeGraph(nodes, (first, second)), path
+
+
+def test_til_is_a_single_sentence_with_the_subject_elided() -> None:
+    # ADR 0028: the TIL is one quantized claim — the first hop in full, then relative clauses. The
+    # hop-by-hop chain is rendered separately by every caller, so it is not restated (and there is
+    # no meta-closer), leaving exactly one sentence.
+    graph, path = _chain("deity")
+    text, _ = narrate(graph, path, 0.9)
+    assert text == "TIL: Alpha was part of Beta, who was part of Gamma."
+    assert text.count(".") == 1  # one sentence: no restated chain, no "It connects ..." closer
+
+
+def test_relative_pronoun_follows_animacy() -> None:
+    # A person/personified being takes "who"; anything else takes "which".
+    graph, path = _chain("city")
+    text, _ = narrate(graph, path, 0.9)
+    assert "Beta, which was part of Gamma" in text
+
+
 def test_reversed_phrasing() -> None:
     graph, statement = _graph("b", "a")  # statement is b -> a, traversed a -> b (reversed)
     path = Path(

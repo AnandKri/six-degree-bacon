@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**96 tests**). Seed: **88 nodes / 123 statements**, 9 domains.
+green (**98 tests**). Seed: **88 nodes / 123 statements**, 9 domains.
 
 ## 1. What it is (one paragraph)
 
@@ -84,8 +84,10 @@ shared-neighbour term de-saturates the endpoint surprise so the improbable pair 
 worlds-apart destinations — e.g. Mansa Musa ⇢ Zoroastrianism), **0026 divine descent** (Elizabeth II
 → Alfred → House of Wessex → Odin; Naruhito → Jimmu → Amaterasu → Shinto — the lineage TILs), **0027
 disjoint archetype hop ranges** (pair cap 3→2 so journey `[3,3]` and pair `[1,2]` can never return the
-same path — they collided on Roman Empire/Christianity). Plus: theme-able embed (`build-site
---theme`), CI for QID-validation + Pages, and the push to a public GitHub repo with Pages live.
+same path — they collided on Roman Empire/Christianity), **0028 single-claim TIL** (the narrator now
+emits one sentence stating the connection; the hop chain is the *evidence* the callers already render,
+not prose to restate). Plus: theme-able embed (`build-site --theme`), CI for QID-validation + Pages,
+and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
 is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and
@@ -102,7 +104,18 @@ max unexpectedness), so the improbable pair was effectively ranked by trust. A g
 pass tuned against the seed — revisit if it ever surfaces weak pairs, or if a richer co-occurrence
 source (link counts / full-text) lands.
 
-**The endpoint term's next rung (if it ever needs one): deterministic diffusion, not a GA.** The
+**Correction (from `docs/review-findings.md`, Finding 2):** 0025 de-saturated *hub* starts but the
+**periphery still ties** — from `confucius`, ~30 nodes remain indistinguishable at max unexpectedness,
+so for sparse starts the pair ranking is still trust-decided. The root cause is **co-occurrence data
+sparsity, not the formula**: a node whose article links few seed nodes also shares few *neighbours*
+with anything, so no amount of extra propagation manufactures signal. This gets **worse as breadth
+adds peripheral nodes** — each new cluster starts life sparse. The durable fix is therefore a **richer
+signal behind the existing `WikipediaClient` seam** (link *counts* / backlinks / full-text instead of
+a 0/1/2 direction count), which ADR 0003 already anticipated; a cheap interim is a deterministic
+tiebreak (domain/temporal distance) when the term saturates, so trust stops silently deciding. A
+canary test bounding the max-tie fraction would stop this being rediscovered.
+
+**The endpoint term's next rung (secondary to the above): deterministic diffusion, not a GA.** The
 0025 shared-neighbour term is effectively a *truncated 2-step diffusion*. The principled all-order
 version is **personalized PageRank / random-walk-with-restart** over the co-occurrence graph: it
 gives every node a distinct expectedness (fully solving saturation, not just softening it), is

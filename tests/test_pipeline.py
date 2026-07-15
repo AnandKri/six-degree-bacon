@@ -259,6 +259,30 @@ def test_west_africa_cluster_connects_via_the_islam_hub(
     assert {"zoroastrianism", "persia", "silk_road"} & reached
 
 
+def test_divine_descent_cluster_links_monarchs_to_mythic_ancestors(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0026: the divine-descent cluster rides `claimed_descent_from` to connect modern monarchs
+    # to mythic ancestors, anchoring on nodes the graph already had — Odin (Norse cluster) and Japan
+    # (via Shinto). These are the lineage TILs: Elizabeth II's line runs back to Odin, and the
+    # Japanese imperial line to the sun goddess Amaterasu.
+    elizabeth = discover(seed_graph, "Elizabeth II", top=3)
+    assert elizabeth
+    assert any("odin" in r.path.node_ids for r in elizabeth)
+
+    naruhito = discover(seed_graph, "Naruhito", top=3)
+    assert naruhito
+    assert any("amaterasu" in r.path.node_ids for r in naruhito)
+
+    # The Shinto bridge keeps the Japanese line attached to the existing Japan/East-Asia cluster.
+    jimmu = discover(seed_graph, "Jimmu", top=5)
+    assert jimmu
+    reached: set[str] = set()
+    for result in jimmu:
+        reached |= set(result.path.node_ids)
+    assert "japan" in reached
+
+
 def test_no_confident_connection_honestly_returns_nothing() -> None:
     # The project's honesty promise: a topic with only low-trust paths returns nothing at the
     # default gate. Uses a *constructed* graph (not a seed label, which drifts): a 3-hop chain of

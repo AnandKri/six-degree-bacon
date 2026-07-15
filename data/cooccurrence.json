@@ -178,6 +178,7 @@
       "persia",
       "roman_empire",
       "rome",
+      "shinto",
       "tang_dynasty",
       "zen",
       "zoroastrianism"
@@ -195,6 +196,7 @@
       "roman_empire",
       "roman_republic",
       "rome",
+      "shinto",
       "zen",
       "zoroastrianism"
     ],
@@ -222,6 +224,7 @@
       "persia",
       "rigveda",
       "roman_empire",
+      "shinto",
       "tang_dynasty",
       "zen"
     ],
@@ -267,6 +270,7 @@
       "persia",
       "roman_empire",
       "rome",
+      "shinto",
       "tang_dynasty",
       "trans_saharan_trade",
       "zhang_qian",
@@ -565,6 +569,7 @@
       "japan",
       "mithraism",
       "rigveda",
+      "shinto",
       "silk_road",
       "tang_dynasty",
       "zen",
@@ -825,6 +830,7 @@
       "mithraism",
       "plato",
       "qin_dynasty",
+      "shinto",
       "tang_dynasty",
       "zen",
       "zoroastrianism"
@@ -851,11 +857,15 @@
       "zoroastrianism"
     ],
     "japan": [
+      "amaterasu",
       "ancient_egypt",
       "buddhism",
       "china",
       "india",
+      "jimmu",
       "mali_empire",
+      "naruhito",
+      "shinto",
       "zen"
     ],
     "zen": [
@@ -868,6 +878,7 @@
       "islam",
       "japan",
       "mithraism",
+      "shinto",
       "tang_dynasty",
       "woodblock_printing",
       "zoroastrianism"
@@ -991,6 +1002,57 @@
       "india",
       "mithraism",
       "persia",
+      "shinto",
+      "zen",
+      "zoroastrianism"
+    ],
+    "elizabeth_ii": [
+      "alfred_the_great",
+      "great_wall_of_china"
+    ],
+    "alfred_the_great": [
+      "elizabeth_ii",
+      "hadrian",
+      "house_of_wessex",
+      "latin",
+      "thor"
+    ],
+    "house_of_wessex": [
+      "alfred_the_great"
+    ],
+    "naruhito": [
+      "china",
+      "elizabeth_ii",
+      "india",
+      "japan",
+      "jimmu",
+      "shinto"
+    ],
+    "jimmu": [
+      "amaterasu",
+      "christianity",
+      "confucianism",
+      "greek_mythology",
+      "islam",
+      "japan",
+      "naruhito",
+      "norse_mythology",
+      "shinto",
+      "zoroastrianism"
+    ],
+    "amaterasu": [
+      "japan",
+      "jimmu",
+      "shinto"
+    ],
+    "shinto": [
+      "amaterasu",
+      "buddhism",
+      "christianity",
+      "confucianism",
+      "islam",
+      "japan",
+      "mithraism",
       "zen",
       "zoroastrianism"
     ]

@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**94 tests**). Seed: **81 nodes / 116 statements**, 9 domains.
+green (**95 tests**). Seed: **88 nodes / 123 statements**, 9 domains.
 
 ## 1. What it is (one paragraph)
 
@@ -61,7 +61,7 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   (ADR 0015).
 - `.github/workflows/` — `ci.yaml` (offline lint/type/test on every push), `pages.yaml` (build+deploy
   Pages), `qid-validation.yaml` (network QID guard on `data/seed.json` changes + weekly + manual).
-- `data/seed.json` (81 nodes / 116 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (88 nodes / 123 statements, verified QIDs) + `data/cooccurrence.json` (committed).
   `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -81,8 +81,10 @@ gunpowder, compass — the Four Great Inventions, via Han/Tang/Silk Road/Buddhis
 West-Africa/Islam** (Mali, Mansa Musa, Timbuktu, trans-Saharan trade + a new Islam hub — via Islam →
 Zoroastrianism/Persia and the Abbasid caliphate), **0025 second-order co-occurrence** (a graded
 shared-neighbour term de-saturates the endpoint surprise so the improbable pair surfaces genuinely
-worlds-apart destinations — e.g. Mansa Musa ⇢ Zoroastrianism). Plus: theme-able embed (`build-site
---theme`), CI for QID-validation + Pages, and the push to a public GitHub repo with Pages live.
+worlds-apart destinations — e.g. Mansa Musa ⇢ Zoroastrianism), **0026 divine descent** (Elizabeth II
+→ Alfred → House of Wessex → Odin; Naruhito → Jimmu → Amaterasu → Shinto — the lineage TILs). Plus:
+theme-able embed (`build-site --theme`), CI for QID-validation + Pages, and the push to a public
+GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
 is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and
@@ -98,6 +100,18 @@ max unexpectedness), so the improbable pair was effectively ranked by trust. A g
 (Mansa Musa ⇢ Zoroastrianism, Buddhism ⇢ Thor). `γ = COOCCURRENCE_NEIGHBOUR_WEIGHT = 0.25` is a first
 pass tuned against the seed — revisit if it ever surfaces weak pairs, or if a richer co-occurrence
 source (link counts / full-text) lands.
+
+**The endpoint term's next rung (if it ever needs one): deterministic diffusion, not a GA.** The
+0025 shared-neighbour term is effectively a *truncated 2-step diffusion*. The principled all-order
+version is **personalized PageRank / random-walk-with-restart** over the co-occurrence graph: it
+gives every node a distinct expectedness (fully solving saturation, not just softening it), is
+deterministic (fixed damping + power iteration) and rubric-specifiable, and would also be a better
+"obviousness" measure than the raw-degree hub penalty. Adopt only when earned. **Genetic algorithms
+were considered and rejected:** at runtime they trade a hand-verifiable exact result for a
+non-reproducible heuristic (killing the north star) with no benefit at this scale; offline weight
+tuning is legitimate in principle but is blocked by the absence of a human-labelled "wow" set, and
+for ~8 continuous knobs a plain grid/random sweep would beat a GA anyway. Stochastic epidemic
+simulation (SIR) is likewise out for scoring (nondeterministic) — fine only as a visualisation.
 
 **Product direction (owner's steer):** a TIL should read as **one quantized surprising fact**
 (e.g. "Japan's imperial line traces to the sun goddess", "Elizabeth II descends from Odin"), not a

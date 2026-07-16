@@ -27,6 +27,9 @@ class _FakeWikipediaClient:
     def outbound_links(self, title: str, candidates: Sequence[str]) -> frozenset[str]:
         return frozenset(self._links.get(title, set()) & set(candidates))
 
+    def all_outbound_links(self, title: str) -> frozenset[str]:
+        return frozenset(self._links.get(title, set()))  # unfiltered: the whole article's links
+
 
 def _node(node_id: str, qid: str | None, label: str) -> Node:
     return Node(id=node_id, label=label, domain=Domain.HISTORY, type="x", wikidata_qid=qid)
@@ -36,10 +39,14 @@ def test_build_cooccurrence_resolves_titles_and_restricts_to_seed_nodes() -> Non
     nodes = [_node("a", "QA", "A"), _node("b", "QB", "B"), _node("c", None, "C")]
     client = _FakeWikipediaClient(
         titles={"QA": "A", "QB": "B"},  # c has no qid -> falls back to its label "C"
-        links={"A": {"B", "External"}, "B": {"A", "C"}, "C": set()},
+        links={"A": {"B", "External", "Shared"}, "B": {"A", "C"}, "C": {"Shared"}},
     )
-    matrix = build_cooccurrence(nodes, client)
-    assert matrix == {"a": ["b"], "b": ["a", "c"]}  # "External" dropped; "c" has no outbound links
+    matrix, similarity = build_cooccurrence(nodes, client)
+    # The link matrix stays restricted to seed titles: "External"/"Shared" are dropped.
+    assert matrix == {"a": ["b"], "b": ["a", "c"]}
+    # Similarity is measured over the *full* link sets (ADR 0029), so it sees "Shared" — which `a`
+    # and `c` both link even though neither links the other: |{shared}| / |{b, external, shared}|.
+    assert similarity == {"a": {"c": pytest.approx(1 / 3, abs=1e-6)}}
 
 
 def _cooc_graph() -> KnowledgeGraph:
@@ -77,26 +84,38 @@ def test_unlinked_endpoint_is_more_surprising_than_linked() -> None:
     assert unlinked > linked
 
 
-def test_shared_neighbour_reduces_unexpectedness() -> None:
-    # Second-order co-occurrence (ADR 0025): `a` and `c` both link `b` (a shared neighbour) but
-    # never link each other; `d` shares nothing. With gamma=0.25, alpha=0.5, N=4 the effective
-    # strengths are eff(a,b)=1, eff(a,c)=0.25 (0 + 0.25*1), eff(a,d)=0; denom[a]=1.5+0.75+0.5=2.75.
-    # The shared-context node `c` is thus less surprising than the isolated `d`, but more than the
-    # directly-linked `b` — de-saturating the strength-0 bucket that ties every unlinked pair.
+def test_shared_context_reduces_unexpectedness() -> None:
+    # Second-order co-occurrence (ADR 0029): `a` links `b` directly (strength 1); `a` and `c` never
+    # link each other but their full articles overlap (jaccard 0.25); `d` shares nothing. With
+    # weight=2.0, alpha=0.5, N=4 the effective strengths are eff(a,b)=1, eff(a,c)=0.5 (2.0*0.25),
+    # eff(a,d)=0, so denom[a] = 1.5 + 1.0 + 0.5 = 3.0. The shared-context node `c` therefore lands
+    # *between* the linked `b` and the isolated `d`, instead of tying with `d` at the maximum.
     nodes = (
         _node("a", "QA", "A"),
         _node("b", "QB", "B"),
         _node("c", "QC", "C"),
         _node("d", "QD", "D"),
     )
-    graph = KnowledgeGraph(nodes, (), cooccurrence={"a": ["b"], "c": ["b"]})
+    graph = KnowledgeGraph(nodes, (), cooccurrence={"a": ["b"]}, similarity={"a": {"c": 0.25}})
     linked = graph.endpoint_unexpectedness("a", "b")
     shared = graph.endpoint_unexpectedness("a", "c")
     isolated = graph.endpoint_unexpectedness("a", "d")
-    assert linked == pytest.approx(math.log2(2.75 / 1.5))
-    assert shared == pytest.approx(math.log2(2.75 / 0.75))
-    assert isolated == pytest.approx(math.log2(2.75 / 0.5))
+    assert linked == pytest.approx(1.0)  # -log2(1.5 / 3.0)
+    assert shared == pytest.approx(math.log2(3.0))  # -log2(1.0 / 3.0)
+    assert isolated == pytest.approx(math.log2(6.0))  # -log2(0.5 / 3.0)
     assert isolated > shared > linked
+
+
+def test_endpoint_term_does_not_saturate(seed_graph: KnowledgeGraph) -> None:
+    # ADR 0029 canary. Before the full-link similarity the endpoint term saturated for peripheral
+    # nodes — house_of_wessex tied 94% of the graph at maximum unexpectedness (it links just one
+    # *seed* node), collapsing the pair ranking onto trust. Sparse nodes arrive with every new
+    # breadth cluster, so bound the tie fraction here to catch that regression rather than
+    # rediscover it. Currently every start is fully distinct (only the single max "ties", ~1.1%).
+    ids = [node.id for node in seed_graph.nodes()]
+    for start in ("house_of_wessex", "confucius", "mansa_musa", "roman_empire"):
+        values = [round(seed_graph.endpoint_unexpectedness(start, e), 6) for e in ids if e != start]
+        assert values.count(max(values)) <= 0.05 * len(values), start
 
 
 def test_endpoint_term_is_zero_without_cooccurrence_data() -> None:

@@ -14,7 +14,7 @@ from collections.abc import Mapping, Sequence
 import networkx as nx
 from rapidfuzz import fuzz, process
 
-from sdb.constants import COOCCURRENCE_ALPHA, COOCCURRENCE_NEIGHBOUR_WEIGHT
+from sdb.constants import COOCCURRENCE_ALPHA, COOCCURRENCE_SIMILARITY_WEIGHT
 from sdb.schema.enums import Predicate
 from sdb.schema.models import Node, SeedData, Statement
 
@@ -31,6 +31,7 @@ class KnowledgeGraph:
         nodes: tuple[Node, ...],
         statements: tuple[Statement, ...],
         cooccurrence: Mapping[str, Sequence[str]] | None = None,
+        similarity: Mapping[str, Mapping[str, float]] | None = None,
     ) -> None:
         """Build the graph from nodes and statements, validating integrity and caching features.
 
@@ -40,6 +41,10 @@ class KnowledgeGraph:
             cooccurrence: Optional ``{node_id: linked_node_ids}`` Wikipedia-link map powering the
                 endpoint-surprise term. Entries for unknown ids are ignored; if omitted or empty,
                 :meth:`endpoint_unexpectedness` returns ``0.0`` (the term is disabled).
+            similarity: Optional ``{node_id: {node_id: jaccard}}`` overlap of the two articles' full
+                outbound link sets (ADR 0029), stored once per pair. Powers the second-order "shared
+                context" term; when absent that term is simply ``0`` and only direct link strength
+                counts.
 
         Raises:
             GraphIntegrityError: On a duplicate node id or a statement with a dangling endpoint.
@@ -62,23 +67,30 @@ class KnowledgeGraph:
             st.predicate for st in self._statements
         )
         self._total_edges: int = len(self._statements)
-        self._build_cooccurrence(cooccurrence or {})
+        self._build_cooccurrence(cooccurrence or {}, similarity or {})
 
     @classmethod
     def from_seed(
-        cls, seed: SeedData, cooccurrence: Mapping[str, Sequence[str]] | None = None
+        cls,
+        seed: SeedData,
+        cooccurrence: Mapping[str, Sequence[str]] | None = None,
+        similarity: Mapping[str, Mapping[str, float]] | None = None,
     ) -> KnowledgeGraph:
         """Build a graph from a :class:`~sdb.schema.models.SeedData` and optional co-occurrence."""
-        return cls(seed.nodes, seed.statements, cooccurrence)
+        return cls(seed.nodes, seed.statements, cooccurrence, similarity)
 
-    def _build_cooccurrence(self, cooccurrence: Mapping[str, Sequence[str]]) -> None:
-        """Cache the co-occurrence link sets, symmetric neighbours, and per-start denominators.
+    def _build_cooccurrence(
+        self,
+        cooccurrence: Mapping[str, Sequence[str]],
+        similarity: Mapping[str, Mapping[str, float]],
+    ) -> None:
+        """Cache the co-occurrence link sets, pair similarity, and per-start denominators.
 
         ``P(endpoint | start)`` is a smoothed conditional over *effective* co-occurrence strength:
         the direct link strength (0, 1, or 2 link directions) plus a second-order term for shared
-        context — ``COOCCURRENCE_NEIGHBOUR_WEIGHT`` per node both articles co-occur with (ADR 0025).
-        The per-start denominator ``Σₑ (effective_strength + alpha)`` is precomputed here (an O(N²)
-        build-time pass; fine for a curated seed) so scoring stays O(1) per query.
+        context — ``COOCCURRENCE_SIMILARITY_WEIGHT * jaccard`` over the two articles' full outbound
+        link sets (ADR 0029). The per-start denominator ``Σₑ (effective_strength + alpha)`` is
+        precomputed here (an O(N²) build-time pass; fine for a curated seed) so scoring stays O(1).
         """
         self._cooc_links: dict[str, frozenset[str]] = {
             node_id: frozenset(t for t in targets if t in self._nodes and t != node_id)
@@ -87,15 +99,14 @@ class KnowledgeGraph:
         }
         self._has_cooccurrence: bool = any(self._cooc_links.values())
 
-        # Symmetric neighbours: every node an article co-occurs with, in either link direction.
-        neighbours: dict[str, set[str]] = {node_id: set() for node_id in self._nodes}
-        for node_id, targets in self._cooc_links.items():
-            neighbours[node_id] |= targets
-            for target in targets:
-                neighbours[target].add(node_id)
-        self._cooc_neighbours: dict[str, frozenset[str]] = {
-            node_id: frozenset(peers) for node_id, peers in neighbours.items()
-        }
+        # Pair similarity, symmetrised: the harvester stores each pair once (a < b).
+        self._cooc_similarity: dict[frozenset[str], float] = {}
+        for left, peers in similarity.items():
+            if left not in self._nodes:
+                continue
+            for right, score in peers.items():
+                if right in self._nodes and right != left and score:
+                    self._cooc_similarity[frozenset((left, right))] = score
 
         node_count = len(self._nodes)
         self._cooc_denominator: dict[str, float] = {}
@@ -112,16 +123,16 @@ class KnowledgeGraph:
         )
 
     def _effective_strength(self, a: str, b: str) -> float:
-        """Direct link strength plus a weighted second-order term for shared context (ADR 0025).
+        """Direct link strength plus a weighted second-order term for shared context (ADR 0029).
 
-        Two nodes that co-occur with the *same* other articles share context even if their articles
-        never link each other, so a destination with more shared neighbours is less surprising. This
-        de-saturates the strength-0 bucket, which otherwise ties nearly every unlinked pair at the
-        maximum unexpectedness on a sparse graph.
+        Two articles that link the *same* other articles share context even if they never link each
+        other, so a destination with more overlap is less surprising. Measured as Jaccard over each
+        article's **full** outbound link set (not just the seed), which is what de-saturates the
+        strength-0 bucket for peripheral nodes — it otherwise ties nearly every unlinked pair at the
+        maximum unexpectedness. Falls back to 0 (direct strength only) without a similarity table.
         """
-        empty: frozenset[str] = frozenset()
-        shared = len(self._cooc_neighbours.get(a, empty) & self._cooc_neighbours.get(b, empty))
-        return self._link_strength(a, b) + COOCCURRENCE_NEIGHBOUR_WEIGHT * shared
+        jaccard = self._cooc_similarity.get(frozenset((a, b)), 0.0)
+        return self._link_strength(a, b) + COOCCURRENCE_SIMILARITY_WEIGHT * jaccard
 
     def endpoint_unexpectedness(self, start: str, end: str) -> float:
         """``-log2 P(end | start)`` from Wikipedia-link co-occurrence; ``0.0`` if no data.

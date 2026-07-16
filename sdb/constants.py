@@ -77,16 +77,23 @@ HUB_DEGREE_THRESHOLD = 6
 # gap. Without co-occurrence data the term is 0 (the engine still runs on seed.json alone).
 COOCCURRENCE_ALPHA = 0.5
 
-# Second-order co-occurrence (ADR 0025). Direct link strength is only 0, 1, or 2, so on a sparse
-# graph the vast majority of pairs sit at strength 0 and tie at the maximum unexpectedness — leaving
-# the improbable-pair ranking to be decided by trust, not by how genuinely worlds-apart the
-# destination is. We add a graded second-order signal: two nodes that link the *same* other articles
-# share context even if they never link each other. The effective strength is
-#   strength(a, b) + COOCCURRENCE_NEIGHBOUR_WEIGHT * |shared co-occurrence neighbours(a, b)|
-# so among unlinked destinations, those with more shared context score less surprising and the truly
-# isolated (zero shared neighbours) rise to the top. The weight is < 1 so a *direct* link still
-# outweighs shared context; 0.25 means four shared neighbours ≈ one direct link direction.
-COOCCURRENCE_NEIGHBOUR_WEIGHT = 0.25
+# Second-order co-occurrence (ADR 0025, reworked by ADR 0029). Direct link strength is only 0, 1 or
+# 2, so on a sparse graph most pairs sit at strength 0 and tie at the maximum unexpectedness —
+# leaving the improbable-pair ranking to be decided by trust rather than by how genuinely
+# worlds-apart the destination is. The fix is a graded *shared context* signal: two articles that
+# link the same other articles are related even if they never link each other. The effective
+# strength is
+#   strength(a, b) + COOCCURRENCE_SIMILARITY_WEIGHT * jaccard(a, b)
+# where `jaccard` is the overlap of the two articles' **full** outbound link sets (committed in
+# data/cooccurrence.json). ADR 0025 first measured that overlap inside the seed-sized keyhole, which
+# starved peripheral nodes (house_of_wessex links just one seed node, so 94% of the graph tied at
+# max); measuring over the whole encyclopaedia restores a graded signal for them.
+#
+# Jaccard is bounded [0, 1] — unlike the old unbounded neighbour count — so the weight sets what a
+# *fully* overlapping article is worth relative to a direct link direction. 2.0 makes complete
+# overlap comparable to a mutual link, and typical real overlaps (0.05-0.30) contribute a fraction
+# of one link direction: enough to order the unlinked pairs, without drowning the direct signal.
+COOCCURRENCE_SIMILARITY_WEIGHT = 2.0
 
 # ---------------------------------------------------------------------------
 # Traversal defaults

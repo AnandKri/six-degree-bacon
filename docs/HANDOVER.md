@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**98 tests**). Seed: **88 nodes / 123 statements**, 9 domains.
+green (**99 tests**). Seed: **88 nodes / 123 statements**, 9 domains.
 
 ## 1. What it is (one paragraph)
 
@@ -86,8 +86,10 @@ worlds-apart destinations — e.g. Mansa Musa ⇢ Zoroastrianism), **0026 divine
 disjoint archetype hop ranges** (pair cap 3→2 so journey `[3,3]` and pair `[1,2]` can never return the
 same path — they collided on Roman Empire/Christianity), **0028 single-claim TIL** (the narrator now
 emits one sentence stating the connection; the hop chain is the *evidence* the callers already render,
-not prose to restate). Plus: theme-able embed (`build-site --theme`), CI for QID-validation + Pages,
-and the push to a public GitHub repo with Pages live.
+not prose to restate), **0029 full-link Jaccard similarity** (measure shared context over each
+article's *whole* outbound link set, not the seed keyhole — kills the peripheral-node saturation:
+max tie-fraction 94%→1.1%, every start now fully distinct). Plus: theme-able embed (`build-site
+--theme`), CI for QID-validation + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
 is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and
@@ -97,30 +99,29 @@ deterministic predicate-alignment table. **Breadth is the higher-leverage invest
 
 ## 5. What's next (forward-looking)
 
-**Just done (ADR 0025):** the endpoint-surprise term saturated on the sparse seed (most pairs tied at
-max unexpectedness), so the improbable pair was effectively ranked by trust. A graded second-order
-**shared-neighbour** term de-saturates it; the pair now surfaces genuinely worlds-apart destinations
-(Mansa Musa ⇢ Zoroastrianism, Buddhism ⇢ Thor). `γ = COOCCURRENCE_NEIGHBOUR_WEIGHT = 0.25` is a first
-pass tuned against the seed — revisit if it ever surfaces weak pairs, or if a richer co-occurrence
-source (link counts / full-text) lands.
+**Endpoint saturation — fixed (ADR 0025 → 0029).** 0025's second-order term only *narrowed* the
+saturation; the review (Finding 2) showed the periphery still tied (`house_of_wessex` tied 94% of the
+graph), because 0025 measured shared context inside the seed keyhole. **0029 measures Jaccard overlap
+of each article's full outbound link set instead** (committed as a `similarity` block; `γ =
+COOCCURRENCE_SIMILARITY_WEIGHT = 2.0`). Result: max tie-fraction 94%→1.1%, **every start now fully
+distinct**, and `test_endpoint_term_does_not_saturate` is a canary that bounds the tie fraction so a
+future sparse cluster can't silently reintroduce it. Re-run `sdb build-cooccurrence` after any seed
+change (it now also fetches each article's full link set — slower, ~a minute for the seed).
 
-**Correction (from `docs/review-findings.md`, Finding 2):** 0025 de-saturated *hub* starts but the
-**periphery still ties** — from `confucius`, ~30 nodes remain indistinguishable at max unexpectedness,
-so for sparse starts the pair ranking is still trust-decided. The root cause is **co-occurrence data
-sparsity, not the formula**: a node whose article links few seed nodes also shares few *neighbours*
-with anything, so no amount of extra propagation manufactures signal. This gets **worse as breadth
-adds peripheral nodes** — each new cluster starts life sparse. The durable fix is therefore a **richer
-signal behind the existing `WikipediaClient` seam** (link *counts* / backlinks / full-text instead of
-a 0/1/2 direction count), which ADR 0003 already anticipated; a cheap interim is a deterministic
-tiebreak (domain/temporal distance) when the term saturates, so trust stops silently deciding. A
-canary test bounding the max-tie fraction would stop this being rediscovered.
+**Open follow-up (a *different* issue, not saturation):** with the pair capped at 1–2 hops (ADR 0027),
+a few genuinely sparse starts (e.g. `confucius`, graph-degree 2) can still surface a directly
+co-occurring 1-hop neighbour as their *top* improbable pair — Confucius ⇢ China, Mansa Musa ⇢ Islam —
+because a high-trust 1-hop beats a more-unexpected lower-trust 2-hop on `eu × trust`. It's a hop/trust
+interaction with a thin candidate pool, not the endpoint term. Candidate fixes (own ADR): exclude
+destinations the start *directly links* (link_strength ≥ 1) from the pair set, or floor the pair's
+endpoint-unexpectedness. Most starts are unaffected (Naruhito ⇢ Amaterasu, Roman Empire ⇢ Paper, etc.).
 
-**The endpoint term's next rung (secondary to the above): deterministic diffusion, not a GA.** The
-0025 shared-neighbour term is effectively a *truncated 2-step diffusion*. The principled all-order
-version is **personalized PageRank / random-walk-with-restart** over the co-occurrence graph: it
-gives every node a distinct expectedness (fully solving saturation, not just softening it), is
-deterministic (fixed damping + power iteration) and rubric-specifiable, and would also be a better
-"obviousness" measure than the raw-degree hub penalty. Adopt only when earned. **Genetic algorithms
+**A further rung if the endpoint term ever needs one: deterministic diffusion, not a GA.** Saturation
+is already solved (0029), so this is no longer motivated by it — but **personalized PageRank /
+random-walk-with-restart** over the co-occurrence graph remains the principled "all-order" successor
+to the current first+second-order strength, and would also give a better "obviousness" measure than
+the raw-degree hub penalty. Deterministic (fixed damping + power iteration) and rubric-specifiable;
+adopt only if a concrete need appears. **Genetic algorithms
 were considered and rejected:** at runtime they trade a hand-verifiable exact result for a
 non-reproducible heuristic (killing the north star) with no benefit at this scale; offline weight
 tuning is legitimate in principle but is blocked by the absence of a human-labelled "wow" set, and

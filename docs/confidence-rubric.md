@@ -142,17 +142,25 @@ Define the **link strength** between two nodes as the number of link *directions
 English Wikipedia articles (0, 1, or 2 — one point each way an article links to the other). Direct
 strength alone is coarse: on a sparse graph almost every pair sits at strength 0 and ties at the
 maximum unexpectedness, which leaves the improbable-pair ranking to trust rather than to how
-worlds-apart the destination really is. So we add a graded **second-order** term (ADR 0025): two
-nodes that link the *same* other articles share context even if they never link each other. The
-**effective strength** is
+worlds-apart the destination really is. So we add a graded **second-order** term: two articles that
+link the *same* other articles share context even if they never link each other. The **effective
+strength** is
 
 ```
-effective_strength(a, b) = strength(a, b) + γ · | shared co-occurrence neighbours(a, b) |
+effective_strength(a, b) = strength(a, b) + γ · jaccard(a, b)
 ```
 
-with `γ = COOCCURRENCE_NEIGHBOUR_WEIGHT = 0.25` (a direct link outweighs shared context — four
-shared neighbours ≈ one link direction). Then, for a start node with `N` graph nodes and Laplace
-smoothing `α = COOCCURRENCE_ALPHA = 0.5`:
+where `jaccard(a, b) = |Aₗᵢₙₖₛ ∩ Bₗᵢₙₖₛ| / |Aₗᵢₙₖₛ ∪ Bₗᵢₙₖₛ|` over the two articles' **full**
+outbound link sets (committed as `similarity` in `data/cooccurrence.json`), and
+`γ = COOCCURRENCE_SIMILARITY_WEIGHT = 2.0`. ADR 0025 first measured that overlap inside the
+seed-sized keyhole, which starved peripheral nodes — `house_of_wessex` links only *one* seed node, so
+94% of the graph tied at maximum; measuring over the whole encyclopaedia (ADR 0029) restores a graded
+signal for them (every start is now fully distinct). Jaccard is bounded `[0, 1]`, so `γ = 2.0` makes a
+*totally* overlapping article worth about one mutual link, while typical real overlaps (0.005–0.30)
+contribute a fraction of a link direction: enough to order the unlinked pairs, not to drown the direct
+signal.
+
+Then, for a start node with `N` graph nodes and Laplace smoothing `α = COOCCURRENCE_ALPHA = 0.5`:
 
 ```
 P(endpoint | start) = ( effective_strength(start, endpoint) + α ) / Σₑ ( effective_strength(start, e) + α )
@@ -166,7 +174,7 @@ is `0`, so the engine still runs on the seed graph alone.
 #### Worked example — direct strength only (matches `tests/test_cooccurrence.py`)
 
 A 4-node graph where only `a` and `b` are mutually linked (`strength(a,b) = 2`), and `a`, `c` share
-no link *and no common neighbour* (so the second-order term is 0 throughout). The denominator is
+no link *and no article overlap* (so the second-order term is 0 throughout). The denominator is
 `0.5·3 + (1 out-link + 1 in-link) = 3.5`:
 
 ```
@@ -176,14 +184,15 @@ P(c | a) = (0 + 0.5) / 3.5 = 0.143  →  endpoint_unexpectedness(a→c) = −log
 
 #### Worked example — second-order de-saturation (matches `tests/test_cooccurrence.py`)
 
-A 4-node graph where `a` and `c` both link `b` (a shared neighbour) but never link each other, and
-`d` shares nothing. With `γ = 0.25`: `effective_strength(a,b) = 1`, `(a,c) = 0 + 0.25·1 = 0.25`,
-`(a,d) = 0`, so the denominator is `1.5 + 0.75 + 0.5 = 2.75`:
+A 4-node graph where `a` links `b` (`strength = 1`); `a` and `c` never link each other but their full
+articles overlap (`jaccard = 0.25`); `d` shares nothing. With `γ = 2.0`:
+`effective_strength(a,b) = 1`, `(a,c) = 2.0 × 0.25 = 0.5`, `(a,d) = 0`, so the denominator is
+`1.5 + 1.0 + 0.5 = 3.0`:
 
 ```
-P(b | a) = (1    + 0.5) / 2.75 = 0.545  →  endpoint_unexpectedness(a→b) = 0.87  (linked)
-P(c | a) = (0.25 + 0.5) / 2.75 = 0.273  →  endpoint_unexpectedness(a→c) = 1.87  (shares context)
-P(d | a) = (0    + 0.5) / 2.75 = 0.182  →  endpoint_unexpectedness(a→d) = 2.46  (truly isolated)
+P(b | a) = (1   + 0.5) / 3.0 = 0.500  →  endpoint_unexpectedness(a→b) = 1.00  (linked)
+P(c | a) = (0.5 + 0.5) / 3.0 = 0.333  →  endpoint_unexpectedness(a→c) = 1.58  (shares context)
+P(d | a) = (0   + 0.5) / 3.0 = 0.167  →  endpoint_unexpectedness(a→d) = 2.58  (truly isolated)
 ```
 
 The shared-context node `c` now sits *between* the linked `b` and the isolated `d`, instead of

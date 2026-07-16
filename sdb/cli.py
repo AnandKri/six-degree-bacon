@@ -19,7 +19,7 @@ from pathlib import Path
 from sdb.constants import POSSIBLY_THRESHOLD, TOP_DEFAULT, TRUST_FLOOR
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
-from sdb.graph.loader import load_cooccurrence, load_seed
+from sdb.graph.loader import load_cooccurrence, load_seed, load_similarity
 from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED, Archetype
 from sdb.schema.models import DiscoveryResult, Source
 
@@ -266,8 +266,10 @@ def _run_discover(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
 
-    cooccurrence = load_cooccurrence(args.cooccurrence) if args.cooccurrence.exists() else None
-    graph = KnowledgeGraph.from_seed(seed, cooccurrence)
+    has_cooc = args.cooccurrence.exists()
+    cooccurrence = load_cooccurrence(args.cooccurrence) if has_cooc else None
+    similarity = load_similarity(args.cooccurrence) if has_cooc else None
+    graph = KnowledgeGraph.from_seed(seed, cooccurrence, similarity)
     min_trust = TRUST_FLOOR if args.include_possibly else POSSIBLY_THRESHOLD
     archetypes = (
         [Archetype.JOURNEY, Archetype.UNLIKELY]
@@ -353,12 +355,15 @@ def _run_build_cooccurrence(args: argparse.Namespace) -> int:
         return 2
 
     print(f"Building co-occurrence for {len(seed.nodes)} nodes from Wikipedia ...", file=sys.stderr)
-    matrix = build_cooccurrence(seed.nodes, LiveWikipediaClient())
+    matrix, similarity = build_cooccurrence(seed.nodes, LiveWikipediaClient())
     args.out.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "_comment": "Wikipedia-link co-occurrence for the endpoint-surprise term; see "
-        "docs/confidence-rubric.md. Regenerate with `sdb build-cooccurrence`.",
+        "docs/confidence-rubric.md. `links` = direct seed-to-seed article links (first-order "
+        "strength); `similarity` = Jaccard overlap of each pair's FULL outbound link sets "
+        "(second-order shared context, ADR 0029). Regenerate with `sdb build-cooccurrence`.",
         "links": matrix,
+        "similarity": similarity,
     }
     args.out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote co-occurrence for {len(matrix)} nodes to {args.out}")

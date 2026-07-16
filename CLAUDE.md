@@ -30,7 +30,7 @@ the science/India cluster into the Rome–Silk Road–China web. Tight, well-sou
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
 plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
-(ruff, format, mypy, 98 tests).
+(ruff, format, mypy, 99 tests).
 
 ## How to run
 
@@ -94,11 +94,12 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   Greece cluster, 0017 Ancient Egypt cluster, 0018 Islamic Golden Age cluster, 0019 Scientific
   Revolution cluster, 0020 East Asia cluster, 0021 journey hop cap 4→3, 0022 Norse/Celtic myth
   cluster, 0023 Chinese-tech cluster, 0024 West-Africa/Islam cluster, 0025 second-order co-occurrence,
-  0026 divine-descent cluster, 0027 disjoint archetype hop ranges, 0028 single-claim TIL).
+  0026 divine-descent cluster, 0027 disjoint archetype hop ranges, 0028 single-claim TIL,
+  0029 full-link Jaccard similarity).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 98 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 99 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
   static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —

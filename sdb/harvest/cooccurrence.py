@@ -21,6 +21,9 @@ _WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 _USER_AGENT = "six-degree-bacon/0.1 (https://github.com/AnandKri/six-degree-bacon)"
 _TIMEOUT_SECONDS = 60
 _MAX_CONTINUATIONS = 10
+# A busy article can list well over a thousand namespace-0 links; 500 arrive per request, so allow
+# a deeper (but still bounded) walk when fetching the *unfiltered* set for the similarity matrix.
+_MAX_LINK_CONTINUATIONS = 12
 
 
 @runtime_checkable
@@ -35,14 +38,30 @@ class WikipediaClient(Protocol):
         """Return which of ``candidates`` the article ``title`` links to (namespace-0 links)."""
         ...
 
+    def all_outbound_links(self, title: str) -> frozenset[str]:
+        """Return *every* namespace-0 article ``title`` links to (not just the seed nodes)."""
+        ...
 
-def build_cooccurrence(nodes: Iterable[Node], client: WikipediaClient) -> dict[str, list[str]]:
-    """Build the node→linked-nodes co-occurrence matrix restricted to the given nodes.
+
+def build_cooccurrence(
+    nodes: Iterable[Node], client: WikipediaClient
+) -> tuple[dict[str, list[str]], dict[str, dict[str, float]]]:
+    """Build the co-occurrence link matrix **and** the full-link similarity matrix.
+
+    Two signals, both restricted to seed *pairs* but measured over different universes:
+
+    - ``links`` — ``{node_id: [linked node ids]}``, the direct seed→seed Wikipedia links. This
+      is the first-order strength (0, 1 or 2 link directions).
+    - ``similarity`` — ``{node_id: {node_id: jaccard}}``, the Jaccard overlap of the two articles'
+      **full** outbound link sets. Measuring shared context over the whole encyclopaedia rather than
+      the seed-sized keyhole is what keeps the second-order term informative for peripheral nodes
+      (ADR 0029): a node may link only one *seed* node yet still share hundreds of articles with
+      another. Only non-zero, rounded values are emitted, and each pair is stored once (a < b).
 
     A node's Wikipedia title comes from its Wikidata sitelink when a ``wikidata_qid`` is present,
     otherwise from its label. Nodes whose article cannot be resolved are simply absent (and thus
-    treated as maximally surprising destinations by the scorer). Output lists are sorted for a
-    stable, diff-friendly committed file.
+    treated as maximally surprising destinations by the scorer). Output is sorted for a stable,
+    diff-friendly committed file.
     """
     node_list = list(nodes)
     title_of = _resolve_titles(node_list, client)
@@ -50,6 +69,7 @@ def build_cooccurrence(nodes: Iterable[Node], client: WikipediaClient) -> dict[s
     candidate_titles = sorted(set(title_of.values()))
 
     matrix: dict[str, list[str]] = {}
+    full_links: dict[str, frozenset[str]] = {}
     for node in node_list:
         title = title_of.get(node.id)
         if title is None:
@@ -62,7 +82,29 @@ def build_cooccurrence(nodes: Iterable[Node], client: WikipediaClient) -> dict[s
         linked_ids.discard(node.id)
         if linked_ids:
             matrix[node.id] = sorted(linked_ids)
-    return matrix
+        full_links[node.id] = frozenset(
+            link.casefold() for link in client.all_outbound_links(title)
+        )
+
+    return matrix, _similarity_matrix(full_links)
+
+
+def _similarity_matrix(
+    full_links: dict[str, frozenset[str]],
+) -> dict[str, dict[str, float]]:
+    """Pairwise Jaccard overlap of full outbound link sets, stored once per pair (a < b)."""
+    similarity: dict[str, dict[str, float]] = {}
+    ids = sorted(full_links)
+    for i, a in enumerate(ids):
+        for b in ids[i + 1 :]:
+            left, right = full_links[a], full_links[b]
+            union = len(left | right)
+            if not union:
+                continue
+            score = round(len(left & right) / union, 6)
+            if score:
+                similarity.setdefault(a, {})[b] = score
+    return similarity
 
 
 def _resolve_titles(nodes: Sequence[Node], client: WikipediaClient) -> dict[str, str]:
@@ -116,6 +158,38 @@ class LiveWikipediaClient:
                 if sitelink is not None:
                     titles[qid] = sitelink["title"]
         return titles
+
+    def all_outbound_links(self, title: str) -> frozenset[str]:
+        """Return every namespace-0 article ``title`` links to, following ``plcontinue`` pagination.
+
+        Unlike :meth:`outbound_links` this is *not* filtered to the seed, so a busy article yields
+        hundreds of titles — the wide universe the Jaccard similarity needs (ADR 0029). The
+        continuation budget bounds a pathological page; a truncated set only makes the similarity
+        conservative (smaller overlap), never wrong in a way that invents surprise.
+        """
+        found: set[str] = set()
+        plcontinue: str | None = None
+        for _ in range(_MAX_LINK_CONTINUATIONS):
+            params = {
+                "action": "query",
+                "format": "json",
+                "prop": "links",
+                "titles": title,
+                "plnamespace": "0",
+                "pllimit": "max",
+                "redirects": "1",
+            }
+            if plcontinue is not None:
+                params["plcontinue"] = plcontinue
+            payload = self._get(_WIKIPEDIA_API, params)
+            for page in payload.get("query", {}).get("pages", {}).values():
+                for link in page.get("links", []):
+                    found.add(link["title"])
+            cont = payload.get("continue")
+            if cont is None:
+                break
+            plcontinue = cont.get("plcontinue")
+        return frozenset(found)
 
     def outbound_links(self, title: str, candidates: Sequence[str]) -> frozenset[str]:
         """Return the subset of ``candidates`` that ``title`` links to (following redirects).

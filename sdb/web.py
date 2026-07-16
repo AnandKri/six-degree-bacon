@@ -23,7 +23,7 @@ from urllib.parse import parse_qs, urlparse
 from sdb.constants import POSSIBLY_THRESHOLD, TOP_DEFAULT, TRUST_FLOOR
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
-from sdb.graph.loader import load_cooccurrence, load_seed
+from sdb.graph.loader import load_cooccurrence, load_seed, load_similarity
 from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED, Archetype
 from sdb.schema.models import DiscoveryResult, Hop
 
@@ -116,8 +116,10 @@ def discover_payload(
 
 def load_graph(seed_path: Path, cooccurrence_path: Path) -> KnowledgeGraph:
     """Load the knowledge graph (with co-occurrence if the sidecar exists) for serving."""
-    cooccurrence = load_cooccurrence(cooccurrence_path) if cooccurrence_path.exists() else None
-    return KnowledgeGraph.from_seed(load_seed(seed_path), cooccurrence)
+    exists = cooccurrence_path.exists()
+    cooccurrence = load_cooccurrence(cooccurrence_path) if exists else None
+    similarity = load_similarity(cooccurrence_path) if exists else None
+    return KnowledgeGraph.from_seed(load_seed(seed_path), cooccurrence, similarity)
 
 
 class _AppServer(ThreadingHTTPServer):

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections.abc import Mapping
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
 from pathlib import Path
@@ -24,6 +25,7 @@ from sdb.constants import POSSIBLY_THRESHOLD, TOP_DEFAULT, TRUST_FLOOR
 from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
 from sdb.graph.loader import load_cooccurrence, load_seed, load_similarity
+from sdb.layout import compute_layout
 from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED, Archetype
 from sdb.schema.models import DiscoveryResult, Hop
 
@@ -38,12 +40,18 @@ _ARCHETYPES: dict[str, list[Archetype]] = {
 
 
 def _hop_payload(graph: KnowledgeGraph, hop: Hop) -> dict[str, str]:
-    """One step of a path as ``{from, phrase, to}``, phrased in the direction traversed."""
+    """One step of a path as ``{from, from_id, phrase, to, to_id}``, in the direction traversed.
+
+    The ``*_id`` node ids let the map light the discovered route in place (join a hop back to a map
+    node); the labels are what the card renders.
+    """
     phrases = PREDICATE_PHRASE_REVERSED if hop.is_reversed else PREDICATE_PHRASE
     return {
         "from": graph.node(hop.from_id).label,
+        "from_id": hop.from_id,
         "phrase": phrases[hop.statement.predicate],
         "to": graph.node(hop.to_id).label,
+        "to_id": hop.to_id,
     }
 
 
@@ -114,6 +122,48 @@ def discover_payload(
     }
 
 
+def graph_payload(
+    graph: KnowledgeGraph, layout: Mapping[str, tuple[float, float]] | None = None
+) -> dict[str, object]:
+    """The whole graph as a JSON-friendly dict for the bird's-eye map — laid-out nodes + edges.
+
+    Nodes carry their deterministic ``(x, y)`` (see :func:`~sdb.layout.compute_layout`), ``domain``
+    for the realm tint, and ``degree`` for sizing. Edges are the undirected statement pairs,
+    de-duplicated (parallel statements collapse) and self-loop-free, mirroring the layout's own edge
+    set. Deterministic; ``layout`` is accepted so a caller can compute it once and reuse it here.
+    """
+    positions = compute_layout(graph) if layout is None else layout
+    nodes: list[dict[str, object]] = []
+    for node in graph.nodes():
+        x, y = positions[node.id]
+        nodes.append(
+            {
+                "id": node.id,
+                "label": node.label,
+                "domain": node.domain.value,
+                "type": node.type,
+                "x": x,
+                "y": y,
+                "degree": graph.degree(node.id),
+                "summary": node.summary,
+                "year": node.start_year,
+                "aliases": list(node.aliases),
+            }
+        )
+    seen: set[tuple[str, str]] = set()
+    edges: list[dict[str, str]] = []
+    for statement in graph.statements:
+        a, b = statement.subject, statement.object
+        if a == b:
+            continue
+        key = (a, b) if a < b else (b, a)
+        if key in seen:
+            continue
+        seen.add(key)
+        edges.append({"source": key[0], "target": key[1]})
+    return {"nodes": nodes, "edges": edges}
+
+
 def load_graph(seed_path: Path, cooccurrence_path: Path) -> KnowledgeGraph:
     """Load the knowledge graph (with co-occurrence if the sidecar exists) for serving."""
     exists = cooccurrence_path.exists()
@@ -127,11 +177,14 @@ class _AppServer(ThreadingHTTPServer):
 
     def __init__(self, address: tuple[str, int], graph: KnowledgeGraph) -> None:
         self.graph = graph
+        # The map payload is computed once, lazily, on first request (the layout costs ~1s), then
+        # shared read-only across request threads.
+        self.graph_payload_cache: dict[str, object] | None = None
         super().__init__(address, _Handler)
 
 
 class _Handler(BaseHTTPRequestHandler):
-    """Serves the single page at ``/`` and JSON results at ``/api/discover``."""
+    """Serves the single page at ``/`` and JSON at ``/api/discover`` and ``/api/graph``."""
 
     server_version = "SixDegreeBacon/0.1"
 
@@ -141,8 +194,16 @@ class _Handler(BaseHTTPRequestHandler):
             self._send(200, "text/html; charset=utf-8", _PAGE.encode("utf-8"))
         elif parsed.path == "/api/discover":
             self._send_json(self._discover(parse_qs(parsed.query)))
+        elif parsed.path == "/api/graph":
+            self._send_json(self._graph())
         else:
             self._send_json({"error": "not_found"}, status=404)
+
+    def _graph(self) -> dict[str, object]:
+        server = cast(_AppServer, self.server)
+        if server.graph_payload_cache is None:
+            server.graph_payload_cache = graph_payload(server.graph)
+        return server.graph_payload_cache
 
     def _discover(self, params: dict[str, list[str]]) -> dict[str, object]:
         graph = cast(_AppServer, self.server).graph

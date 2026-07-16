@@ -11,7 +11,7 @@ from contextlib import contextmanager
 import pytest
 
 from sdb.graph.build import KnowledgeGraph
-from sdb.web import _PAGE, _AppServer, discover_payload, make_server
+from sdb.web import _PAGE, _AppServer, discover_payload, graph_payload, make_server
 
 
 def test_payload_has_journey_and_unlikely_with_sourced_chains(seed_graph: KnowledgeGraph) -> None:
@@ -48,6 +48,35 @@ def test_include_possibly_widens_results(seed_graph: KnowledgeGraph) -> None:
     strict_endpoints = {card["endpoint"] for card in strict["results"]["journey"]}
     loose_endpoints = {card["endpoint"] for card in loose["results"]["journey"]}
     assert strict_endpoints < loose_endpoints
+
+
+def test_graph_payload_lays_out_nodes_with_resolvable_edges(seed_graph: KnowledgeGraph) -> None:
+    payload = graph_payload(seed_graph)
+    nodes = payload["nodes"]
+    edges = payload["edges"]
+    assert isinstance(nodes, list) and isinstance(edges, list)
+    assert len(nodes) == len(seed_graph.nodes())
+    ids = {n["id"] for n in nodes}
+    assert len(ids) == len(nodes)  # ids are unique
+    for node in nodes:
+        assert {"id", "label", "domain", "x", "y", "degree"} <= node.keys()
+        assert 0.0 <= node["x"] <= 1000.0 and 0.0 <= node["y"] <= 1000.0  # within the viewBox
+    seen: set[frozenset[str]] = set()
+    for edge in edges:
+        assert edge["source"] in ids and edge["target"] in ids  # no dangling endpoint
+        assert edge["source"] != edge["target"]  # self-loop-free
+        key = frozenset((edge["source"], edge["target"]))
+        assert key not in seen  # undirected and de-duplicated (parallel statements collapse)
+        seen.add(key)
+
+
+def test_chain_steps_carry_resolvable_node_ids(seed_graph: KnowledgeGraph) -> None:
+    # The map lights a route by joining each hop back to a map node via its id.
+    card = discover_payload(seed_graph, "Roman Empire", top=1)["results"]["journey"][0]
+    ids = {n.id for n in seed_graph.nodes()}
+    for step in card["chain"]:
+        assert step["from_id"] in ids and step["to_id"] in ids
+        assert seed_graph.node(step["from_id"]).label == step["from"]  # id and label agree
 
 
 def test_page_is_self_contained_no_external_assets() -> None:
@@ -95,3 +124,12 @@ def test_http_unknown_path_is_404(seed_graph: KnowledgeGraph) -> None:
     with _running(seed_graph) as server, pytest.raises(urllib.error.HTTPError) as excinfo:
         _get(server, "/nope")
     assert excinfo.value.code == 404
+
+
+def test_http_round_trip_serves_graph(seed_graph: KnowledgeGraph) -> None:
+    with _running(seed_graph) as server:
+        status, body = _get(server, "/api/graph")
+        assert status == 200
+        payload = json.loads(body)
+        assert len(payload["nodes"]) == len(seed_graph.nodes())
+        assert payload["edges"]  # the map has links to draw

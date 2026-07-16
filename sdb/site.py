@@ -16,7 +16,7 @@ from importlib import resources
 from pathlib import Path
 
 from sdb.graph.build import KnowledgeGraph
-from sdb.web import discover_payload
+from sdb.web import discover_payload, graph_payload
 
 _EMPTY: dict[str, object] = {"journey": [], "unlikely": []}
 
@@ -56,6 +56,7 @@ def build_site(
         "generated": dt.datetime.now(dt.UTC).replace(microsecond=0).isoformat(),
         "index": sorted(index, key=lambda entry: str(entry["label"])),
         "results": results,
+        "graph": graph_payload(graph),  # laid-out nodes + edges for the bird's-eye map
     }
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")

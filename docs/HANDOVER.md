@@ -3,7 +3,13 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**99 tests**). Seed: **88 nodes / 123 statements**, 9 domains.
+green (**120 tests**). Seed: **88 nodes / 123 statements**, 10 domains (`culture` still empty).
+
+Newest work: a **map-first UI** — the whole knowledge base as domain territories, laid out by a
+deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030) and themed "minimal terminal"
+(dark slate + single teal accent, ADR 0031). Click a node → its discovered route lights up in place.
+The engine is untouched; the map is a pure consumer of `discover()` via a new `graph_payload()` /
+`/api/graph` (baked into the static bundle's `graph` key).
 
 ## 1. What it is (one paragraph)
 

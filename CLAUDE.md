@@ -28,16 +28,19 @@ pair*), **harvest node enrichment** (P31→Domain coverage incl. `SCIENCE`/`ART`
 extent so harvested people are dated), and a **Hellenistic–India–Buddhism seed bridge** that connects
 the science/India cluster into the Rome–Silk Road–China web. Tight, well-sourced cross-culture
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
-zero-LLM, deterministic, reproducible by hand, and now with a zero-dependency web UI (`sdb serve`)
-plus a static export (`sdb build-site`, theme-able for embedding) for free hosting. All checks green
-(ruff, format, mypy, 99 tests).
+zero-LLM, deterministic, reproducible by hand, and now with a **map-first** zero-dependency web UI
+(`sdb serve`) — a bird's-eye view of the whole knowledge base as domain territories, with the
+discovered route lighting up in place — plus a static export (`sdb build-site`, theme-able) for free
+hosting. The map is laid out by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030)
+and themed "minimal terminal" (dark slate, single teal accent; ADR 0031). All checks green (ruff,
+format, mypy, 120 tests).
 
 ## How to run
 
 ```sh
 uv sync --extra dev                     # create .venv + install (writes uv.lock)
 uv run sdb discover "Roman Empire"      # two archetypes: a journey + an improbable pair
-uv run sdb serve                        # interactive web UI at http://127.0.0.1:8000 (zero-dep)
+uv run sdb serve                        # map-first web UI at http://127.0.0.1:8000 (zero-dep)
 uv run sdb build-site                    # pre-render a static site/ for free GitHub Pages hosting
 uv run sdb validate-qids                # check every node's wikidata_qid resolves (guard, ADR 0008)
 uv run sdb discover "Trojan War" --include-possibly   # speculative paths when none clear the gate
@@ -75,12 +78,18 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   `harvester.py` (k-hop BFS → `SeedData`), `cooccurrence.py` (Wikipedia-link co-occurrence harvest),
   `merge.py` (overlay a harvest onto the curated graph: QID node-unification + independent-source
   corroboration), `snapshot.py` (pin to `data/harvest/`, git-ignored).
+- `sdb/layout.py` — a deterministic, pure-Python force-directed layout (`compute_layout`, ADR 0030)
+  that groups same-domain nodes into territories for the map; byte-identical every run, no numpy.
 - `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
   `validate-qids`, `serve`, `build-site`). `sdb/web.py` + `sdb/static/index.html` — a zero-dependency
-  stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change; the page is
-  dual-mode, so `sdb/site.py` (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page
-  for free GitHub Pages hosting. `sdb/viz.py` — optional matplotlib path drawing (`viz` extra).
-- `data/seed.json` — curated 88-node / 123-statement graph across 9 domains, full provenance (incl. a
+  stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change: a **map-first**
+  page (ADR 0031) drawing the whole graph from `graph_payload()`/`/api/graph`, themed "minimal
+  terminal" (dark slate + single teal accent). The page is dual-mode, so `sdb/site.py`
+  (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page (now incl. the laid-out
+  `graph`) for free GitHub Pages hosting. `sdb/viz.py` — legacy matplotlib path drawing (`viz` extra),
+  orphaned (superseded by the web map).
+- `data/seed.json` — curated 88-node / 123-statement graph across 10 domains (one, `culture`, has no
+  nodes yet), full provenance (incl. a
   Hellenistic–India–Buddhism bridge and Ancient Greece / Ancient Egypt / Islamic Golden Age /
   Scientific Revolution / East Asia / Norse–Celtic myth / Chinese-tech / West-Africa / divine-descent
   clusters — e.g. Newton → Euclid → al-Tusi → Copernicus, Thor → Rigveda → India, Mansa Musa → Islam
@@ -95,15 +104,16 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   Revolution cluster, 0020 East Asia cluster, 0021 journey hop cap 4→3, 0022 Norse/Celtic myth
   cluster, 0023 Chinese-tech cluster, 0024 West-Africa/Islam cluster, 0025 second-order co-occurrence,
   0026 divine-descent cluster, 0027 disjoint archetype hop ranges, 0028 single-claim TIL,
-  0029 full-link Jaccard similarity).
+  0029 full-link Jaccard similarity, 0030 deterministic graph layout, 0031 map-first terminal UI).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 99 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 120 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
-  the Hellenistic–India–Buddhism bridge, the web UI (payload + a real localhost HTTP round-trip), the
-  static-site export, and a guided-walk scaling/perf test; `eval/golden.json` —
-  ranker regression (characterization values).
+  the Hellenistic–India–Buddhism bridge, the web UI (payload + graph payload + real localhost HTTP
+  round-trips), the static-site export, a deterministic-layout suite (`test_layout.py`: reproducibility
+  + the domain-cohesion property + a negative control), and a guided-walk scaling/perf test;
+  `eval/golden.json` — ranker regression (characterization values).
 
 ## Scoring in one paragraph
 

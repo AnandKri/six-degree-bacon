@@ -31,6 +31,13 @@ def test_bundle_covers_every_topic_with_both_toggle_states(
     assert entry["strict"]["journey"][0]["sources"]  # sourced, like the live payload
 
 
+def test_bundle_includes_the_laid_out_graph(seed_graph: KnowledgeGraph, tmp_path: Path) -> None:
+    graph = _build(seed_graph, tmp_path)["graph"]  # the map draws from this, offline
+    assert len(graph["nodes"]) == len(seed_graph.nodes())
+    assert graph["edges"]
+    assert {"id", "label", "domain", "x", "y", "degree"} <= graph["nodes"][0].keys()
+
+
 def test_strict_is_confident_and_loose_is_a_superset(
     seed_graph: KnowledgeGraph, tmp_path: Path
 ) -> None:

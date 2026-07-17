@@ -28,6 +28,7 @@ from sdb.graph.loader import load_cooccurrence, load_seed, load_similarity
 from sdb.layout import compute_layout
 from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED, Archetype
 from sdb.schema.models import DiscoveryResult, Hop
+from sdb.serialize import result_core, source_dicts
 
 # The single self-contained page, loaded once from package data (works from a source tree or wheel).
 _PAGE = resources.files("sdb").joinpath("static", "index.html").read_text(encoding="utf-8")
@@ -56,27 +57,15 @@ def _hop_payload(graph: KnowledgeGraph, hop: Hop) -> dict[str, str]:
 
 
 def _result_payload(graph: KnowledgeGraph, result: DiscoveryResult) -> dict[str, object]:
-    """A single result as a JSON-friendly dict — richer than the CLI's, with per-hop phrasing."""
-    seen: dict[str, dict[str, str | None]] = {}
-    for hop in result.path.hops:
-        for source in hop.statement.sources:
-            seen.setdefault(
-                source.id,
-                {"id": source.id, "type": source.source_type.value, "url": source.url},
-            )
+    """A single result as a JSON-friendly dict — richer than the CLI's, with per-hop phrasing.
+
+    Display-facing, so the shared fields round to 2-3 dp; ``chain`` is the web's own (the CLI
+    emits a flat ``path`` of labels instead).
+    """
     return {
-        "archetype": result.archetype.value,
-        "topic": graph.node(result.path.node_ids[0]).label,
-        "endpoint": graph.node(result.path.node_ids[-1]).label,
-        "hops": result.path.length,
-        "score": round(result.score, 2),
-        "trust": round(result.trust, 3),
-        "surprise": round(result.surprise, 2),
-        "endpoint_unexpectedness": round(result.endpoint_unexpectedness, 2),
-        "possibly": result.possibly,
-        "til": result.til,
+        **result_core(graph, result, score_dp=2, trust_dp=3, metric_dp=2),
         "chain": [_hop_payload(graph, hop) for hop in result.path.hops],
-        "sources": list(seen.values()),
+        "sources": source_dicts(result),
     }
 
 

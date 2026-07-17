@@ -21,7 +21,8 @@ from sdb.engine.pipeline import TopicNotFoundError, discover
 from sdb.graph.build import KnowledgeGraph
 from sdb.graph.loader import load_cooccurrence, load_seed, load_similarity
 from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED, Archetype
-from sdb.schema.models import DiscoveryResult, Source
+from sdb.schema.models import DiscoveryResult
+from sdb.serialize import result_core, source_dicts, unique_sources
 
 _DEFAULT_SEED = Path("data/seed.json")
 _DEFAULT_COOCCURRENCE = Path("data/cooccurrence.json")
@@ -430,7 +431,7 @@ def _render_card(
     lines.append("")
 
     lines.append("   sources:")
-    for source in _unique_sources(result):
+    for source in unique_sources(result):
         location = f"  {source.url}" if source.url else ""
         lines.append(f"     [{source.id}] {source.source_type.value}{location}")
     return "\n".join(lines)
@@ -442,34 +443,17 @@ def _bar(value: float, glyphs: _Glyphs, width: int = 10) -> str:
     return glyphs.bar_full * filled + glyphs.bar_empty * (width - filled)
 
 
-def _unique_sources(result: DiscoveryResult) -> list[Source]:
-    """Collect the distinct sources (by id) used across all hops, in first-seen order."""
-    seen: dict[str, Source] = {}
-    for hop in result.path.hops:
-        for source in hop.statement.sources:
-            seen.setdefault(source.id, source)
-    return list(seen.values())
-
-
 def _result_to_dict(
     graph: KnowledgeGraph, result: DiscoveryResult, index: int
 ) -> dict[str, object]:
-    """Convert a result to a JSON-friendly dict."""
+    """Convert a result to a JSON-friendly dict.
+
+    Machine-facing, so the shared fields keep 4 dp; ``rank`` and the flat ``path`` of labels are the
+    CLI's own (the web card renders a phrased ``chain`` instead).
+    """
     return {
         "rank": index,
-        "archetype": result.archetype.value,
-        "topic": graph.node(result.path.node_ids[0]).label,
-        "endpoint": graph.node(result.path.node_ids[-1]).label,
-        "hops": result.path.length,
-        "score": round(result.score, 4),
-        "trust": round(result.trust, 4),
-        "surprise": round(result.surprise, 4),
-        "endpoint_unexpectedness": round(result.endpoint_unexpectedness, 4),
-        "possibly": result.possibly,
-        "til": result.til,
+        **result_core(graph, result, score_dp=4, trust_dp=4, metric_dp=4),
         "path": [graph.node(node_id).label for node_id in result.path.node_ids],
-        "sources": [
-            {"id": source.id, "type": source.source_type.value, "url": source.url}
-            for source in _unique_sources(result)
-        ],
+        "sources": source_dicts(result),
     }

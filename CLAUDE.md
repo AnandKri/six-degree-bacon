@@ -33,7 +33,7 @@ zero-LLM, deterministic, reproducible by hand, and now with a **map-first** zero
 discovered route lighting up in place — plus a static export (`sdb build-site`, theme-able) for free
 hosting. The map is laid out by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030)
 and themed "minimal terminal" (dark slate, single teal accent; ADR 0031). All checks green (ruff,
-format, mypy, 126 tests).
+format, mypy, 130 tests).
 
 ## How to run
 
@@ -80,6 +80,10 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   corroboration), `snapshot.py` (pin to `data/harvest/`, git-ignored).
 - `sdb/layout.py` — a deterministic, pure-Python force-directed layout (`compute_layout`, ADR 0030)
   that groups same-domain nodes into territories for the map; byte-identical every run, no numpy.
+- `sdb/serialize.py` — the `DiscoveryResult` → JSON fields the CLI (`--json`) and the web API share
+  (`result_core` + `source_dicts`), so a new result field can't reach one surface and miss the other.
+  Each caller keeps its own extras (CLI `rank`/`path`, web `chain`), rounding, and appends `sources`
+  last.
 - `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
   `validate-qids`, `serve`, `build-site`). `sdb/web.py` + `sdb/static/index.html` — a zero-dependency
   stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change: a **map-first**
@@ -112,7 +116,7 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 126 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 130 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the web UI (payload + graph payload + real localhost HTTP

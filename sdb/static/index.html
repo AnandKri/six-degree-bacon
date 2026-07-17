@@ -26,6 +26,9 @@
     --nlabel-fill: var(--fg);  /* node-label ink; muted while exploring a minimized card */
     /* 5 realm tints — teal-harmonized, validated dark all-pairs (worst CVD dE 11.5) */
     --world: #4d9bf0; --expression: #d99a3e; --knowledge: #0f8f18; --power: #ef5f6b; --belief: #d857a3;
+    /* Not a realm: the `other` domain (unmapped harvest fallout, ADR 0032). Deliberately a neutral
+       grey so unclassified nodes read as absence-of-classification, never as a 6th territory. */
+    --unclassified: #64748b;
     --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
     --font-sans: "Roboto", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
     --glow: 0 0 8px -1px rgba(94,234,212,.55);
@@ -50,12 +53,13 @@
   .t-knowledge { fill: var(--knowledge); stroke: var(--knowledge); }
   .t-power { fill: var(--power); stroke: var(--power); }
   .t-belief { fill: var(--belief); stroke: var(--belief); }
+  .t-unclassified { fill: var(--unclassified); stroke: var(--unclassified); }
   .dlabel { font-family: var(--font-mono); font-weight: 600; letter-spacing: .26em;
     text-transform: uppercase; text-anchor: middle; fill-opacity: .85; pointer-events: none;
     transition: opacity .45s ease; }
   .dl-world { fill: var(--world); } .dl-expression { fill: var(--expression); }
   .dl-knowledge { fill: var(--knowledge); } .dl-power { fill: var(--power); }
-  .dl-belief { fill: var(--belief); }
+  .dl-belief { fill: var(--belief); } .dl-unclassified { fill: var(--unclassified); }
 
   .edge { stroke: var(--edge); stroke-width: 1; fill: none; transition: opacity .45s ease; }
   .edge.on { stroke: var(--accent); stroke-width: 2.2; opacity: 1 !important; }
@@ -65,6 +69,7 @@
   .n-world circle { fill: var(--world); } .n-expression circle { fill: var(--expression); }
   .n-knowledge circle { fill: var(--knowledge); } .n-power circle { fill: var(--power); }
   .n-belief circle { fill: var(--belief); }
+  .n-unclassified circle { fill: var(--unclassified); }
   .node.hover circle { fill: var(--accent); }
   .node.on circle { fill: var(--accent); stroke: var(--bg); filter: drop-shadow(0 0 4px rgba(94,234,212,.7)); }
   .node.origin circle { fill: var(--accent); filter: drop-shadow(0 0 6px rgba(94,234,212,.85)); }
@@ -326,6 +331,10 @@ const REALM = { geography: "world", trade: "world", culture: "expression", art: 
 const REALM_LABEL = { world: "World", expression: "Expression", knowledge: "Knowledge", power: "Power", belief: "Belief" };
 const REALM_DOMAINS = { world: ["geography", "trade"], expression: ["culture", "art"],
   knowledge: ["science", "language"], power: ["history", "genealogy"], belief: ["myth", "religion"] };
+// `other` (unmapped harvest fallout, ADR 0032) has no realm by design, and is absent from the
+// legend: it is the absence of a classification, not a sixth kind of thing. Anything unmapped tints
+// neutral grey rather than silently borrowing a realm's colour, which is what `culture` used to do.
+const realmOf = (dom) => REALM[dom] || "unclassified";
 
 // Escape for HTML/SVG text + attribute values (the map is built as innerHTML strings).
 const xml = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;")
@@ -379,7 +388,7 @@ function renderMap(graph) {
   for (const n of NODES) (domains[n.domain] ||= []).push(n);
   const terr = [], dlab = [];
   for (const [dom, ns] of Object.entries(domains)) {
-    const realm = REALM[dom];
+    const realm = realmOf(dom);
     const pts = ns.map((n) => ({ x: n.x, y: n.y }));
     if (ns.length === 1) {
       terr.push(`<circle class="territory t-${realm}" cx="${pts[0].x}" cy="${pts[0].y}" r="28"></circle>`);
@@ -409,7 +418,7 @@ function renderMap(graph) {
   $("#nodes").innerHTML = NODES.map((n) => {
     const r = nodeR(n.degree);
     const hit = Math.max(r + 8, 15);  // a finger-sized tap target regardless of dot size
-    return `<g class="node n-${REALM[n.domain]}" data-id="${xml(n.id)}" tabindex="0" aria-label="${xml(n.label)}">`
+    return `<g class="node n-${realmOf(n.domain)}" data-id="${xml(n.id)}" tabindex="0" aria-label="${xml(n.label)}">`
       + `<circle class="hit" cx="${n.x}" cy="${n.y}" r="${hit}"></circle>`
       + `<circle cx="${n.x}" cy="${n.y}" r="${r}"></circle>`
       + `<text class="nlabel" x="${n.x + r + 3}" y="${n.y + 4}">${xml(n.label)}</text></g>`;

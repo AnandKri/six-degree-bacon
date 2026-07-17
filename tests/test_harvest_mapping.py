@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from sdb.harvest.mapping import (
+    DOMAIN_FALLBACK,
     HARVEST_EXCLUDED_PROPERTIES,
     HARVEST_PREDICATE_ALIASES,
     HARVEST_PROPERTIES,
@@ -77,12 +78,23 @@ def test_source_reliability_is_deterministic_rank_times_reference_tier() -> None
 def test_domain_for_takes_first_known_class_then_falls_back() -> None:
     assert domain_for(("Q34770",)) is Domain.LANGUAGE  # language
     assert domain_for(("Q99999999", "Q9174")) is Domain.RELIGION  # skips unknown, finds religion
-    assert domain_for(()) is Domain.CULTURE  # documented fallback
-    assert domain_for(("Q99999999",)) is Domain.CULTURE
+    assert domain_for(()) is Domain.OTHER  # documented fallback (ADR 0032)
+    assert domain_for(("Q99999999",)) is Domain.OTHER
+
+
+def test_fallback_domain_is_not_a_classifiable_domain() -> None:
+    """The fallback must stay a bucket no P31 class maps *into* (ADR 0032).
+
+    If a class mapped to the fallback, unclassified fallout and genuinely-classified nodes would be
+    indistinguishable again — the exact confusion that made `culture` ~100% harvest fallout.
+    """
+    assert DOMAIN_FALLBACK is Domain.OTHER
+    assert DOMAIN_FALLBACK not in INSTANCE_OF_DOMAIN.values()
 
 
 def test_domain_table_now_covers_science_and_art() -> None:
-    # These two Domains had no P31 mapping before enrichment, so every such node fell to `culture`.
+    # These two Domains had no P31 mapping before enrichment, so every such node fell to the
+    # fallback (`culture` at the time; `other` since ADR 0032).
     assert domain_for(("Q2465832",)) is Domain.SCIENCE  # branch of science
     assert domain_for(("Q62832",)) is Domain.SCIENCE  # observatory
     assert domain_for(("Q735",)) is Domain.ART  # art

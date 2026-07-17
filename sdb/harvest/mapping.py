@@ -139,8 +139,13 @@ INSTANCE_OF_DOMAIN: dict[str, Domain] = {
     "Q28877": Domain.TRADE,  # good/s (commodity)
 }
 
-# Domain assigned when no P31 class maps (broad, non-committal — never guesses a specific field).
-DOMAIN_FALLBACK: Domain = Domain.CULTURE
+# Domain assigned when no P31 class maps. This is an explicit "unclassified" bucket, not a real
+# domain: it must never be one a curated node uses, or unmapped harvest fallout becomes
+# indistinguishable from a substantive cluster. It was CULTURE until ADR 0032 — which made `culture`
+# both the fallback *and* a domain, so a 2-hop Roman harvest put 24 of 40 unmapped nodes into
+# `culture` while the curated seed had zero, i.e. the domain was ~100% fallout. Unclassified nodes
+# still traverse and score normally; they just no longer borrow a real domain's identity.
+DOMAIN_FALLBACK: Domain = Domain.OTHER
 
 # Rank strings as they appear in Wikidata's reified statement model.
 _RANK_BY_NAME: dict[str, WikidataRank] = {

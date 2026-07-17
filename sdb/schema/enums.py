@@ -10,7 +10,17 @@ from enum import StrEnum
 
 
 class Domain(StrEnum):
-    """Thematic domain of a node — the axis whose *changes* make a path surprising."""
+    """Thematic domain of a node — the axis whose *changes* make a path surprising.
+
+    ``OTHER`` is the deliberate "not yet classified" bucket for harvested nodes whose ``P31`` class
+    is unmapped (:data:`sdb.harvest.mapping.DOMAIN_FALLBACK`); it is never a curated node's domain.
+    Keeping it distinct from a real domain is what stops unclassified harvest fallout from inflating
+    a substantive domain's territory — see ADR 0032.
+
+    Order is load-bearing: :func:`sdb.layout.compute_layout` seeds positions by ``(domain, id)``
+    using this enum's ordinal, so a new member must be **appended**, never inserted, or every
+    existing map shifts (ADR 0030's byte-identical guarantee).
+    """
 
     MYTH = "myth"
     HISTORY = "history"
@@ -22,6 +32,7 @@ class Domain(StrEnum):
     RELIGION = "religion"
     SCIENCE = "science"
     ART = "art"
+    OTHER = "other"
 
 
 class Predicate(StrEnum):

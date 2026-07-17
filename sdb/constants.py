@@ -50,6 +50,7 @@ TRUST_FLOOR = 0.15
 # Surprise — documented weights
 #   surprise = W_RARITY * sum_rarity
 #            + W_DOMAIN * domain_jumps
+#            + W_REGION * region_jumps
 #            + W_TEMPORAL * normalized_temporal_gap
 #            + W_ENDPOINT * endpoint_unexpectedness
 #            - W_HUB * hub_penalty
@@ -57,6 +58,7 @@ TRUST_FLOOR = 0.15
 # ---------------------------------------------------------------------------
 W_RARITY = 1.0
 W_DOMAIN = 2.0
+W_REGION = 2.0  # cultural-sphere jumps, valued on par with disciplinary jumps (ADR 0039)
 W_TEMPORAL = 1.5
 W_ENDPOINT = 4.0
 W_HUB = 0.75
@@ -78,6 +80,20 @@ W_HUB = 0.75
 # re-tuning was needed. An unseen predicate smooths to P = 0.5 (weight 0.5) — an honest "no idea"
 # rather than a free full jump. Deterministic and hand-reproducible: count, divide, subtract.
 DOMAIN_JUMP_ALPHA = 0.5
+
+# Each *region* jump — a hop between two mutually-foreign macro-cultures (:class:`sdb.schema.enums.
+# Region`) — is weighted by the same machinery on an independent axis (ADR 0039). `domain` models a
+# node's *discipline*, so a Polish -> Persian -> Greek -> Indian science lineage (Copernicus ->
+# al-Tusi -> Euclid -> Jagannatha Samrat) crosses **zero** domains and banks 0 domain-jump surprise
+# despite spanning four civilisations. The region term supplies exactly that missing signal, and it
+# is *additive* rather than a replacement: measured over the seed, 47% of jump-edges cross a domain
+# but not a region (a within-culture discipline change) and 6% cross a region but not a domain (a
+# same-discipline culture change), so each axis carries surprise the other cannot see (ADR 0039).
+# A hop that crosses both is doubly surprising and is credited on both — W_REGION calibrates the
+# magnitude. Same Laplace-smoothed, self-learned base rate as the domain term:
+#   P(region_jump | predicate) = (region_jumps + alpha) / (edges + 2*alpha)
+#   weight                     = 1 - P(region_jump | predicate)
+REGION_JUMP_ALPHA = 0.5
 
 # Total temporal gap (in years) is divided by this before weighting.
 TEMPORAL_NORM_YEARS = 1000.0

@@ -14,6 +14,7 @@ from sdb.schema.enums import (
     Archetype,
     Domain,
     Predicate,
+    Region,
     SourceType,
     TimePrecision,
     WikidataRank,
@@ -55,6 +56,7 @@ class Node(BaseModel):
     label: str
     domain: Domain
     type: str
+    region: Region | None = None
     wikidata_qid: str | None = None
     aliases: tuple[str, ...] = ()
     summary: str = ""

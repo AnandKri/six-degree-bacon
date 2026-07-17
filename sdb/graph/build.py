@@ -18,6 +18,7 @@ from sdb.constants import (
     COOCCURRENCE_ALPHA,
     COOCCURRENCE_SIMILARITY_WEIGHT,
     DOMAIN_JUMP_ALPHA,
+    REGION_JUMP_ALPHA,
 )
 from sdb.schema.enums import Predicate
 from sdb.schema.models import Node, SeedData, Statement
@@ -76,6 +77,22 @@ class KnowledgeGraph:
             st.predicate
             for st in self._statements
             if self._nodes[st.subject].domain != self._nodes[st.object].domain
+        )
+        # The same base rate on the *region* axis (ADR 0039). Only edges whose endpoints both carry
+        # a region count toward either total, so an unregioned node never inflates or deflates a
+        # predicate's region-jump rate.
+        self._predicate_region_edge_counts: Counter[Predicate] = Counter(
+            st.predicate
+            for st in self._statements
+            if self._nodes[st.subject].region is not None
+            and self._nodes[st.object].region is not None
+        )
+        self._predicate_region_jump_counts: Counter[Predicate] = Counter(
+            st.predicate
+            for st in self._statements
+            if self._nodes[st.subject].region is not None
+            and self._nodes[st.object].region is not None
+            and self._nodes[st.subject].region != self._nodes[st.object].region
         )
         self._total_edges: int = len(self._statements)
         self._build_cooccurrence(cooccurrence or {}, similarity or {})
@@ -212,6 +229,19 @@ class KnowledgeGraph:
         edges = self._predicate_counts.get(predicate, 0)
         jumps = self._predicate_jump_counts.get(predicate, 0)
         probability = (jumps + DOMAIN_JUMP_ALPHA) / (edges + 2 * DOMAIN_JUMP_ALPHA)
+        return 1.0 - probability
+
+    def region_jump_weight(self, predicate: Predicate) -> float:
+        """How *unexpected* a region jump is on ``predicate`` — ``1 - P(region_jump | predicate)``.
+
+        The region-axis twin of :meth:`domain_jump_weight` (ADR 0039). The base rate is learned only
+        from edges whose endpoints *both* carry a region, so unregioned nodes neither raise nor
+        lower it; Laplace-smoothed by :data:`~sdb.constants.REGION_JUMP_ALPHA`. Bounded ``[0, 1]``;
+        a predicate with no regioned edges smooths to ``0.5``.
+        """
+        edges = self._predicate_region_edge_counts.get(predicate, 0)
+        jumps = self._predicate_region_jump_counts.get(predicate, 0)
+        probability = (jumps + REGION_JUMP_ALPHA) / (edges + 2 * REGION_JUMP_ALPHA)
         return 1.0 - probability
 
     def incident(self, node_id: str) -> list[tuple[str, Statement, bool]]:

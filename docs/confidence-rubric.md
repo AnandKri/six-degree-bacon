@@ -115,6 +115,7 @@ Computed from a path's features with documented weights:
 ```
 surprise = W_RARITY·Σ rarity
          + W_DOMAIN·domain_jumps
+         + W_REGION·region_jumps
          + W_TEMPORAL·normalized_temporal_gap
          + W_ENDPOINT·endpoint_unexpectedness
          − W_HUB·hub_penalty
@@ -123,7 +124,8 @@ surprise = W_RARITY·Σ rarity
 | Term | Definition | Weight |
 |---|---|---|
 | `rarity` (per edge) | `−log2( count(predicate) / total_edges )` — self-information; rarer ⇒ more surprising | `W_RARITY = 1.0` |
-| `domain_jumps` | Σ over domain-crossing hops of `1 − P(jump \| predicate)`, the jump's unexpectedness given the predicate that made it — Laplace-smoothed with `DOMAIN_JUMP_ALPHA = 0.5` and learned from the graph (ADR 0034). Was a flat count, which paid full price for tautological crossings like `located_in → geography`. | `W_DOMAIN = 2.0` |
+| `domain_jumps` | Σ over **discipline**-crossing hops of `1 − P(jump \| predicate)`, the jump's unexpectedness given the predicate that made it — Laplace-smoothed with `DOMAIN_JUMP_ALPHA = 0.5` and learned from the graph (ADR 0034). Was a flat count, which paid full price for tautological crossings like `located_in → geography`. | `W_DOMAIN = 2.0` |
+| `region_jumps` | Σ over **culture**-crossing hops of `1 − P(region_jump \| predicate)`, the same machinery on an independent axis (ADR 0039). `domain` is discipline, so a same-discipline chain across four civilisations (Copernicus → al-Tusi → Euclid → Jagannatha Samrat, all `science`) scores 0 domain jumps but banks its cultural surprise here. Only edges whose endpoints both carry a `Region` feed the rate; `REGION_JUMP_ALPHA = 0.5`. | `W_REGION = 2.0` |
 | `normalized_temporal_gap` | `Σ |midpoint_yearₐ − midpoint_year_b| / 1000` | `W_TEMPORAL = 1.5` |
 | `endpoint_unexpectedness` | `−log2 P(endpoint | start)` — an *unexpected destination* (see below) | `W_ENDPOINT = 4.0` |
 | `hub_penalty` | for each **intermediate** node, `max(0, degree − 6) / 6` | `W_HUB = 0.75` |
@@ -214,19 +216,43 @@ weight              = 1 − 0.75                                         = 0.25 
 
 Σ rarity                = 2.0 + 2.0            = 4.0
 domain_jumps            = 0.25 + 0.25          = 0.5    (a flat count would say 2)
+region_jumps            = 0                    (these fixture nodes carry no region)
 normalized_gap          = 400 / 1000           = 0.4
 endpoint_unexpectedness = 0                    (no co-occurrence data)
 hub_penalty             = 0
 
-surprise = 1.0·4.0 + 2.0·0.5 + 1.5·0.4 + 4.0·0 − 0.75·0 = 5.6
+surprise = 1.0·4.0 + 2.0·0.5 + 2.0·0 + 1.5·0.4 + 4.0·0 − 0.75·0 = 5.6
 ```
 
 Its wow score would be `surprise × trust`; e.g. at `trust = 0.75`, `wow = 5.6 × 0.75 = 4.2`.
 
+### Region jumps — the cultural axis (worked example, ADR 0039)
+
+`domain` is a node's *discipline*, so the `domain_jumps` term is blind to a chain that changes
+*culture* without changing discipline. `region_jumps` supplies that, with the identical
+`1 − P(region_jump | predicate)` machinery on a `Region` axis (macro-cultural spheres: `WESTERN`,
+`NEAR_EASTERN`, `SOUTH_ASIAN`, `SINITIC`, …). The flagship case is
+`Copernicus → al-Tusi → Euclid → Jagannatha Samrat` — three `influenced_by` hops, **all `science`**
+(so `domain_jumps = 0`), crossing WESTERN → NEAR_EASTERN → WESTERN → SOUTH_ASIAN:
+
+```
+count the seed:  influenced_by has 39 edges with both endpoints regioned, 15 of which cross a region
+P(region_jump | influenced_by) = (15 + 0.5) / (39 + 2·0.5) = 15.5 / 40 = 0.3875
+region_jump_weight             = 1 − 0.3875                              = 0.6125
+
+region_jumps = 0.6125 × 3 (all three hops cross a region) = 1.838
+surprise gained = W_REGION · 1.838 = 2.0 · 1.838 = 3.68   (was 0 under domain alone)
+```
+
+The axes are near-orthogonal *per predicate*: `located_in` is a domain tautology (weight 0.06 — a
+thing is nearly always located in `geography`) but region-informative (0.89 — usually its own
+culture's place), so each term sees crossings the other cannot. The term is **additive** — an
+unregioned graph scores exactly as before (region_jumps = 0), so nothing already scored is taxed.
+
 On the real seed the weights separate sharply, which is the point: `located_in` crosses into
-`geography` on 32 of its 34 edges, so `weight = 1 − (32+0.5)/(34+1) = 0.07` — saying *where* a thing
-is always changes domain, so it is no surprise. `follows` crosses on 0 of 5, so a `follows` jump
-would be genuinely informative: `weight = 1 − (0+0.5)/(5+1) = 0.92`.
+`geography` on 36 of its 38 edges, so `weight = 1 − (36+0.5)/(38+1) = 0.06` — saying *where* a thing
+is always changes domain, so it is no surprise. `follows` crosses on 0 of 6, so a `follows` jump
+would be genuinely informative: `weight = 1 − (0+0.5)/(6+1) = 0.93`.
 
 ---
 

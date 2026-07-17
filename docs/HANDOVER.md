@@ -3,9 +3,10 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**142 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
+green (**146 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
-then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033).
+then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now also carries
+a **`Region`** cultural axis (ADR 0039).
 
 **Read this first — the rule the project nearly broke (ADR 0034/0035).** Data and the rubric are the
 truth; **a test may only verify what the rubric claims, never that a favourite wins**. This was
@@ -21,7 +22,25 @@ rubric via ADR + worked example. Never the data — data changes only when a *fa
 `eval/golden.json` is a change-*detector*, not a correctness oracle; re-characterising it would have
 enshrined the bug.
 
-Newest work (ADR 0038): **a South/SE Asia cluster** — 9 nodes / 17 statements (Hinduism, Sanskrit,
+Newest work (ADR 0039): **a cultural-region surprise term — the schema-blocker fix the note below
+long called "the highest-value non-breadth work".** `domain` models a node's *discipline*, so a
+Polish→Persian→Greek→Indian science lineage (Copernicus → al-Tusi → Euclid → Jagannatha Samrat)
+crossed **zero** domains and banked 0 domain-jump surprise despite spanning four civilisations. A new
+`Region` macro-cultural axis on `Node` (10 spheres; all 107 nodes curated) + an **additive**
+`region_jumps` term (identical `1 − P(jump|predicate)` machinery as ADR 0034, `W_REGION = 2.0`)
+scores exactly that. Two decisions, both **measured before building** (per the truth hierarchy):
+(1) *additive, not a replacement* — 47% of jump-edges cross a domain but not a region and 6% cross a
+region but not a domain, so each axis sees crossings the other can't; (2) *macro granularity* — the
+Greco-Roman-European continuum is one `WESTERN` sphere, because a finer split let a Western-canon
+walking tour (`Rome → Greece → Renaissance → Plato`) farm three "cultural" crossings while the
+trans-Eurasian route banked fewer. Result: the science lineage is restored to Copernicus's #1 **on
+merit** (the term reinforces it, no test pins it), Western walking tours leave the top results, and
+within-culture origin stories (Naruhito → Amaterasu, Elizabeth II → Odin) correctly score 0 region
+jumps. `eval/golden.json` re-characterised from the engine (Roman Empire → Zen, Christianity → Zhang
+Qian; Euclid → Maurya unchanged). This **closes one of the two schema-blocker terms** in §"The real
+blocker" below; the temporal/floruit axis remains.
+
+Before that (ADR 0038): **a South/SE Asia cluster** — 9 nodes / 17 statements (Hinduism, Sanskrit,
 Maurya, Ashoka, Chola, Srivijaya, Khmer, Angkor Wat, Borobudur), seed **98 → 107 nodes / 141 → 158
 statements**. Four independent bridges keep it connected: the **Indo-European language** link
 (`sanskrit → proto_indo_european`, the best structural addition — **Sanskrit → Proto-Indo-European →
@@ -92,8 +111,10 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
 
 ## 3. Architecture map
 
-- `sdb/schema/` — `enums.py` (Domain, Predicate→Wikidata props, SourceType, **Archetype**),
-  `models.py` (Pydantic; `DiscoveryResult` has `archetype`, `score`, `endpoint_unexpectedness`).
+- `sdb/schema/` — `enums.py` (Domain=discipline, **Region**=macro-culture (ADR 0039),
+  Predicate→Wikidata props, SourceType, **Archetype**),
+  `models.py` (Pydantic; `Node.region`; `DiscoveryResult` has `archetype`, `score`,
+  `endpoint_unexpectedness`).
 - `sdb/constants.py` — **the rubric**: every weight/threshold. `wow = surprise × trust`; default gate
   `trust ≥ 0.50`; UNLIKELY hop range `[1,2]`; JOURNEY `[3,3]` — a fixed-length 3-hop chain (cap cut
   6→4 ADR 0012, then 4→3 ADR 0021; still `--max-hops`-overridable). No length reward.
@@ -152,9 +173,10 @@ split**, **0033 Renaissance cluster** (filled the last two empty realms), **0034
 information weighting** (+ **0035 closed temporal extents** — the scoring fix behind the al-Tusi
 reversal; see the rule at the top), **0036 interval separation measured & rejected**, **0037 surface
 the curated `Statement.evidence` on every hop** (+ the `load_graph`/`discover_all` refactor), **0038
-South/SE Asia cluster** (Indo-European/Sanskrit + Hellenistic/Maurya + maritime Silk Road bridges).
-Plus: theme-able embed (`build-site --theme`), CI for QID-validation + Pages, and the push to a public
-GitHub repo with Pages live.
+South/SE Asia cluster** (Indo-European/Sanskrit + Hellenistic/Maurya + maritime Silk Road bridges),
+**0039 cultural-region surprise term** (the `Node.region` axis + additive `region_jumps`; closes one
+of the two schema-blocker terms). Plus: theme-able embed (`build-site --theme`), CI for QID-validation
++ Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
 is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and
@@ -224,14 +246,19 @@ pairwise intuition was right and simply doesn't survive being summed. Its motiva
 Florence route) was already fixed by 0035 itself. `end-to-end` separation is recorded in 0036 as an
 untested option, not a plan.
 
-**The real blocker, now named by two independent terms: the `Node` schema is thinner than the
-surprise the rubric wants to express.** (1) ADR 0034's closing limitation — `domain` models
-*discipline*, so Polish→Persian→Greek→Indian scores **0** domain jumps. (2) ADR 0036 — the temporal
-extent models *existence* (`[start, 2025]`), not the **active period**, so India's midpoint is
-`(-3300+2025)/2 = -638`, a number describing nothing, and both midpoint *and* separation inherit it.
-The fix for each is a new axis on `Node` (a cultural/regional one; an active-period/floruit one),
-each a curation pass over all 107 nodes. **Two blocked terms is roughly what would earn it** — this is
-the highest-value non-breadth work, and it is data, not code.
+**The schema blocker — one of its two terms is now CLOSED (ADR 0039), one remains.** The `Node`
+schema was thinner than the surprise the rubric wanted to express, along two independent axes:
+(1) ✅ **CLOSED — `domain` models *discipline*, not culture** (ADR 0034's closing limitation).
+Polish→Persian→Greek→Indian scored **0** domain jumps. **ADR 0039 added the `Region` cultural axis +
+an additive `region_jumps` term** (all 107 nodes curated), the exact fix this note long called for —
+the science lineage now scores its cross-cultural surprise and is Copernicus's #1 on merit. (2) ⬜
+**STILL OPEN — the temporal extent models *existence* (`[start, 2025]`), not the active period**
+(ADR 0036), so India's midpoint is `(-3300+2025)/2 = -638`, a number describing nothing, and both
+midpoint *and* separation inherit it. The fix is a second new axis on `Node` — an
+active-period/floruit one distinct from the existence extent — a curation pass over all 107 nodes,
+data not code. It is now **the** highest-value non-breadth work, and ADR 0039 is the template: measure
+the design (additive? granularity?) before building, curate every node, add a worked example + a
+completeness guard.
 
 **A further rung if the endpoint term ever needs one: deterministic diffusion, not a GA.** Saturation
 is already solved (0029), so this is no longer motivated by it — but **personalized PageRank /

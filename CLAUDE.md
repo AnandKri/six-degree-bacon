@@ -39,7 +39,12 @@ Hinduism, Sanskrit, Maurya, Ashoka, Chola, Srivijaya, Khmer, Angkor Wat, Borobud
 eastern reach: `sanskrit → proto_indo_european` ties the Indian classical language to the Norse/Latin
 family (Sanskrit → Proto-Indo-European → Norse mythology → Loki; Angkor Wat → Hinduism → Rigveda →
 Thor), the Maurya Empire rose in the wake of Alexander, and the Chola/Srivijaya thalassocracies reach
-the graph through the maritime Silk Road. All checks green (ruff, format, mypy, 142 tests).
+the graph through the maritime Silk Road. Then a **cultural-region surprise term** (ADR 0039) gave
+`Node` the axis it was missing: `domain` models *discipline*, so a Polish→Persian→Greek→Indian science
+lineage (Copernicus → al-Tusi → Euclid → Jagannatha Samrat) crossed **zero** domains; a new `Region`
+macro-sphere axis + an additive `region_jumps` term (mirroring ADR 0034's weighting) scores that
+cross-cultural surprise, restoring the science lineage to #1 and pushing Western-canon walking tours
+out of the top results — on merit, not by tuning. All checks green (ruff, format, mypy, 146 tests).
 
 ## How to run
 
@@ -66,9 +71,11 @@ commands directly. The CLI degrades to ASCII glyphs automatically on a legacy co
 topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filter by trust -> template TIL
 ```
 
-- `sdb/schema/` — `enums.py` (Domain, Predicate→Wikidata props, SourceType…) + `models.py`
-  (Pydantic: `Source`, `Node`, `Statement`, `Path`, `DiscoveryResult`). **Statement-reified**: every
-  claim is a `Statement{subject, predicate, object, sources[], evidence, link_quality}` so multiple
+- `sdb/schema/` — `enums.py` (Domain=discipline, **Region=macro-culture** (ADR 0039),
+  Predicate→Wikidata props, SourceType…) + `models.py`
+  (Pydantic: `Source`, `Node` (incl. `region`), `Statement`, `Path`, `DiscoveryResult`).
+  **Statement-reified**: every claim is a
+  `Statement{subject, predicate, object, sources[], evidence, link_quality}` so multiple
   sources corroborate a fact.
 - `sdb/constants.py` — **the scoring rubric**: the single source of truth for every weight/threshold.
 - `sdb/graph/` — `build.py` (`KnowledgeGraph`: networkx graph + cached degree/rarity/counts + topic
@@ -76,8 +83,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   and the one-call `load_graph` that both the CLI and `sdb serve` use — the sole JSON→graph path,
   moved here from `web.py` in ADR 0037).
 - `sdb/engine/` — `traversal.py` (`find_paths`: exact enumeration under a budget, else a bounded
-  best-first **guided walk** — ADR 0010), `surprise.py` (information-theoretic +
-  **endpoint-unexpectedness** from co-occurrence), `confidence.py` (source rubric → noisy-OR
+  best-first **guided walk** — ADR 0010), `surprise.py` (information-theoretic: rarity + domain jumps +
+  **region jumps** (ADR 0039) + temporal gap + **endpoint-unexpectedness** from co-occurrence),
+  `confidence.py` (source rubric → noisy-OR
   corroboration → link quality → validators → weakest-link path trust), `narrate.py` (template TIL — a
   single quantized claim, ADR 0028; + `Possibly:` flag), `pipeline.py` (`discover()`, and the shared
   `discover_all`/`trust_gate` the CLI and web both dispatch through — ADR 0037).
@@ -126,15 +134,17 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   0032 `other` domain / harvest-fallback split, 0033 Renaissance cluster,
   0034 domain-jump information weighting, 0035 closed temporal extents, 0036 interval separation
   measured & rejected — keep midpoint distance, 0037 surface the curated `Statement.evidence` prose
-  on every hop, 0038 South/SE Asia cluster).
+  on every hop, 0038 South/SE Asia cluster, 0039 cultural-region surprise term).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 142 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 146 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the South/SE Asia cluster's bridges (ADR 0038 — Indo-European/Sanskrit,
-  Hellenistic/Maurya, maritime Silk Road, worlds-apart Angkor Wat), the web UI (payload + graph payload + real localhost HTTP
+  Hellenistic/Maurya, maritime Silk Road, worlds-apart Angkor Wat), the region-jump term (ADR 0039 —
+  a worked example, the domain/region independence property, and a guard that every curated node has a
+  region), the web UI (payload + graph payload + real localhost HTTP
   round-trips), the static-site export, a deterministic-layout suite (`test_layout.py`: reproducibility
   + the domain-cohesion property + a negative control), a guided-walk scaling/perf test, the seed
   loaders (`test_loader.py`: single-parse + missing-sidecar tolerance), and the per-hop evidence
@@ -145,7 +155,8 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 
 **Trust** (is it true?): per-source reliability rubric → `1 − ∏(1 − rᵢ)` corroboration → × link
 quality → × validator penalties; path trust = product of edge confidences. **Surprise** (is it
-interesting?): `Σ −log2(count/total)` edge rarity + domain jumps + normalized temporal gap +
+interesting?): `Σ −log2(count/total)` edge rarity + domain (discipline) jumps + **region (culture)
+jumps** (ADR 0039, same weighting on an independent axis) + normalized temporal gap +
 **endpoint unexpectedness** (`−log2 P(endpoint | start)` from Wikipedia-link co-occurrence) − hub
 penalty (length is *not* rewarded). Results come in two **archetypes** (ADR 0007), surfaced together:
 a **journey** (a fixed 3-hop chain, ranked `surprise × trust`) and an **improbable pair** (1–2 hops,

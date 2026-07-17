@@ -65,6 +65,34 @@ def test_every_curated_statement_carries_evidence() -> None:
     assert not missing, f"statements with no curated evidence: {missing}"
 
 
+def test_every_curated_node_carries_a_region() -> None:
+    """Region is a scoring input (ADR 0039), so a curated node without one is a silent hole — it
+    skips the region-jump term, under-counting its cultural surprise. `Node.region` defaults to
+    `None` (harvested nodes may legitimately lack one), so the completeness of the *curated* seed is
+    an invariant the schema can't enforce; this guards it, mirroring the evidence guard above."""
+    seed = load_seed(SEED_PATH)
+    missing = [n.id for n in seed.nodes if n.region is None]
+    assert not missing, f"curated nodes with no region: {missing}"
+
+
+def test_region_is_an_axis_independent_of_domain() -> None:
+    """ADR 0039: the region term earns its keep only if some edges cross a culture without crossing
+    a domain — the cross-cultural, same-discipline hops the domain term is blind to (e.g. al-Tusi
+    influenced_by Euclid: both `science`, Near-Eastern -> Western). Asserted as a structural
+    property of the seed, not by naming a favoured result."""
+    seed = load_seed(SEED_PATH)
+    by_id = {n.id: n for n in seed.nodes}
+    same_domain_cross_region = [
+        s
+        for s in seed.statements
+        if by_id[s.subject].domain == by_id[s.object].domain
+        and by_id[s.subject].region is not None
+        and by_id[s.object].region is not None
+        and by_id[s.subject].region != by_id[s.object].region
+    ]
+    assert same_domain_cross_region  # the region axis captures surprise the domain axis cannot
+
+
 def test_cooccurrence_references_only_real_nodes() -> None:
     seed = load_seed(SEED_PATH)
     cooccurrence = load_cooccurrence(COOCCURRENCE_PATH)

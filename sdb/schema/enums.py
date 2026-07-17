@@ -35,6 +35,40 @@ class Domain(StrEnum):
     OTHER = "other"
 
 
+class Region(StrEnum):
+    """Macro-cultural sphere of a node — the *cultural/regional* axis, distinct from ``Domain``.
+
+    ``Domain`` models a node's *discipline* (science, history, religion...), so a
+    Polish -> Persian -> Greek -> Indian science lineage crosses **zero** domains and its cultural
+    surprise is invisible to :func:`sdb.engine.surprise._domain_jumps`. ``Region`` supplies the
+    missing axis: a *region jump* is a hop between two mutually-foreign civilisations, scored by an
+    independent, additive surprise term (ADR 0039) that mirrors ADR 0034's domain-jump weighting.
+
+    Granularity is **civilisational**, deliberately coarse: the Greco-Roman-Byzantine-Renaissance
+    continuum is a single ``WESTERN`` sphere, because the Renaissance revived antiquity — moving
+    Rome -> Ancient Greece is staying inside one ancestral tradition, not crossing into a foreign
+    culture. A finer split let a Western-canon walking tour (Rome -> Greece -> Renaissance -> Plato)
+    farm three "cultural" crossings while a genuinely trans-Eurasian route banked fewer; the
+    macro-sphere model reflects real cultural distance instead (measured in ADR 0039).
+
+    A node's region is the culture it is *rooted in* (a religion's birthplace, a person's home),
+    not everywhere it later spread; a trans-cultural route takes its heartland (the Silk Road is
+    ``CENTRAL_ASIAN``). Unlike :class:`Domain` this enum feeds no layout, so members may be added in
+    any order.
+    """
+
+    WESTERN = "western"  # Greco-Roman-Byzantine-European continuum
+    NORSE_GERMANIC = "norse_germanic"
+    NEAR_EASTERN = "near_eastern"  # Persia, Mesopotamia, the Islamic Middle East, the Levant
+    EGYPTIAN = "egyptian"
+    SOUTH_ASIAN = "south_asian"
+    SOUTHEAST_ASIAN = "southeast_asian"
+    SINITIC = "sinitic"  # the Chinese cultural sphere
+    JAPANESE = "japanese"
+    WEST_AFRICAN = "west_african"
+    CENTRAL_ASIAN = "central_asian"  # the Eurasian steppe / Silk Road heartland
+
+
 class Predicate(StrEnum):
     """Relationship types, mapped to Wikidata properties where one exists.
 

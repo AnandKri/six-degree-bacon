@@ -1,7 +1,7 @@
 """Deterministic, information-theoretic *surprise* scoring for a path.
 
-surprise = W_RARITY·Σ rarity + W_DOMAIN·domain_jumps + W_TEMPORAL·temporal_gap
-           + W_ENDPOINT·endpoint_unexpectedness - W_HUB·hub_penalty
+surprise = W_RARITY·Σ rarity + W_DOMAIN·domain_jumps + W_REGION·region_jumps
+           + W_TEMPORAL·temporal_gap + W_ENDPOINT·endpoint_unexpectedness - W_HUB·hub_penalty
 
 Length is not rewarded here — trust (in the wow score, ``surprise x trust``) already prefers shorter
 chains. All weights live in :mod:`sdb.constants`; the formula is reproducible by hand.
@@ -18,6 +18,7 @@ from sdb.constants import (
     W_ENDPOINT,
     W_HUB,
     W_RARITY,
+    W_REGION,
     W_TEMPORAL,
 )
 from sdb.graph.build import KnowledgeGraph
@@ -31,6 +32,7 @@ class SurpriseScore:
     total: float
     sum_rarity: float
     domain_jumps: float  # jumps weighted by their unexpectedness given the predicate (ADR 0034)
+    region_jumps: float  # cultural-sphere jumps, same weighting on an independent axis (ADR 0039)
     temporal_gap: float  # normalized (years / TEMPORAL_NORM_YEARS)
     endpoint_unexpectedness: float  # -log2 P(endpoint | start) from co-occurrence; 0 without data
     hub_penalty: float
@@ -40,12 +42,14 @@ def score_surprise(graph: KnowledgeGraph, path: Path) -> SurpriseScore:
     """Compute the deterministic surprise score for ``path``."""
     sum_rarity = sum(graph.rarity(hop.statement.predicate) for hop in path.hops)
     domain_jumps = _domain_jumps(graph, path)
+    region_jumps = _region_jumps(graph, path)
     temporal_gap = _temporal_gap(graph, path)
     endpoint_unexpectedness = graph.endpoint_unexpectedness(path.node_ids[0], path.node_ids[-1])
     hub_penalty = _hub_penalty(graph, path)
     total = (
         W_RARITY * sum_rarity
         + W_DOMAIN * domain_jumps
+        + W_REGION * region_jumps
         + W_TEMPORAL * temporal_gap
         + W_ENDPOINT * endpoint_unexpectedness
         - W_HUB * hub_penalty
@@ -54,6 +58,7 @@ def score_surprise(graph: KnowledgeGraph, path: Path) -> SurpriseScore:
         total=total,
         sum_rarity=sum_rarity,
         domain_jumps=domain_jumps,
+        region_jumps=region_jumps,
         temporal_gap=temporal_gap,
         endpoint_unexpectedness=endpoint_unexpectedness,
         hub_penalty=hub_penalty,
@@ -71,6 +76,23 @@ def _domain_jumps(graph: KnowledgeGraph, path: Path) -> float:
         graph.domain_jump_weight(hop.statement.predicate)
         for hop in path.hops
         if graph.node(hop.from_id).domain != graph.node(hop.to_id).domain
+    )
+
+
+def _region_jumps(graph: KnowledgeGraph, path: Path) -> float:
+    """Sum each culture-crossing hop's *unexpectedness given its predicate* (ADR 0039).
+
+    The region-axis twin of :func:`_domain_jumps`. A hop counts only when *both* endpoints carry a
+    region and the two differ, so a hop touching an unregioned node (e.g. Proto-Indo-European is
+    regioned, but a genuinely trans-regional node need not be) contributes nothing rather than a
+    spurious jump — mirroring how :func:`_temporal_gap` skips undated nodes.
+    """
+    return sum(
+        graph.region_jump_weight(hop.statement.predicate)
+        for hop in path.hops
+        if graph.node(hop.from_id).region is not None
+        and graph.node(hop.to_id).region is not None
+        and graph.node(hop.from_id).region != graph.node(hop.to_id).region
     )
 
 

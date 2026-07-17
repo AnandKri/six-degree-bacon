@@ -25,9 +25,11 @@ topic ─▶ graph (networkx) ─▶ traverse ─▶ score surprise ─▶ rank 
 
 - **Traverse** — enumerate candidate multi-hop paths from the topic node exactly while that's cheap,
   falling back to a bounded best-first **guided walk** only when a search would explode (ADR 0010).
-- **Surprise** (information-theoretic, deterministic) — rewards rare edges, cross-domain jumps,
-  temporal leaps, and **unexpected destinations** (`−log2 P(endpoint | start)` from real
-  Wikipedia-link co-occurrence); penalizes routing through hubs. Length is *not* rewarded.
+- **Surprise** (information-theoretic, deterministic) — rewards rare edges, cross-**discipline** jumps
+  (domain) and cross-**culture** jumps (region — ADR 0039, so a same-field lineage that spans four
+  civilisations still scores), temporal leaps, and **unexpected destinations** (`−log2 P(endpoint |
+  start)` from real Wikipedia-link co-occurrence); penalizes routing through hubs. Length is *not*
+  rewarded.
 - **Trust** (deterministic) — per-source reliability rubric → multi-source corroboration (noisy-OR) →
   entity-link quality → validation penalties → weakest-link path trust.
 - **Rank** — two **archetypes**, surfaced together (ADR 0007):
@@ -106,9 +108,9 @@ data/seed.json          the curated graph (verified QIDs, full provenance)
 data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-surprise term
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        142 tests: human-vs-code confidence, surprise & endpoint checks, harvester, both
-              archetypes, the clusters, the web round-trip, the seed loaders, the per-hop evidence
-              contract, and a guided-walk scaling/perf test
+tests/        146 tests: human-vs-code confidence, surprise & endpoint checks (incl. region jumps),
+              harvester, both archetypes, the clusters, the web round-trip, the seed loaders,
+              the per-hop evidence contract, and a guided-walk scaling/perf test
 ```
 
 ## Design decisions

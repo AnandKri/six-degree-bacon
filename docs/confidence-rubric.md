@@ -123,7 +123,7 @@ surprise = W_RARITY·Σ rarity
 | Term | Definition | Weight |
 |---|---|---|
 | `rarity` (per edge) | `−log2( count(predicate) / total_edges )` — self-information; rarer ⇒ more surprising | `W_RARITY = 1.0` |
-| `domain_jumps` | number of consecutive nodes whose `domain` differs | `W_DOMAIN = 2.0` |
+| `domain_jumps` | Σ over domain-crossing hops of `1 − P(jump \| predicate)`, the jump's unexpectedness given the predicate that made it — Laplace-smoothed with `DOMAIN_JUMP_ALPHA = 0.5` and learned from the graph (ADR 0034). Was a flat count, which paid full price for tautological crossings like `located_in → geography`. | `W_DOMAIN = 2.0` |
 | `normalized_temporal_gap` | `Σ |midpoint_yearₐ − midpoint_year_b| / 1000` | `W_TEMPORAL = 1.5` |
 | `endpoint_unexpectedness` | `−log2 P(endpoint | start)` — an *unexpected destination* (see below) | `W_ENDPOINT = 4.0` |
 | `hub_penalty` | for each **intermediate** node, `max(0, degree − 6) / 6` | `W_HUB = 0.75` |
@@ -201,20 +201,32 @@ tying with `d` at the maximum — the de-saturation that lets the most worlds-ap
 ### Worked example (matches `tests/test_surprise.py`)
 
 A 2-hop path whose two edges each use a predicate that occurs once in a 4-edge graph
-(`rarity = −log2(1/4) = 2.0` each), crossing a domain at each step (2 jumps), with midpoint-year gaps
-summing to 400 years, no hub intermediates, and **no co-occurrence data** (endpoint term `= 0`):
+(`rarity = −log2(1/4) = 2.0` each), crossing a domain at each step, with midpoint-year gaps
+summing to 400 years, no hub intermediates, and **no co-occurrence data** (endpoint term `= 0`).
+
+Each jump is weighted by how *unexpected* it is given its predicate (ADR 0034), not counted flat.
+In this graph each of the four predicates crosses a domain on its single edge, so a jump is exactly
+what that predicate always does — fully predictable, and worth little:
 
 ```
+P(jump | predicate) = (jumps + α) / (edges + 2α) = (1 + 0.5) / (1 + 1) = 0.75
+weight              = 1 − 0.75                                         = 0.25   (per jumping hop)
+
 Σ rarity                = 2.0 + 2.0            = 4.0
-domain_jumps            = 2
-normalized_gap          = 400 / 1000          = 0.4
-endpoint_unexpectedness = 0                   (no co-occurrence data)
+domain_jumps            = 0.25 + 0.25          = 0.5    (a flat count would say 2)
+normalized_gap          = 400 / 1000           = 0.4
+endpoint_unexpectedness = 0                    (no co-occurrence data)
 hub_penalty             = 0
 
-surprise = 1.0·4.0 + 2.0·2 + 1.5·0.4 + 4.0·0 − 0.75·0 = 8.6
+surprise = 1.0·4.0 + 2.0·0.5 + 1.5·0.4 + 4.0·0 − 0.75·0 = 5.6
 ```
 
-Its wow score would be `surprise × trust`; e.g. at `trust = 0.75`, `wow = 8.6 × 0.75 = 6.45`.
+Its wow score would be `surprise × trust`; e.g. at `trust = 0.75`, `wow = 5.6 × 0.75 = 4.2`.
+
+On the real seed the weights separate sharply, which is the point: `located_in` crosses into
+`geography` on 32 of its 34 edges, so `weight = 1 − (32+0.5)/(34+1) = 0.07` — saying *where* a thing
+is always changes domain, so it is no surprise. `follows` crosses on 0 of 5, so a `follows` jump
+would be genuinely informative: `weight = 1 − (0+0.5)/(5+1) = 0.92`.
 
 ---
 

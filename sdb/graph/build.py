@@ -14,7 +14,11 @@ from collections.abc import Mapping, Sequence
 import networkx as nx
 from rapidfuzz import fuzz, process
 
-from sdb.constants import COOCCURRENCE_ALPHA, COOCCURRENCE_SIMILARITY_WEIGHT
+from sdb.constants import (
+    COOCCURRENCE_ALPHA,
+    COOCCURRENCE_SIMILARITY_WEIGHT,
+    DOMAIN_JUMP_ALPHA,
+)
 from sdb.schema.enums import Predicate
 from sdb.schema.models import Node, SeedData, Statement
 
@@ -65,6 +69,13 @@ class KnowledgeGraph:
         # Cached derived features.
         self._predicate_counts: Counter[Predicate] = Counter(
             st.predicate for st in self._statements
+        )
+        # How often each predicate's edges cross a domain boundary — the base rate that tells a
+        # tautological jump (`located_in` always lands in `geography`) from an informative one.
+        self._predicate_jump_counts: Counter[Predicate] = Counter(
+            st.predicate
+            for st in self._statements
+            if self._nodes[st.subject].domain != self._nodes[st.object].domain
         )
         self._total_edges: int = len(self._statements)
         self._build_cooccurrence(cooccurrence or {}, similarity or {})
@@ -187,6 +198,21 @@ class KnowledgeGraph:
         if count == 0 or self._total_edges == 0:
             return 0.0
         return -math.log2(count / self._total_edges)
+
+    def domain_jump_weight(self, predicate: Predicate) -> float:
+        """How *unexpected* a domain jump is on ``predicate`` — ``1 - P(jump | predicate)``.
+
+        A jump is only surprising if the predicate did not already guarantee it. ``located_in``
+        crosses into ``geography`` in 94% of the seed's such edges, so a jump there carries almost
+        no information and scores ~0.07; ``follows`` jumps ~0% of the time, so a jump there is
+        genuinely informative and scores ~0.92. The base rate is Laplace-smoothed
+        (:data:`~sdb.constants.DOMAIN_JUMP_ALPHA`) and learned from this graph, mirroring
+        :meth:`rarity`. Bounded ``[0, 1]``; an unseen predicate smooths to ``0.5``. See ADR 0034.
+        """
+        edges = self._predicate_counts.get(predicate, 0)
+        jumps = self._predicate_jump_counts.get(predicate, 0)
+        probability = (jumps + DOMAIN_JUMP_ALPHA) / (edges + 2 * DOMAIN_JUMP_ALPHA)
+        return 1.0 - probability
 
     def incident(self, node_id: str) -> list[tuple[str, Statement, bool]]:
         """Return ``(neighbor_id, statement, is_reversed)`` for every edge at ``node_id``.

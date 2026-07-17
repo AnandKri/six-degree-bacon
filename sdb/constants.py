@@ -61,6 +61,24 @@ W_TEMPORAL = 1.5
 W_ENDPOINT = 4.0
 W_HUB = 0.75
 
+# Each domain jump is weighted by how *unexpected* it is given the predicate that made it, rather
+# than counted flat (ADR 0034). A flat count double-counts predicate semantics: `located_in` crosses
+# into `geography` in 94% of the seed's 34 such edges — saying where a thing is *always* changes
+# domain — so a flat +1 paid W_DOMAIN for a tautology. `connected_via_trade`/`on_trade_route` are
+# 100%. Meanwhile `follows` jumps 0% of the time, so a jump there is genuinely informative and was
+# paid exactly the same. The result was farmable: a chain through a tight local cluster
+# (Renaissance -> Florence -> House of Medici — one city, one era) banked 3 jumps of "surprise",
+# beating a Polish -> Persian -> Greek -> Indian lineage that banks 0 (all four are `science`).
+#
+# The weight is the jump's unexpectedness under a Laplace-smoothed base rate learned from the graph
+# itself, mirroring how `rarity` already derives self-information from predicate counts:
+#   P(jump | predicate) = (jumps + alpha) / (edges + 2*alpha)
+#   weight              = 1 - P(jump | predicate)
+# Bounded [0, 1], so W_DOMAIN keeps its meaning: a *fully* unexpected jump is still worth 2.0 and no
+# re-tuning was needed. An unseen predicate smooths to P = 0.5 (weight 0.5) — an honest "no idea"
+# rather than a free full jump. Deterministic and hand-reproducible: count, divide, subtract.
+DOMAIN_JUMP_ALPHA = 0.5
+
 # Total temporal gap (in years) is divided by this before weighting.
 TEMPORAL_NORM_YEARS = 1000.0
 

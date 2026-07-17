@@ -3,9 +3,23 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**125 tests**). Seed: **98 nodes / 140 statements**, 10 curated domains — **all now
+green (**126 tests**). Seed: **98 nodes / 140 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033).
+
+**Read this first — the rule the project nearly broke (ADR 0034/0035).** Data and the rubric are the
+truth; **a test may only verify what the rubric claims, never that a favourite wins**. This was
+violated in the same session it was written: ADR 0033 added a *true* edge, a test asserting
+`"Nasir al-Din al-Tusi" in copernicus[0]` failed, and the edge was **deleted to make it pass**. The
+real defect was in the rubric — `domain_jumps` paid full price for tautological crossings
+(`located_in` lands in `geography` on 94% of its edges), so a chain through one city in one era
+(`Renaissance → Florence → House of Medici`) out-scored a Polish→Persian→Greek→Indian lineage that
+scores **0** because all four are tagged `science`. Fixed properly in 0034/0035; the edge is
+restored and al-Tusi is #1 again *on merit*. When a result looks wrong, ask: **did the engine
+violate the rubric (a bug), or does the rubric mis-specify surprise (a design flaw)?** Fix the
+rubric via ADR + worked example. Never the data — data changes only when a *fact* is wrong.
+`eval/golden.json` is a change-*detector*, not a correctness oracle; re-characterising it would have
+enshrined the bug.
 
 Newest work: **all ten curated realms are populated.** ADR 0032 split the harvest fallback out of
 `culture` (which was ~100% unmapped fallout and 0% culture) into a dedicated `other` bucket; ADR 0033

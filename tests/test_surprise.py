@@ -58,7 +58,28 @@ def test_surprise_matches_hand_calc() -> None:
     )
     score = score_surprise(graph, path)
     assert score.sum_rarity == pytest.approx(4.0)
-    assert score.domain_jumps == 2
+    # Both hops cross a domain, but each predicate crosses on 1 of its 1 edges here, so the jump is
+    # fully predictable from the predicate and earns little: weight = 1 - (1+0.5)/(1+1) = 0.25 each
+    # (ADR 0034). A flat count would have said 2.
+    assert score.domain_jumps == pytest.approx(0.5)
     assert score.temporal_gap == pytest.approx(0.4)
     assert score.hub_penalty == pytest.approx(0.0)
-    assert score.total == pytest.approx(8.6)  # see docs/confidence-rubric.md
+    assert score.total == pytest.approx(5.6)  # see docs/confidence-rubric.md
+
+
+def test_domain_jump_weight_discounts_a_jump_the_predicate_guarantees() -> None:
+    """A jump is only surprising if the predicate did not already imply it (ADR 0034).
+
+    The fixture's four predicates each cross a domain on their single edge, so each is fully
+    predictable and discounted alike. The real seed separates them sharply: `located_in` lands in
+    `geography` on 94% of its edges (weight ~0.07) while `follows` almost never crosses (~0.92).
+    """
+    graph = _fixture()
+    # Every predicate here jumps on 1/1 edges -> P = (1+0.5)/(1+1) = 0.75 -> weight 0.25.
+    for predicate in (Predicate.INFLUENCED_BY, Predicate.DERIVED_FROM, Predicate.FOLLOWS):
+        assert graph.domain_jump_weight(predicate) == pytest.approx(0.25)
+    # An unseen predicate has no evidence either way and smooths to the 0.5 prior, not a free jump.
+    assert graph.domain_jump_weight(Predicate.MENTIONED_IN) == pytest.approx(0.5)
+    # Bounded [0, 1], so W_DOMAIN keeps its meaning: a fully-unexpected jump is still worth 2.0.
+    for predicate in Predicate:
+        assert 0.0 <= graph.domain_jump_weight(predicate) <= 1.0

@@ -33,7 +33,7 @@ zero-LLM, deterministic, reproducible by hand, and now with a **map-first** zero
 discovered route lighting up in place — plus a static export (`sdb build-site`, theme-able) for free
 hosting. The map is laid out by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030)
 and themed "minimal terminal" (dark slate, single teal accent; ADR 0031). All checks green (ruff,
-format, mypy, 125 tests).
+format, mypy, 126 tests).
 
 ## How to run
 
@@ -108,11 +108,12 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   cluster, 0023 Chinese-tech cluster, 0024 West-Africa/Islam cluster, 0025 second-order co-occurrence,
   0026 divine-descent cluster, 0027 disjoint archetype hop ranges, 0028 single-claim TIL,
   0029 full-link Jaccard similarity, 0030 deterministic graph layout, 0031 map-first terminal UI,
-  0032 `other` domain / harvest-fallback split, 0033 Renaissance cluster).
+  0032 `other` domain / harvest-fallback split, 0033 Renaissance cluster,
+  0034 domain-jump information weighting, 0035 closed temporal extents).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 125 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 126 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the web UI (payload + graph payload + real localhost HTTP

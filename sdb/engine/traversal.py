@@ -136,9 +136,11 @@ def guided_paths(
 
     counter = itertools.count()  # unique, monotonic tie-breaker so heap never compares payloads
     # Frontier entries: (-promise, seq, current, visited, hops, sum_rarity, domain_jumps, hub_pen).
-    frontier: list[tuple[float, int, str, frozenset[str], tuple[Hop, ...], float, int, float]] = []
+    frontier: list[
+        tuple[float, int, str, frozenset[str], tuple[Hop, ...], float, float, float]
+    ] = []
 
-    def promise(current: str, sum_rarity: float, domain_jumps: int, hub_penalty: float) -> float:
+    def promise(current: str, sum_rarity: float, domain_jumps: float, hub_penalty: float) -> float:
         return (
             W_RARITY * sum_rarity
             + W_DOMAIN * domain_jumps
@@ -151,7 +153,7 @@ def guided_paths(
         visited: frozenset[str],
         hops: tuple[Hop, ...],
         sum_rarity: float,
-        domain_jumps: int,
+        domain_jumps: float,
         hub_penalty: float,
     ) -> None:
         priority = promise(current, sum_rarity, domain_jumps, hub_penalty)
@@ -169,7 +171,7 @@ def guided_paths(
             ),
         )
 
-    push(source, frozenset({source}), (), 0.0, 0, 0.0)
+    push(source, frozenset({source}), (), 0.0, 0.0, 0.0)
     results: list[Path] = []
     expansions = 0
 
@@ -198,7 +200,14 @@ def guided_paths(
                 visited | {neighbor},
                 (*hops, hop),
                 sum_rarity + graph.rarity(statement.predicate),
-                domain_jumps + (graph.node(current).domain != graph.node(neighbor).domain),
+                # Mirrors `surprise._domain_jumps` (ADR 0034): weight the jump by how unexpected it
+                # is given the predicate, so the walk is guided by the score it will be ranked on.
+                domain_jumps
+                + (
+                    graph.domain_jump_weight(statement.predicate)
+                    if graph.node(current).domain != graph.node(neighbor).domain
+                    else 0.0
+                ),
                 hub_penalty + interior_penalty,
             )
 

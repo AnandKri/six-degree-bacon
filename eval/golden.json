@@ -1,10 +1,10 @@
 {
-  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. History: science subgraph -> Mithra; Hellenistic-India-Buddhism bridge (0011); default cap cut 6->4 (0012); breadth clusters Greece (0016), Egypt (0017), Islamic Golden Age (0018), Scientific Revolution (0019), East Asia (0020); journey cap cut 4->3 (0021, fixed-length 3-hop journeys); Norse/Celtic (0022); Chinese tech (0023); second-order co-occurrence (0025), reworked by full-link Jaccard similarity (0029) which measures shared context over each article's whole outbound link set rather than the seed-sized keyhole -- this de-saturated the term (max tie-fraction 94% -> 1.1%) and re-ordered the endpoints again. At the 3-hop cap the winners are Roman Empire -> India (via Silk Road -> Buddhism), Christianity -> Paper (via Roman Empire -> Silk Road), and Euclid -> India (via Alexandria -> Alexander the Great). Re-characterise after any seed/co-occurrence/scoring change.",
+  "_comment": "Ranker-regression expectations over data/seed.json + data/cooccurrence.json. CHARACTERIZATION values (what the deterministic engine produces for the default JOURNEY archetype at the trust>=0.50 gate), not hand-picked winners. Update deliberately when the seed, co-occurrence, or scoring changes, and record why. History: science subgraph -> Mithra; Hellenistic-India-Buddhism bridge (0011); default cap cut 6->4 (0012); breadth clusters Greece (0016), Egypt (0017), Islamic Golden Age (0018), Scientific Revolution (0019), East Asia (0020); journey cap cut 4->3 (0021, fixed-length 3-hop journeys); Norse/Celtic (0022); Chinese tech (0023); second-order co-occurrence (0025), reworked by full-link Jaccard similarity (0029) which measures shared context over each article's whole outbound link set rather than the seed-sized keyhole -- this de-saturated the term (max tie-fraction 94% -> 1.1%) and re-ordered the endpoints again. At the 3-hop cap the winners are Roman Empire -> India (via Silk Road -> Buddhism), Christianity -> Paper (via Roman Empire -> Silk Road), and Euclid -> India (via Alexandria -> Alexander the Great). Re-characterise after any seed/co-occurrence/scoring change; ADR 0034 weighted each domain jump by its unexpectedness given the predicate (a flat count paid full price for tautological crossings like located_in->geography) and ADR 0035 closed the 24 open-ended temporal extents (a still-standing city founded in 59 BC no longer reads as an ancient node). Both shifted predicate-level surprise, so winners were re-characterised from the engine -- not hand-picked.",
   "cases": [
     {
       "topic": "Roman Empire",
       "top": 1,
-      "expected_endpoint": "India",
+      "expected_endpoint": "Qin Shi Huang",
       "expected_hops": 3,
       "expected_possibly": false
     },
@@ -18,7 +18,7 @@
     {
       "topic": "Euclid",
       "top": 1,
-      "expected_endpoint": "India",
+      "expected_endpoint": "Persia",
       "expected_hops": 3,
       "expected_possibly": false
     }

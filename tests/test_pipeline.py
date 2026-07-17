@@ -174,15 +174,31 @@ def test_islamic_cluster_bridges_greek_and_indian_science(seed_graph: KnowledgeG
 def test_scientific_revolution_extends_the_lineage_back_to_antiquity(
     seed_graph: KnowledgeGraph,
 ) -> None:
-    # ADR 0019: the modern astronomers reach back across the 2000-year science lineage — Newton via
-    # Euclid, Copernicus via al-Tusi (the Tusi couple) — into the Greek/Islamic world.
-    newton = discover(seed_graph, "Isaac Newton", top=1)
-    assert newton
-    assert "Euclid" in [seed_graph.node(n).label for n in newton[0].path.node_ids]
+    """ADR 0019: the modern astronomers reach back across the ~2000-year science lineage.
 
-    copernicus = discover(seed_graph, "Nicolaus Copernicus", top=1)
-    assert copernicus
-    assert "Nasir al-Din al-Tusi" in [seed_graph.node(n).label for n in copernicus[0].path.node_ids]
+    Asserted as the *structural* claim — a top journey travels centuries back into antiquity — not
+    by naming who it reaches. This previously pinned `"Nasir al-Din al-Tusi" in copernicus[0]`,
+    i.e. a named favourite at rank 1, and that is exactly how it went wrong: when ADR 0033 added a
+    true `copernicus part_of renaissance` edge, this test failed, and the edge was deleted to make
+    it pass. Deleting true data to protect a favoured result inverts the whole project — data and
+    the rubric are the truth, and a test may only verify what the rubric claims. The real defect was
+    in the rubric (fixed in ADR 0034/0035), and the edge is now restored.
+    """
+    for astronomer in ("Isaac Newton", "Nicolaus Copernicus"):
+        journeys = discover(seed_graph, astronomer, top=3)
+        assert journeys, astronomer
+        modern = seed_graph.find_topic(astronomer)
+        assert modern is not None
+        origin = seed_graph.node(modern).midpoint_year
+        assert origin is not None
+        # Some surfaced journey reaches a figure at least five centuries older — the lineage is
+        # traversable back into the ancient/medieval world, whoever happens to rank first today.
+        reach = min(
+            (seed_graph.node(n).midpoint_year or origin)
+            for result in journeys
+            for n in result.path.node_ids
+        )
+        assert origin - reach >= 500, f"{astronomer} reached only back to {reach}"
 
 
 def test_east_asia_cluster_connects_via_china_buddhism_and_silk_road(

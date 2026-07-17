@@ -30,7 +30,7 @@ class SurpriseScore:
 
     total: float
     sum_rarity: float
-    domain_jumps: int
+    domain_jumps: float  # jumps weighted by their unexpectedness given the predicate (ADR 0034)
     temporal_gap: float  # normalized (years / TEMPORAL_NORM_YEARS)
     endpoint_unexpectedness: float  # -log2 P(endpoint | start) from co-occurrence; 0 without data
     hub_penalty: float
@@ -60,11 +60,17 @@ def score_surprise(graph: KnowledgeGraph, path: Path) -> SurpriseScore:
     )
 
 
-def _domain_jumps(graph: KnowledgeGraph, path: Path) -> int:
-    """Count consecutive nodes whose thematic domain differs."""
+def _domain_jumps(graph: KnowledgeGraph, path: Path) -> float:
+    """Sum each domain-crossing hop's *unexpectedness given its predicate* (ADR 0034).
+
+    Not a flat count: a jump the predicate already guarantees is not a surprise. ``located_in``
+    lands in ``geography`` 94% of the time, so it contributes ~0.07 rather than a full 1.0, while a
+    rare ``follows`` jump contributes ~0.92. See :meth:`KnowledgeGraph.domain_jump_weight`.
+    """
     return sum(
-        graph.node(a).domain != graph.node(b).domain
-        for a, b in zip(path.node_ids, path.node_ids[1:], strict=False)
+        graph.domain_jump_weight(hop.statement.predicate)
+        for hop in path.hops
+        if graph.node(hop.from_id).domain != graph.node(hop.to_id).domain
     )
 
 

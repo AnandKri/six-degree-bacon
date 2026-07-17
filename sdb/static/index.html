@@ -159,6 +159,16 @@
   .card .close { position: absolute; top: .55rem; right: .7rem; border: 0; background: none;
     color: var(--faint); font-family: var(--font-mono); font-size: 1.15rem; cursor: pointer; line-height: 1; }
   .card .close:hover { color: var(--accent); }
+  .card .cardbtn { position: absolute; top: .5rem; right: 2.3rem; border: 0; background: none;
+    color: var(--faint); font-family: var(--font-mono); font-size: 1.25rem; cursor: pointer;
+    line-height: 1; padding: 0 .2rem; }
+  .card .cardbtn:hover { color: var(--accent); }
+  /* Minimized: only the topic -> endpoint headline and the metric bars, so the map has room. */
+  .card.min { cursor: pointer; padding-bottom: 1rem; }
+  .card.min .seg, .card.min .meta, .card.min .til,
+  .card.min .route-list, .card.min details.src { display: none; }
+  .card.min h2 { font-size: 1.12rem; }
+  .card.min .meters { margin-top: .7rem; }
   .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 3px; overflow: hidden;
     font-family: var(--font-mono); font-size: .7rem; margin-bottom: .95rem; }
   .seg button { border: 0; background: transparent; padding: .34rem .75rem; cursor: pointer;
@@ -212,23 +222,25 @@
 
   @media (max-width: 720px) {
     .brand p { display: none; }
-    .controls { width: 100%; margin-left: 0; justify-content: flex-end; }
     #zin, #zout { display: none; }                 /* redundant on mobile — keep only fit-to-screen */
-    /* Collapsed search = just the magnifier; tapping it expands the field (.controls gets .open). */
-    .controls:not(.open) .search { flex: 0 0 auto; }
-    .controls:not(.open) .search input { width: 0; min-width: 0; padding: 0; opacity: 0;
-      border-color: transparent; pointer-events: none; }
-    .controls:not(.open) .search .mag { position: static; transform: none; width: 38px; height: 38px;
+    .zoomdock { left: auto; right: 1.15rem; }      /* single control, bottom-right, clear of the hint */
+    /* Collapsed search = just the magnifier, sitting by the brand on the header row. */
+    .controls:not(.open) .search .mag { position: static; transform: none; width: 34px; height: 34px;
       border: 1px solid var(--border-2); border-radius: 3px; color: var(--muted); }
     .controls:not(.open) .search .mag:hover { color: var(--accent); border-color: var(--accent); }
-    .controls.open .search { flex: 1 1 auto; }
-    .controls.open .search input { width: 100%; min-width: 0; }
+    .controls:not(.open) .search input { width: 0; min-width: 0; padding: 0; opacity: 0;
+      border-color: transparent; pointer-events: none; }
+    /* Tapping it expands to a full-width search bar over the header. */
+    .controls.open { position: fixed; top: .8rem; left: 1.15rem; right: 1.15rem; margin: 0; z-index: 22; }
+    .controls.open .search { flex: 1 1 auto; width: 100%; }
+    .controls.open .search input { width: 100%; min-width: 0; opacity: 1; padding-left: 2.1rem; }
+    .controls.open #spec { display: none; }
     .legend { display: none; }
     .card { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 64vh; border-radius: 0;
       border-left: 0; border-right: 0; border-bottom: 0; transform: translateY(112%); }
     .card.open { transform: none; }
-    .hint { left: .75rem; right: .75rem; transform: none; max-width: none; }  /* fit + wrap, no clip */
-    body.card-open .zoomdock { display: none; }   /* the card owns the lower-left corner */
+    .hint { left: .75rem; right: 4rem; transform: none; max-width: none; justify-content: flex-start; }
+    body.card-open .zoomdock { display: none; }   /* the card owns the corner */
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -283,6 +295,7 @@
 <div class="hint" id="hint"><span class="lbl">loading map&hellip;</span></div>
 
 <aside class="card" id="card" aria-live="polite">
+  <button class="cardbtn" id="cardmin" aria-label="Minimize">&#8211;</button>
   <button class="close" id="cardclose" aria-label="Close">&#10005;</button>
   <div id="cardbody"></div>
 </aside>
@@ -330,7 +343,7 @@ async function getResult(node, possibly) {
 
 // ================= state =================
 let NODES = [], byId = new Map(), nodeEl = new Map(), edgeByKey = new Map();
-let selected = null, kind = "journey", possibly = false;
+let selected = null, kind = "journey", possibly = false, curPath = [];
 const nodeR = (deg) => 3.4 + Math.sqrt(deg) * 1.7;
 
 // ================= convex hull (monotone chain) =================
@@ -396,6 +409,8 @@ function renderMap(graph) {
     `<div class="row"><span class="sw" style="background:var(--${realm})"></span>${REALM_LABEL[realm]}`
     + `<span style="color:var(--faint)">&middot; ${doms.join(", ")}</span></div>`).join("");
 
+  Object.assign(VB, fullView());  // now that the nodes exist, frame their real extent
+  applyVB();
   runLOD();
   showHint();
 }
@@ -435,7 +450,14 @@ function frame(cx, cy, bw, bh, pad, bottomFrac) {
   const h = w * a;
   return { x: cx - w / 2, y: cy - h * (top + vis / 2), w, h };
 }
-function fullView() { return frame(GRAPH_CENTRE, GRAPH_CENTRE, GRAPH_SPAN, GRAPH_SPAN, 0, 0); }
+function fullView() {
+  // Frame the *actual* node cloud (it is ~775x940, not a full 1000 square), so a fit fills the
+  // screen instead of leaving a wide margin.
+  if (!NODES.length) return frame(GRAPH_CENTRE, GRAPH_CENTRE, GRAPH_SPAN, GRAPH_SPAN, 0, 0);
+  const xs = NODES.map((n) => n.x), ys = NODES.map((n) => n.y);
+  const minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
+  return frame((minx + maxx) / 2, (miny + maxy) / 2, maxx - minx, maxy - miny, 26, 0);
+}
 Object.assign(VB, fullView());
 applyVB();
 
@@ -553,10 +575,21 @@ function highlight(ids) {
   }
 }
 function clearSelection() {
-  selected = null; svg.classList.remove("focused"); gRoute.innerHTML = "";
+  selected = null; curPath = []; svg.classList.remove("focused"); gRoute.innerHTML = "";
   for (const el of nodeEl.values()) el.classList.remove("on", "origin");
   for (const line of edgeByKey.values()) line.classList.remove("on");
-  $("#card").classList.remove("open"); document.body.classList.remove("card-open"); showHint();
+  $("#card").classList.remove("open"); document.body.classList.remove("card-open");
+  setMinimized(false); showHint();  // reopen full next time
+}
+function setMinimized(min) {
+  $("#card").classList.toggle("min", min);
+  const b = $("#cardmin");
+  b.innerHTML = min ? "&#9633;" : "&#8211;";  // restore (square) vs minimize (dash)
+  b.setAttribute("aria-label", min ? "Expand" : "Minimize");
+}
+function toggleMinimized() {
+  setMinimized(!$("#card").classList.contains("min"));
+  if (curPath.length) fitTo(curPath, 90, cardBottomFrac());  // reclaim the freed space
 }
 function closeCard() { clearSelection(); animateVB(fullView()); }
 function cardBottomFrac() {
@@ -588,9 +621,10 @@ async function select(node, preferKind) {
   const card = has(kind) ? res[kind][0] : null;
   if (!card) { renderNoResult(node); return; }
   const ids = pathIds(card);
+  curPath = ids;
   highlight(ids); drawRoute(ids);
   renderCard(node, res, card);  // render first, so the card's height is known for the fit below
-  fitTo(ids, 90, cardBottomFrac());
+  fitTo(ids, 90, cardBottomFrac());  // the .min class persists across selections, so this reuses it
 }
 
 function renderNoResult(node) {
@@ -640,6 +674,11 @@ function renderCard(node, res, card) {
     b.onclick = () => { if (!b.disabled) select(node, b.dataset.k); });
 }
 $("#cardclose").onclick = () => closeCard();
+$("#cardmin").onclick = (e) => { e.stopPropagation(); toggleMinimized(); };
+// Tap the minimized card (anywhere but its buttons) to expand it again.
+$("#card").addEventListener("click", (e) => {
+  if ($("#card").classList.contains("min") && !e.target.closest("button")) toggleMinimized();
+});
 
 // ================= node interaction (event delegation) =================
 const tip = $("#tip");

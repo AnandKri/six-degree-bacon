@@ -174,6 +174,27 @@ and 0034 fixed it there; al-Tusi is #1 again on merit, edge intact. So: after ad
 re-check the *existing* flagships, not just the new nodes — but when one is hijacked, **fix the
 rubric, never the data**. See the rule at the top of this note.
 
+**Interval separation — measured and CLOSED, do not rebuild (ADR 0036).** ADR 0035 recorded
+"replace midpoint distance with interval separation" as its natural successor. It was measured before
+being built, and the measurement killed it: `temporal_gap` is a **sum of per-hop distances**, and
+consecutive entities in a path overlap — *that is why they are linked* — so every per-hop separation
+is 0. The flagship sums to **0 years** hop-by-hop (`Roman Empire (-27,476) → Silk Road (-130,1450) →
+Great Wall (-220,1644) → Qin Shi Huang (-259,-210)`, each pair overlapping) while its endpoints are
+genuinely **183 years** apart. **54 of 96** top journeys (56%) collapse to exactly 0. Midpoint
+distance is a metric and accumulates; separation is *closest approach* and does not compose. 0035's
+pairwise intuition was right and simply doesn't survive being summed. Its motivating case (the bogus
+Florence route) was already fixed by 0035 itself. `end-to-end` separation is recorded in 0036 as an
+untested option, not a plan.
+
+**The real blocker, now named by two independent terms: the `Node` schema is thinner than the
+surprise the rubric wants to express.** (1) ADR 0034's closing limitation — `domain` models
+*discipline*, so Polish→Persian→Greek→Indian scores **0** domain jumps. (2) ADR 0036 — the temporal
+extent models *existence* (`[start, 2025]`), not the **active period**, so India's midpoint is
+`(-3300+2025)/2 = -638`, a number describing nothing, and both midpoint *and* separation inherit it.
+The fix for each is a new axis on `Node` (a cultural/regional one; an active-period/floruit one),
+each a curation pass over all 98 nodes. **Two blocked terms is roughly what would earn it** — this is
+the highest-value non-breadth work, and it is data, not code.
+
 **A further rung if the endpoint term ever needs one: deterministic diffusion, not a GA.** Saturation
 is already solved (0029), so this is no longer motivated by it — but **personalized PageRank /
 random-walk-with-restart** over the co-occurrence graph remains the principled "all-order" successor
@@ -238,15 +259,17 @@ genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_fr
 - **After ANY `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → run tests →
   re-characterise `eval/golden.json` if a winner shifted (adding edges shifts predicate rarity). This
   pushing to `main` also triggers the `qid-validation` CI job. Regenerate the personal-site embed too.
-- **Your local `data/harvest/` snapshots are stale (pre-ADR-0032) — regenerate before trusting a
-  `--harvest` run.** Both pinned snapshots predate the fallback split and have **32 nodes with
-  `"domain": "culture"`** baked in (24 in `roman_2hop.json`, 8 in `q34266.json`), zero `"other"`.
-  `merge.py` adds an unmatched overlay node *with the domain the snapshot recorded*, so overlaying one
-  today re-injects the exact confusion 0032 removed — and it is now **worse than when 0032 was
-  written**: back then `culture` was empty, so fallout was at least homogeneous; since ADR 0033 filled
-  it, stale fallout lands indistinguishably on top of real curated culture nodes, and `domain` is a
-  scoring input. Fix: re-run `sdb harvest` (network). Git-ignored and local-only, so **CI cannot catch
-  this** — it is invisible until a `--harvest` result looks wrong.
+- **`data/harvest/` snapshots go stale silently after a `mapping.py` change — regenerate them.**
+  Regenerated 2026-07-17 (`sdb harvest Q2277 --hops 2 --out data/harvest/roman_2hop.json`;
+  `Q34266 --hops 1`), so they are currently clean: **0 `"domain": "culture"`, 13 `"other"`**, and a
+  `--harvest` merge now yields `culture: 2` (the real curated Renaissance nodes) + `other: 12`
+  (fallout), correctly separated. They had been pre-ADR-0032 with **32** nodes tagged `"culture"`.
+  Why it matters: `merge.py` adds an unmatched overlay node *with the domain the snapshot recorded*,
+  so a stale snapshot re-injects the confusion 0032 removed — worse now than at 0032, since `culture`
+  was empty then but ADR 0033 filled it, so fallout would land indistinguishably on real culture
+  nodes, and `domain` is a scoring input. They are **git-ignored and local, so CI cannot catch this**;
+  it stays invisible until a `--harvest` result looks wrong. Snapshots record no provenance (no QID,
+  hops or date), so the regen command is written down here on purpose.
 - **Verify every new QID** — resolve label → Wikipedia article → `wikibase_item` (validate.py does
   this). My from-memory QID guesses are frequently wrong (a fish family, Jean-Claude Killy, a military
   school…); never trust memory for a QID.

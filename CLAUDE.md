@@ -112,7 +112,8 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   0026 divine-descent cluster, 0027 disjoint archetype hop ranges, 0028 single-claim TIL,
   0029 full-link Jaccard similarity, 0030 deterministic graph layout, 0031 map-first terminal UI,
   0032 `other` domain / harvest-fallback split, 0033 Renaissance cluster,
-  0034 domain-jump information weighting, 0035 closed temporal extents).
+  0034 domain-jump information weighting, 0035 closed temporal extents, 0036 interval separation
+  measured & rejected — keep midpoint distance).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).

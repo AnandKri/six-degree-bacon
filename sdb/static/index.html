@@ -74,6 +74,10 @@
   .nlabel.show { opacity: 1; }
   .node.on .nlabel { opacity: 1; fill: var(--accent-2); }
   .node.hover .nlabel { opacity: 1; fill: var(--white); }
+  /* Touch target: an invisible hit disc enlarges the tap area, and a visible label is tappable too
+     (a hidden label stays pointer-events:none so it never becomes an invisible tap trap). */
+  .node .hit { fill: transparent; }
+  .nlabel.show, .node.on .nlabel { pointer-events: auto; }
 
   .route { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round;
     stroke-linejoin: round; filter: drop-shadow(0 0 5px rgba(94,234,212,.6)); }
@@ -206,12 +210,15 @@
 
   @media (max-width: 720px) {
     .brand p { display: none; }
-    .search input { width: 40vw; min-width: 0; }
+    .controls { width: 100%; margin-left: 0; }   /* wrap to their own row so search gets real width */
+    .search { flex: 1 1 auto; }
+    .search input { width: 100%; min-width: 0; }
     .legend { display: none; }
     .card { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 64vh; border-radius: 0;
       border-left: 0; border-right: 0; border-bottom: 0; transform: translateY(112%); }
     .card.open { transform: none; }
-    .hint { bottom: auto; top: 4.6rem; }
+    .hint { left: .75rem; right: .75rem; transform: none; max-width: none; }  /* fit + wrap, no clip */
+    body.card-open .zoomdock { display: none; }   /* the card owns the lower-left corner */
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
@@ -364,7 +371,9 @@ function renderMap(graph) {
 
   $("#nodes").innerHTML = NODES.map((n) => {
     const r = nodeR(n.degree);
+    const hit = Math.max(r + 8, 15);  // a finger-sized tap target regardless of dot size
     return `<g class="node n-${REALM[n.domain]}" data-id="${xml(n.id)}" tabindex="0" aria-label="${xml(n.label)}">`
+      + `<circle class="hit" cx="${n.x}" cy="${n.y}" r="${hit}"></circle>`
       + `<circle cx="${n.x}" cy="${n.y}" r="${r}"></circle>`
       + `<text class="nlabel" x="${n.x + r + 3}" y="${n.y + 4}">${xml(n.label)}</text></g>`;
   }).join("");
@@ -379,10 +388,11 @@ function renderMap(graph) {
   showHint();
 }
 
-// ================= pan / zoom (viewBox) =================
+// ================= pan / zoom (aspect-matched viewBox; one pointer model) =================
+// The viewBox aspect is kept equal to the container's, so `xMidYMid meet` fills the screen with no
+// letterboxing — which keeps the screen<->world mapping linear, so cursor-anchored zoom and pan stay
+// exact (a square viewBox on a portrait phone letterboxed, and was the source of the glitchy zoom).
 const VB = { x: 0, y: 0, w: 1000, h: 1000 };
-const FULL = { x: -20, y: -20, w: 1040, h: 1040 };
-Object.assign(VB, FULL);
 let lodRAF = 0;
 function scheduleLOD() { if (!lodRAF) lodRAF = requestAnimationFrame(runLOD); }
 function runLOD() {
@@ -394,48 +404,76 @@ function runLOD() {
   }
 }
 function applyVB() { svg.setAttribute("viewBox", `${VB.x} ${VB.y} ${VB.w} ${VB.h}`); scheduleLOD(); }
+function aspect() { const r = svg.getBoundingClientRect(); return r.height / (r.width || 1) || 1; }
+
+// The layout normalizes into ~[10, 1030] around (510, 510); a full view covers it on the short axis.
+const GRAPH_SPAN = 1060, GRAPH_CENTRE = 510;
+function fullView() {
+  const a = aspect();
+  const w = a >= 1 ? GRAPH_SPAN : GRAPH_SPAN / a;
+  const h = w * a;
+  return { x: GRAPH_CENTRE - w / 2, y: GRAPH_CENTRE - h / 2, w, h };
+}
+Object.assign(VB, fullView());
 applyVB();
 
+function svgPoint(clientX, clientY) {
+  const rect = svg.getBoundingClientRect();
+  return { x: VB.x + ((clientX - rect.left) / rect.width) * VB.w,
+           y: VB.y + ((clientY - rect.top) / rect.height) * VB.h };
+}
 function zoomAt(factor, cx, cy) {
-  const nw = Math.max(120, Math.min(1400, VB.w * factor));
-  const nh = nw * (VB.h / VB.w);
+  const nw = Math.max(150, Math.min(1700, VB.w * factor));
+  const nh = nw * aspect();
   VB.x = cx - (cx - VB.x) * (nw / VB.w);
   VB.y = cy - (cy - VB.y) * (nh / VB.h);
   VB.w = nw; VB.h = nh; applyVB();
 }
-function svgPoint(evt) {
-  const rect = svg.getBoundingClientRect();
-  return { x: VB.x + ((evt.clientX - rect.left) / rect.width) * VB.w,
-           y: VB.y + ((evt.clientY - rect.top) / rect.height) * VB.h };
-}
-svg.addEventListener("wheel", (e) => { e.preventDefault(); const p = svgPoint(e);
+svg.addEventListener("wheel", (e) => { e.preventDefault(); const p = svgPoint(e.clientX, e.clientY);
   zoomAt(e.deltaY > 0 ? 1.12 : 0.89, p.x, p.y); }, { passive: false });
 
-let drag = null;
-svg.addEventListener("pointerdown", (e) => { if (e.target.closest(".node")) return;
-  drag = { x: e.clientX, y: e.clientY }; svg.classList.add("grabbing"); svg.setPointerCapture(e.pointerId); });
+// One unified pointer model — 1 pointer pans, 2 pinch-zoom (mixing touch + pointer events glitched).
+// A pointer that starts on empty map and barely moves is a tap.
+const pointers = new Map();
+let pinchDist = 0, downOnMap = false, moved = 0;
+svg.addEventListener("pointerdown", (e) => {
+  const onNode = !!e.target.closest(".node");
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, onNode });
+  if (!onNode) { svg.setPointerCapture(e.pointerId); svg.classList.add("grabbing"); }
+  if (pointers.size === 1) { downOnMap = !onNode; moved = 0; }
+});
 svg.addEventListener("pointermove", (e) => {
-  if (!drag) return; const rect = svg.getBoundingClientRect();
-  VB.x -= ((e.clientX - drag.x) / rect.width) * VB.w;
-  VB.y -= ((e.clientY - drag.y) / rect.height) * VB.h;
-  drag.x = e.clientX; drag.y = e.clientY; applyVB(); });
-const endDrag = () => { drag = null; svg.classList.remove("grabbing"); };
-svg.addEventListener("pointerup", endDrag);
-svg.addEventListener("pointercancel", endDrag);
-
-let pinch = null;
-svg.addEventListener("touchmove", (e) => {
-  if (e.touches.length !== 2) return; e.preventDefault();
-  const [a, b] = e.touches; const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-  const mid = svgPoint({ clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2 });
-  if (pinch) zoomAt(pinch / d, mid.x, mid.y);
-  pinch = d;
-}, { passive: false });
-svg.addEventListener("touchend", () => { pinch = null; });
+  const p = pointers.get(e.pointerId); if (!p) return;
+  if (pointers.size === 1 && !p.onNode) {
+    const rect = svg.getBoundingClientRect();
+    VB.x -= ((e.clientX - p.x) / rect.width) * VB.w;
+    VB.y -= ((e.clientY - p.y) / rect.height) * VB.h;
+    moved += Math.hypot(e.clientX - p.x, e.clientY - p.y);
+    applyVB();
+  } else if (pointers.size >= 2) {
+    const pts = [...pointers.values()];
+    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+    if (pinchDist) {
+      const mid = svgPoint((pts[0].x + pts[1].x) / 2, (pts[0].y + pts[1].y) / 2);
+      zoomAt(pinchDist / dist, mid.x, mid.y);
+    }
+    pinchDist = dist; moved = 999;  // a pinch is never a tap
+  }
+  p.x = e.clientX; p.y = e.clientY;
+});
+function liftPointer(e) {
+  const p = pointers.get(e.pointerId); pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinchDist = 0;
+  if (!pointers.size) svg.classList.remove("grabbing");
+  // A tap on the open map (not a drag, not a node) collapses the card — like the X.
+  if (p && !p.onNode && downOnMap && moved < 6 && selected) closeCard();
+}
+svg.addEventListener("pointerup", liftPointer);
+svg.addEventListener("pointercancel", liftPointer);
 
 function animateVB(target) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) { Object.assign(VB, target); return applyVB(); }
-  const from = { ...VB }, t0 = performance.now(), dur = 440;
+  const from = { ...VB }, t0 = performance.now(), dur = 380;
   (function step(now) {
     const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
     VB.x = from.x + (target.x - from.x) * e; VB.y = from.y + (target.y - from.y) * e;
@@ -443,17 +481,26 @@ function animateVB(target) {
     applyVB(); if (k < 1) requestAnimationFrame(step);
   })(t0);
 }
-function fitTo(ids, pad) {
+// Fit nodes into view. `bottomFrac` reserves that fraction of the height (the mobile bottom-sheet
+// card), so the route lands in the visible area *above* the card.
+function fitTo(ids, pad, bottomFrac) {
   const ps = ids.map((id) => byId.get(id)).filter(Boolean);
   if (!ps.length) return;
   const xs = ps.map((p) => p.x), ys = ps.map((p) => p.y);
   const minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
-  const w = Math.max(maxx - minx, maxy - miny, 60) + pad * 2;
-  animateVB({ x: (minx + maxx) / 2 - w / 2, y: (miny + maxy) / 2 - w / 2, w, h: w });
+  const a = aspect(), vis = 1 - (bottomFrac || 0);
+  const w = Math.max(maxx - minx + pad * 2, (maxy - miny + pad * 2) / (a * vis), 170);
+  const h = w * a;
+  animateVB({ x: (minx + maxx) / 2 - w / 2, y: (miny + maxy) / 2 - h * vis / 2, w, h });
 }
-$("#zin").onclick = () => zoomAt(0.8, VB.x + VB.w / 2, VB.y + VB.h / 2);
-$("#zout").onclick = () => zoomAt(1.25, VB.x + VB.w / 2, VB.y + VB.h / 2);
-$("#zfit").onclick = () => { clearSelection(); animateVB({ ...FULL }); };
+function zoomButton(factor) {
+  const cx = VB.x + VB.w / 2, cy = VB.y + VB.h / 2;
+  const nw = Math.max(150, Math.min(1700, VB.w * factor)), nh = nw * aspect();
+  animateVB({ x: cx - nw / 2, y: cy - nh / 2, w: nw, h: nh });
+}
+$("#zin").onclick = () => zoomButton(0.7);
+$("#zout").onclick = () => zoomButton(1.4);
+$("#zfit").onclick = () => closeCard();
 
 // ================= selection / route =================
 const gRoute = $("#route");
@@ -490,13 +537,20 @@ function clearSelection() {
   selected = null; svg.classList.remove("focused"); gRoute.innerHTML = "";
   for (const el of nodeEl.values()) el.classList.remove("on", "origin");
   for (const line of edgeByKey.values()) line.classList.remove("on");
-  $("#card").classList.remove("open"); showHint();
+  $("#card").classList.remove("open"); document.body.classList.remove("card-open"); showHint();
+}
+function closeCard() { clearSelection(); animateVB(fullView()); }
+function cardBottomFrac() {
+  // On mobile the card is a bottom sheet; reserve its height so the route fits above it.
+  if (!matchMedia("(max-width: 720px)").matches) return 0;
+  const c = $("#card");
+  return Math.min(0.66, (c.offsetHeight || innerHeight * 0.6) / innerHeight);
 }
 function showHint() {
   const h = $("#hint");
   if (selected) { h.style.display = "none"; return; }
   h.style.display = "";
-  h.innerHTML = `<span class="lbl">click any node to plot its most surprising route</span>`
+  h.innerHTML = `<span class="lbl">select a node &rarr; its most surprising route</span>`
     + `<span class="sep">&middot;</span><span class="stat">${NODES.length}</span> nodes`;
 }
 
@@ -515,8 +569,9 @@ async function select(node, preferKind) {
   const card = has(kind) ? res[kind][0] : null;
   if (!card) { renderNoResult(node); return; }
   const ids = pathIds(card);
-  highlight(ids); drawRoute(ids); fitTo(ids, 90);
-  renderCard(node, res, card);
+  highlight(ids); drawRoute(ids);
+  renderCard(node, res, card);  // render first, so the card's height is known for the fit below
+  fitTo(ids, 90, cardBottomFrac());
 }
 
 function renderNoResult(node) {
@@ -526,7 +581,7 @@ function renderNoResult(node) {
     + `<h2>${xml(node.label)}</h2>`
     + `<p class="til" style="color:var(--muted);font-size:.94rem">No route clears the trust gate`
     + ` from here${possibly ? "" : " — try <b>+ speculative</b>"}. ${xml(node.summary || "")}</p>`;
-  $("#card").classList.add("open");
+  $("#card").classList.add("open"); document.body.classList.add("card-open");
 }
 
 function chainList(card) {
@@ -561,11 +616,11 @@ function renderCard(node, res, card) {
     + `<div class="bar"><span style="width:${Math.min(100, scoreVal / 18 * 100)}%"></span></div></div>`
     + `</div>`
     + `<details class="src"><summary>${card.sources.length} source${card.sources.length === 1 ? "" : "s"} — every link is provenanced</summary><ul>${srcs}</ul></details>`;
-  $("#card").classList.add("open");
+  $("#card").classList.add("open"); document.body.classList.add("card-open");
   $("#cardbody").querySelectorAll(".seg button").forEach((b) =>
     b.onclick = () => { if (!b.disabled) select(node, b.dataset.k); });
 }
-$("#cardclose").onclick = () => { clearSelection(); animateVB({ ...FULL }); };
+$("#cardclose").onclick = () => closeCard();
 
 // ================= node interaction (event delegation) =================
 const tip = $("#tip");
@@ -639,7 +694,13 @@ $("#spec").onclick = () => {
 getGraph().then(renderMap).catch(() => {
   $("#hint").innerHTML = '<span class="lbl">could not load the map</span>';
 });
-window.addEventListener("resize", scheduleLOD);
+window.addEventListener("resize", () => {
+  // Keep the viewBox aspect equal to the container's (about its centre), so it never letterboxes.
+  const cx = VB.x + VB.w / 2, cy = VB.y + VB.h / 2;
+  VB.h = VB.w * aspect();
+  VB.x = cx - VB.w / 2; VB.y = cy - VB.h / 2;
+  applyVB();
+});
 </script>
 </body>
 </html>

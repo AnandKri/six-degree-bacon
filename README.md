@@ -68,14 +68,15 @@ legacy console).
 
 ## The seed graph
 
-[`data/seed.json`](data/seed.json) is a curated **98-node / 141-statement** graph spanning all 10
+[`data/seed.json`](data/seed.json) is a curated **107-node / 158-statement** graph spanning all 10
 domains, each statement fully provenanced. It spans a Roman–Silk Road–China web plus a Hellenistic–
 India–Buddhism bridge and clusters for Ancient Greece, Ancient Egypt, the Islamic Golden Age, the
 Scientific Revolution, East Asia, Norse/Celtic myth, Chinese technology, West Africa, royal divine
-descent, and the Renaissance — so it yields connections like Newton → Euclid → al-Tusi → Copernicus,
-Mansa Musa → Islam → Zoroastrianism → Mithra, **Elizabeth II → Alfred the Great → House of Wessex →
-Odin**, or **Gutenberg → Printing press → Paper → Silk Road** (Europe's printing revolution ran on a
-Chinese invention).
+descent, the Renaissance, and South/Southeast Asia — so it yields connections like Newton → Euclid →
+al-Tusi → Copernicus, Mansa Musa → Islam → Zoroastrianism → Mithra, **Elizabeth II → Alfred the Great
+→ House of Wessex → Odin**, **Gutenberg → Printing press → Paper → Silk Road** (Europe's printing
+revolution ran on a Chinese invention), or **Sanskrit → Proto-Indo-European → Norse mythology → Loki**
+(India's classical language and the Norse pantheon share one prehistoric root).
 [`data/cooccurrence.json`](data/cooccurrence.json) holds the committed Wikipedia-link co-occurrence
 backing the endpoint-surprise term.
 
@@ -105,7 +106,7 @@ data/seed.json          the curated graph (verified QIDs, full provenance)
 data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-surprise term
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        141 tests: human-vs-code confidence, surprise & endpoint checks, harvester, both
+tests/        142 tests: human-vs-code confidence, surprise & endpoint checks, harvester, both
               archetypes, the clusters, the web round-trip, the seed loaders, the per-hop evidence
               contract, and a guided-walk scaling/perf test
 ```

@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**141 tests**). Seed: **98 nodes / 141 statements**, 10 curated domains — **all now
+green (**142 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033).
 
@@ -21,7 +21,22 @@ rubric via ADR + worked example. Never the data — data changes only when a *fa
 `eval/golden.json` is a change-*detector*, not a correctness oracle; re-characterising it would have
 enshrined the bug.
 
-Newest work (ADR 0037): **the curated `Statement.evidence` prose now ships on every hop.** All 141
+Newest work (ADR 0038): **a South/SE Asia cluster** — 9 nodes / 17 statements (Hinduism, Sanskrit,
+Maurya, Ashoka, Chola, Srivijaya, Khmer, Angkor Wat, Borobudur), seed **98 → 107 nodes / 141 → 158
+statements**. Four independent bridges keep it connected: the **Indo-European language** link
+(`sanskrit → proto_indo_european`, the best structural addition — **Sanskrit → Proto-Indo-European →
+Norse mythology → Loki**, and the ADR 0022 Thor↔Rigveda cognate now reaches SE Asia: **Angkor Wat →
+Hinduism → Rigveda → Thor**), the **Hellenistic** link (`maurya_empire follows alexander_the_great` —
+**Maurya Empire → Alexander → Alexandria → Euclid**), the **maritime Silk Road** (Chola/Srivijaya/
+Borobudur `connected_via_trade`), and **religion** (into the Buddhism/Rigveda hubs). Domains follow
+precedent: empires/dynasties and monuments → `history`, Sanskrit → `language`, Hinduism → `religion`.
+No flagship hijack (Copernicus→al-Tusi, Gutenberg→paper, Newton intact). Two golden winners
+re-characterised from the engine, not tuned: **Euclid**'s terminus improved to the new Maurya Empire,
+and **Roman Empire** flipped Qin Shi Huang → Plato by a hair (38.02 vs 37.65, pure global
+rarity re-weighting — noted in ADR 0038 as a possible future rubric question about weighting endpoint
+unexpectedness, *not* acted on). 4 of 8 from-memory QIDs were wrong again (the ADR 0008 hazard).
+
+Before that (ADR 0037): **the curated `Statement.evidence` prose now ships on every hop.** All 141
 statements had a hand-written, sourced one-line justification since ADR 0002, read by *nothing* — the
 narrator, CLI, web and static bundle all ignored it, and the shipped TIL chained predicates
 mechanically while a better sentence sat unused beside each hop. It went dark on a terminology
@@ -104,7 +119,7 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   (ADR 0015).
 - `.github/workflows/` — `ci.yaml` (offline lint/type/test on every push), `pages.yaml` (build+deploy
   Pages), `qid-validation.yaml` (network QID guard on `data/seed.json` changes + weekly + manual).
-- `data/seed.json` (98 nodes / 141 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (107 nodes / 158 statements, verified QIDs) + `data/cooccurrence.json` (committed).
   `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -136,8 +151,9 @@ max tie-fraction 94%→1.1%, every start now fully distinct), **0030/0031 map-fi
 split**, **0033 Renaissance cluster** (filled the last two empty realms), **0034 domain-jump
 information weighting** (+ **0035 closed temporal extents** — the scoring fix behind the al-Tusi
 reversal; see the rule at the top), **0036 interval separation measured & rejected**, **0037 surface
-the curated `Statement.evidence` on every hop** (+ the `load_graph`/`discover_all` refactor). Plus:
-theme-able embed (`build-site --theme`), CI for QID-validation + Pages, and the push to a public
+the curated `Statement.evidence` on every hop** (+ the `load_graph`/`discover_all` refactor), **0038
+South/SE Asia cluster** (Indo-European/Sanskrit + Hellenistic/Maurya + maritime Silk Road bridges).
+Plus: theme-able embed (`build-site --theme`), CI for QID-validation + Pages, and the push to a public
 GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
@@ -214,7 +230,7 @@ surprise the rubric wants to express.** (1) ADR 0034's closing limitation — `d
 extent models *existence* (`[start, 2025]`), not the **active period**, so India's midpoint is
 `(-3300+2025)/2 = -638`, a number describing nothing, and both midpoint *and* separation inherit it.
 The fix for each is a new axis on `Node` (a cultural/regional one; an active-period/floruit one),
-each a curation pass over all 98 nodes. **Two blocked terms is roughly what would earn it** — this is
+each a curation pass over all 107 nodes. **Two blocked terms is roughly what would earn it** — this is
 the highest-value non-breadth work, and it is data, not code.
 
 **A further rung if the endpoint term ever needs one: deterministic diffusion, not a GA.** Saturation
@@ -243,13 +259,14 @@ flavour is genealogy/derivation chains (royal descent, `claimed_descent_from` / 
 1. **Breadth — the main ongoing thread.** Add coherent, well-connected clusters, **one commit each**,
    following the process in §6. Done this round: **East Asia** (ADR 0020), **Norse/Celtic myth**
    (0022), **Chinese tech** (0023) and **West Africa/Islam** (0024); then the **Renaissance** (0033 —
-   which filled the last two empty realms, `culture` and `art`, and relieved `plato`/`constantinople`).
-   The graph now spans most major Old-World civilisations. Possible future clusters that still connect
-   via existing hubs: **Byzantine–Ottoman** (via Constantinople/Byzantine Empire/Fall of
-   Constantinople — now doubly hooked), the **Enlightenment** proper (via Newton/Galileo/the printing
-   press), **South/Southeast Asia** (via Buddhism/India), or **Judaism/the Abrahamic web** (via the
-   Islam node + Christianity). **Avoid Mesoamerica** — pre-Columbian, it would be an island.
-   Reusable recipe in memory `sdb-breadth-paused`.
+   which filled the last two empty realms, `culture` and `art`, and relieved `plato`/`constantinople`);
+   then **South/Southeast Asia** (0038 — Hinduism/Sanskrit/Maurya/Chola/Srivijaya/Khmer/Angkor,
+   adding the Indo-European language bridge and the maritime Silk Road). The graph now spans most major
+   Old-World civilisations. Possible future clusters that still connect via existing hubs:
+   **Byzantine–Ottoman** (via Constantinople/Byzantine Empire/Fall of Constantinople — now doubly
+   hooked), the **Enlightenment** proper (via Newton/Galileo/the printing press), or **Judaism/the
+   Abrahamic web** (via the Islam node + Christianity). **Avoid Mesoamerica** — pre-Columbian, it would
+   be an island. Reusable recipe in memory `sdb-breadth-paused`.
 2. **Deploy polish (small, optional).** (a) Add a `<personal-site>/CLAUDE.md` pointer so that repo's
    Claude auto-picks-up the `/six-degrees` embed, and wire its SPA-rewrite to exclude `/six-degrees/*`
    (else the CRA fallback serves the React app instead of the static files — the one real gotcha).
@@ -258,7 +275,7 @@ flavour is genealogy/derivation chains (royal descent, `claimed_descent_from` / 
 3. **Corroboration** — deferred (ADR 0014); only if both prerequisites in §4 are genuinely met.
 4. **Documented graduations (adopt only when earned):** Neo4j (scale / NL→Cypher for ~10k+ nodes), an
    optional free/local LLM narrator behind the existing template seam. The guided walk (0010) already
-   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 98 nodes.
+   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 107 nodes.
 
 ## 6. Conventions / gotchas
 
@@ -267,7 +284,7 @@ flavour is genealogy/derivation chains (royal descent, `claimed_descent_from` / 
   now tracking `origin/main` (public).
 - **Update the docs in the same commit as the change — `README.md` included.** The live-truth docs
   are `README.md`, `CLAUDE.md` and this note. If a commit moves a user-visible fact, fix it in all
-  three: **seed size** (98 nodes / 141 statements), **test count**, the **rubric's worked-example
+  three: **seed size** (107 nodes / 158 statements), **test count**, the **rubric's worked-example
   figures**, the module list, the ADR list, domain counts. **Grep the old number** — prose lies, and
   a figure can be quoted in a file you didn't touch. **ADRs are records: never back-edit them.** Mark
   a superseded one with a status line + a pointer to its successor (see ADR 0033's header) and leave

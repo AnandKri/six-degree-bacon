@@ -34,7 +34,12 @@ discovered route lighting up in place — plus a static export (`sdb build-site`
 hosting. The map is laid out by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030)
 and themed "minimal terminal" (dark slate, single teal accent; ADR 0031). Each hop now renders its
 curated one-line **evidence** — the `Statement.evidence` prose that shipped in the data model since
-ADR 0002 but reached no surface until ADR 0037. All checks green (ruff, format, mypy, 141 tests).
+ADR 0002 but reached no surface until ADR 0037. A **South/SE Asia cluster** (ADR 0038 —
+Hinduism, Sanskrit, Maurya, Ashoka, Chola, Srivijaya, Khmer, Angkor Wat, Borobudur) then extended the
+eastern reach: `sanskrit → proto_indo_european` ties the Indian classical language to the Norse/Latin
+family (Sanskrit → Proto-Indo-European → Norse mythology → Loki; Angkor Wat → Hinduism → Rigveda →
+Thor), the Maurya Empire rose in the wake of Alexander, and the Chola/Srivijaya thalassocracies reach
+the graph through the maritime Silk Road. All checks green (ruff, format, mypy, 142 tests).
 
 ## How to run
 
@@ -96,11 +101,13 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   terminal" (dark slate + single teal accent). The page is dual-mode, so `sdb/site.py`
   (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page (now incl. the laid-out
   `graph`) for free GitHub Pages hosting.
-- `data/seed.json` — curated 98-node / 141-statement graph across 10 curated domains, all now
+- `data/seed.json` — curated 107-node / 158-statement graph across 10 curated domains, all now
   populated (an 11th, `other`, is the harvest-only "unclassified" bucket and is never curated —
   ADR 0032), full provenance (incl. a Renaissance cluster — Florence/Medici/Leonardo/the printing
   press, ADR 0033 — reaching antiquity via Plato, Byzantium via the Fall of Constantinople, and China
-  via paper; and a
+  via paper; a South/SE Asia cluster — Hinduism/Sanskrit/Maurya/Chola/Srivijaya/Khmer/Angkor Wat,
+  ADR 0038 — via the Indo-European language bridge, the wake of Alexander, and the maritime Silk Road;
+  and a
   Hellenistic–India–Buddhism bridge and Ancient Greece / Ancient Egypt / Islamic Golden Age /
   Scientific Revolution / East Asia / Norse–Celtic myth / Chinese-tech / West-Africa / divine-descent
   clusters — e.g. Newton → Euclid → al-Tusi → Copernicus, Thor → Rigveda → India, Mansa Musa → Islam
@@ -119,14 +126,15 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   0032 `other` domain / harvest-fallback split, 0033 Renaissance cluster,
   0034 domain-jump information weighting, 0035 closed temporal extents, 0036 interval separation
   measured & rejected — keep midpoint distance, 0037 surface the curated `Statement.evidence` prose
-  on every hop).
+  on every hop, 0038 South/SE Asia cluster).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 141 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 142 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
-  relief (ADR 0033), the web UI (payload + graph payload + real localhost HTTP
+  relief (ADR 0033), the South/SE Asia cluster's bridges (ADR 0038 — Indo-European/Sanskrit,
+  Hellenistic/Maurya, maritime Silk Road, worlds-apart Angkor Wat), the web UI (payload + graph payload + real localhost HTTP
   round-trips), the static-site export, a deterministic-layout suite (`test_layout.py`: reproducibility
   + the domain-cohesion property + a negative control), a guided-walk scaling/perf test, the seed
   loaders (`test_loader.py`: single-parse + missing-sidecar tolerance), and the per-hop evidence
@@ -152,7 +160,7 @@ constants, `test_<module>.py`, ADRs `NNNN-kebab.md`. Type hints + docstrings on 
 mypy + pytest must stay green (CI enforces it).
 
 **Docs move with the code, in the same commit — `README.md` included.** If a commit changes a
-user-visible fact, update it everywhere in that commit: seed size (98 nodes / 141 statements), test
+user-visible fact, update it everywhere in that commit: seed size (107 nodes / 158 statements), test
 count, the rubric's worked-example figures, the module list, the ADR list, domain counts. **Grep the
 old number; don't trust the prose.** The live-truth docs are `README.md`, this file, and
 `docs/HANDOVER.md`. **ADRs are records — never back-edit them**; mark a superseded one with a status

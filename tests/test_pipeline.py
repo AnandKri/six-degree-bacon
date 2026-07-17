@@ -437,6 +437,40 @@ def test_renaissance_cluster_relieves_the_starved_classical_starts(
         _assert_worlds_apart(seed_graph, node_id, pairs)
 
 
+def test_south_southeast_asia_cluster_bridges_hellenistic_and_indo_european(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0038: the South/SE Asia cluster (Hinduism, Sanskrit, Maurya, Ashoka, Chola, Srivijaya,
+    # Khmer, Angkor Wat, Borobudur) is not an island — it re-enters the graph through independent
+    # bridges, asserted structurally (which hub is on the route) rather than by a hardcoded
+    # endpoint, since the seed's winners shift as it grows.
+
+    # Hellenistic bridge: Chandragupta founded the Maurya Empire in the wake of Alexander's Indus
+    # campaign, so the Indian empire reaches the Greek world rather than terminating in India.
+    maurya = discover(seed_graph, "Maurya Empire", top=5)
+    assert maurya
+    assert any("alexander_the_great" in r.path.node_ids for r in maurya)
+
+    # The Indo-European language bridge — the cluster's best structural link: Sanskrit descends from
+    # Proto-Indo-European, so the classical language of India reaches the Norse/Latin family (e.g.
+    # Sanskrit → Proto-Indo-European → Norse mythology).
+    sanskrit = discover(seed_graph, "Sanskrit", top=5)
+    assert sanskrit
+    assert any("proto_indo_european" in r.path.node_ids for r in sanskrit)
+
+    # The maritime-trade bridge: the Chola and Srivijaya thalassocracies reach the wider Eurasian
+    # world through the Silk Road hub, not just their own waters.
+    for topic in ("Chola dynasty", "Srivijaya"):
+        journeys = discover(seed_graph, topic, top=5)
+        assert journeys, topic
+        assert any("silk_road" in r.path.node_ids for r in journeys), topic
+
+    # Angkor Wat's improbable partners are genuinely worlds apart from a Cambodian temple, not its
+    # in-cluster neighbours — it reaches the Vedic/Indo-European myth world through Hinduism.
+    pairs = discover(seed_graph, "Angkor Wat", archetype=Archetype.UNLIKELY, top=5)
+    _assert_worlds_apart(seed_graph, "angkor_wat", pairs)
+
+
 def test_culture_domain_is_populated_and_holds_no_harvest_fallout(
     seed_graph: KnowledgeGraph,
 ) -> None:

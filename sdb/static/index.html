@@ -735,13 +735,17 @@ let sugItems = [], sugIdx = -1;
 function resolve(text) {
   const needle = text.trim().toLowerCase();
   if (!needle) return [];
-  const match = (n, pred) => pred(n.label.toLowerCase()) || n.id === needle
-    || (n.aliases || []).some((a) => pred(a.toLowerCase()));
-  const exact = NODES.filter((n) => match(n, (v) => v === needle));
-  const starts = NODES.filter((n) => match(n, (v) => v.startsWith(needle)));
-  const has = NODES.filter((n) => match(n, (v) => v.includes(needle)));
+  const aliases = (n) => n.aliases || [];
+  // A node's own label/id ranks above another node's alias (so "Rome" is the city, not the empire).
+  const primaryExact = NODES.filter((n) => n.label.toLowerCase() === needle || n.id === needle);
+  const aliasExact = NODES.filter((n) => aliases(n).some((a) => a.toLowerCase() === needle));
+  const starts = NODES.filter((n) => n.label.toLowerCase().startsWith(needle));
+  const has = NODES.filter((n) => n.label.toLowerCase().includes(needle)
+    || aliases(n).some((a) => a.toLowerCase().includes(needle)));
   const seen = new Set(), out = [];
-  for (const n of [...exact, ...starts, ...has]) { if (!seen.has(n.id)) { seen.add(n.id); out.push(n); } }
+  for (const n of [...primaryExact, ...aliasExact, ...starts, ...has]) {
+    if (!seen.has(n.id)) { seen.add(n.id); out.push(n); }
+  }
   return out.slice(0, 6);
 }
 function openSuggest(items) {

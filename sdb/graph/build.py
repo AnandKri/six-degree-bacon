@@ -206,17 +206,23 @@ class KnowledgeGraph:
     def find_topic(self, query: str) -> str | None:
         """Resolve a free-text topic to a node id via exact (case-insensitive) match.
 
-        Matches against node id, label, Wikidata QID, and aliases. Returns ``None`` if nothing
-        matches (see :meth:`suggest` for near-misses).
+        A node's own id, label, or Wikidata QID wins outright over another node's *alias*, so a
+        query that names one node (e.g. ``"Rome"``, the city) is never hijacked by an earlier node
+        that merely lists it as an alias (``roman_empire``, aliased "Rome"). Only if nothing matches
+        a primary field does an alias match apply. Returns ``None`` if nothing matches at all (see
+        :meth:`suggest` for near-misses).
         """
         needle = query.strip().casefold()
+        alias_hit: str | None = None
         for node in self._nodes.values():
-            candidates = [node.id, node.label, *node.aliases]
+            primary = [node.id, node.label]
             if node.wikidata_qid is not None:
-                candidates.append(node.wikidata_qid)
-            if any(candidate.casefold() == needle for candidate in candidates):
+                primary.append(node.wikidata_qid)
+            if any(candidate.casefold() == needle for candidate in primary):
                 return node.id
-        return None
+            if alias_hit is None and any(alias.casefold() == needle for alias in node.aliases):
+                alias_hit = node.id
+        return alias_hit
 
     def suggest(self, query: str, k: int = 3) -> list[str]:
         """Return up to ``k`` node labels closest to ``query`` (for 'did you mean' hints)."""

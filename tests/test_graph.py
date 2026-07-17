@@ -52,7 +52,26 @@ def test_find_topic_matches(seed_graph: KnowledgeGraph) -> None:
     assert seed_graph.find_topic("roman empire") == "roman_empire"
     assert seed_graph.find_topic("Imperium Romanum") == "roman_empire"  # alias
     assert seed_graph.find_topic("Q2277") == "roman_empire"  # wikidata qid
+    assert seed_graph.find_topic("Rome") == "rome"  # the city, not the empire's "Rome" alias
     assert seed_graph.find_topic("does not exist") is None
+
+
+def test_own_identity_beats_another_nodes_alias() -> None:
+    # `roman_empire` (aliased "Rome") is inserted first, but the city's own id/label must win — else
+    # the map's precomputed results for `rome` would silently be the empire's (a real bug we hit).
+    empire = Node(
+        id="roman_empire",
+        label="Roman Empire",
+        domain=Domain.HISTORY,
+        type="empire",
+        aliases=("Rome",),
+    )
+    city = Node(id="rome", label="Rome", domain=Domain.GEOGRAPHY, type="city")
+    graph = KnowledgeGraph((empire, city), ())
+    assert graph.find_topic("Rome") == "rome"  # id/label beats the earlier node's alias
+    assert graph.find_topic("nope") is None
+    # But an alias still resolves when nothing matches a primary field.
+    assert KnowledgeGraph((empire,), ()).find_topic("Rome") == "roman_empire"
 
 
 def test_suggest_returns_close_labels(seed_graph: KnowledgeGraph) -> None:

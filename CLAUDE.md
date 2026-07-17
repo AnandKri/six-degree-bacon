@@ -86,8 +86,7 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   page (ADR 0031) drawing the whole graph from `graph_payload()`/`/api/graph`, themed "minimal
   terminal" (dark slate + single teal accent). The page is dual-mode, so `sdb/site.py`
   (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page (now incl. the laid-out
-  `graph`) for free GitHub Pages hosting. `sdb/viz.py` — legacy matplotlib path drawing (`viz` extra),
-  orphaned (superseded by the web map).
+  `graph`) for free GitHub Pages hosting.
 - `data/seed.json` — curated 98-node / 141-statement graph across 10 curated domains, all now
   populated (an 11th, `other`, is the harvest-only "unclassified" bucket and is never curated —
   ADR 0032), full provenance (incl. a Renaissance cluster — Florence/Medici/Leonardo/the printing

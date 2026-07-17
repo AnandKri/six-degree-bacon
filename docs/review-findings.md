@@ -1,5 +1,19 @@
 # Review findings — independent read-only review
 
+> **HISTORICAL — all findings resolved. Nothing here is open; do not re-fix.**
+> Kept because [ADR 0029](adr/0029-full-link-jaccard-similarity.md) cites Finding 2 by path as its
+> motivation. This is a snapshot of `b11a679`, not live state — its code, constants and counts are
+> all superseded.
+>
+> | # | Finding | Resolved by |
+> |---|---|---|
+> | 1 | Archetypes can return the identical path | [ADR 0027](adr/0027-disjoint-archetype-hop-ranges.md) — `MAX_HOPS_UNLIKELY` 3→2, exactly the fix proposed below |
+> | 2 | Endpoint saturation for sparse starts | [ADR 0029](adr/0029-full-link-jaccard-similarity.md) — full-link Jaccard; max tie-fraction 94%→1.1%. Took option (2), the "richer signal" recommendation |
+> | 3 | Cross-archetype scores not comparable | Open by choice — cosmetic; the raw numbers are still archetype-relative |
+>
+> Two of its assumptions have since been overtaken outright: the seed is now 98 nodes / 141
+> statements (not 88/124), and `domain_jumps` is no longer a flat count ([ADR 0034](adr/0034-domain-jump-information.md)).
+
 - **Reviewed at:** `b11a679` (ADR 0025) plus the uncommitted seed growth in the working tree
   (88 nodes / 124 statements at review time).
 - **Scope:** read-only. **No files were changed**; nothing was committed. Findings only.

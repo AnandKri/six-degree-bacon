@@ -4,7 +4,7 @@
 .DEFAULT_GOAL := check
 TOPIC ?= Roman Empire
 
-.PHONY: install lint format typecheck test check validate discover clean
+.PHONY: install lint format format-check typecheck test check validate discover clean
 
 install:  ## Create the venv and install dev dependencies (writes uv.lock).
 	uv sync --extra dev
@@ -15,13 +15,16 @@ lint:  ## Lint with ruff.
 format:  ## Auto-format with ruff.
 	uv run ruff format .
 
+format-check:  ## Check formatting without writing (what CI runs).
+	uv run ruff format --check .
+
 typecheck:  ## Static type check the package with mypy.
 	uv run mypy sdb
 
 test:  ## Run the test suite.
 	uv run pytest
 
-check: lint typecheck test  ## Lint + typecheck + test (the offline CI gate).
+check: lint format-check typecheck test  ## The offline CI gate, step for step (.github/workflows/ci.yaml).
 
 validate:  ## Network guard (ADR 0008): check every seed QID resolves. Run after editing seed.json.
 	uv run sdb validate-qids

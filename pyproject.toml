@@ -15,7 +15,6 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["ruff>=0.6", "mypy>=1.10", "pytest>=8.2"]
-viz = ["matplotlib>=3.8", "pyvis>=0.3"]
 
 [project.scripts]
 sdb = "sdb.cli:main"

@@ -3,11 +3,17 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**122 tests**). Seed: **88 nodes / 123 statements**, 10 curated domains (`culture` still
-empty — now *cleanly* empty; the harvest fallback moved to a dedicated `other` bucket, ADR 0032).
+green (**125 tests**). Seed: **98 nodes / 140 statements**, 10 curated domains — **all now
+populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
+then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033).
 
-Newest work: a **map-first UI** — the whole knowledge base as domain territories, laid out by a
-deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030) and themed "minimal terminal"
+Newest work: **all ten curated realms are populated.** ADR 0032 split the harvest fallback out of
+`culture` (which was ~100% unmapped fallout and 0% culture) into a dedicated `other` bucket; ADR 0033
+then filled `culture` and `art` with a **Renaissance cluster**, which also relieved two of the
+"starved" starts measured in §5 — breadth, not a scoring change, was the fix. Best new TIL:
+**Gutenberg → Printing press → Paper → Silk Road** (Europe's printing revolution ran on a Chinese
+invention). Before that: a **map-first UI** — the whole knowledge base as domain territories, laid out
+by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030) and themed "minimal terminal"
 (dark slate + single teal accent, ADR 0031). Click a node → its discovered route lights up in place.
 The engine is untouched; the map is a pure consumer of `discover()` via a new `graph_payload()` /
 `/api/graph` (baked into the static bundle's `graph` key).
@@ -68,7 +74,7 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   (ADR 0015).
 - `.github/workflows/` — `ci.yaml` (offline lint/type/test on every push), `pages.yaml` (build+deploy
   Pages), `qid-validation.yaml` (network QID guard on `data/seed.json` changes + weekly + manual).
-- `data/seed.json` (88 nodes / 123 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (98 nodes / 140 statements, verified QIDs) + `data/cooccurrence.json` (committed).
   `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -115,13 +121,40 @@ distinct**, and `test_endpoint_term_does_not_saturate` is a canary that bounds t
 future sparse cluster can't silently reintroduce it. Re-run `sdb build-cooccurrence` after any seed
 change (it now also fetches each article's full link set — slower, ~a minute for the seed).
 
-**Open follow-up (a *different* issue, not saturation):** with the pair capped at 1–2 hops (ADR 0027),
-a few genuinely sparse starts (e.g. `confucius`, graph-degree 2) can still surface a directly
-co-occurring 1-hop neighbour as their *top* improbable pair — Confucius ⇢ China, Mansa Musa ⇢ Islam —
-because a high-trust 1-hop beats a more-unexpected lower-trust 2-hop on `eu × trust`. It's a hop/trust
-interaction with a thin candidate pool, not the endpoint term. Candidate fixes (own ADR): exclude
-destinations the start *directly links* (link_strength ≥ 1) from the pair set, or floor the pair's
-endpoint-unexpectedness. Most starts are unaffected (Naruhito ⇢ Amaterasu, Roman Empire ⇢ Paper, etc.).
+**Open follow-up (a *different* issue, not saturation) — MEASURED, and the obvious fix is wrong.**
+With the pair capped at 1–2 hops (ADR 0027), some starts surface a directly co-occurring neighbour as
+their *top* improbable pair (Confucius ⇢ China), because a high-trust 1-hop beats a more-unexpected
+lower-trust 2-hop on `eu × trust`. An earlier draft of this note proposed: *exclude destinations the
+start directly links (link_strength ≥ 1) from the pair set, or floor the pair's endpoint-unexpectedness*.
+**Do not build that without reading this.** Measured across every start (2026-07-17; re-measured
+after ADR 0033 — the shape held, the count improved **16/88 → 15/98**):
+
+- **15 starts** surface a directly-co-occurring winner.
+- Only **4** have a non-obvious alternative that merely loses on score (`confucius` → Chang'an 4.80 vs
+  China 4.98; also `cleopatra`, `ptolemy`, `great_pyramid_of_giza`). These are the only ones the
+  exclusion would fix — and it swaps for a barely-better endpoint.
+- The other **11 are starved**: *every* candidate within 1–2 hops directly co-occurs (`julius_caesar`
+  → Augustus, `troy` → Trojan War, `romance_languages` → Latin, `nile`, `jimmu`, `mali_empire`,
+  `china`, `aeneas`, `trojan_war`, `augustus`, `mona_lisa`). Excluding direct links there returns
+  **nothing at all** — trading a mediocre TIL for an empty result on 11 of 98 starts.
+
+Root cause is **not scoring**: every starved start has graph-degree 1–4, so its 2-hop reach is its own
+cluster and no distant destination exists to rank. `troy` (degree 1) can only reach Trojan War's
+neighbours. The fix is **breadth — specifically edges that *escape* a cluster**, not nodes beside it
+(e.g. `troy → Heinrich Schliemann → 19th-c. archaeology` jumps domain and two millennia in one hop).
+This independently re-confirms ADR 0014's "breadth is the higher-leverage investment", and **ADR 0033
+demonstrated it**: adding the Renaissance cluster relieved `plato` and `constantinople` (both now
+reach genuinely unlinked destinations) without touching a single scoring weight. Reproduce with the
+sweep: for each node, `discover(archetype=UNLIKELY, top=25)` and compare the winner against
+`load_cooccurrence()` link sets. Most starts are unaffected (Naruhito ⇢ Amaterasu, Roman Empire ⇢
+Paper). If a fix is ever built, it needs an honest "no worlds-apart pair exists here" path for the
+starved 11, not a silent empty.
+
+**Watch for cluster hijack (found in ADR 0033).** A dense new sub-cluster can out-compete an existing
+flagship on domain jumps: `copernicus part_of renaissance` — one true edge — pushed al-Tusi out of
+Copernicus's top 4 entirely, replacing ADR 0019's flagship with a bland `→ Renaissance → Florence →
+House of Medici` walking tour. The edge was dropped. After adding any cluster, re-check the *existing*
+flagships, not just the new nodes.
 
 **A further rung if the endpoint term ever needs one: deterministic diffusion, not a GA.** Saturation
 is already solved (0029), so this is no longer motivated by it — but **personalized PageRank /
@@ -145,12 +178,14 @@ genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_fr
 
 1. **Breadth — the main ongoing thread.** Add coherent, well-connected clusters, **one commit each**,
    following the process in §6. Done this round: **East Asia** (ADR 0020), **Norse/Celtic myth**
-   (0022), **Chinese tech** (0023) and **West Africa/Islam** (0024). The graph now spans most major
-   Old-World civilisations. Possible future clusters that still connect via existing hubs: the
-   **Enlightenment/Renaissance** (via Newton/Copernicus/Galileo), **Byzantine–Ottoman** (via
-   Constantinople/Byzantine Empire), **South/Southeast Asia** (via Buddhism/India), or **Judaism/the
-   Abrahamic web** (via the new Islam node + Christianity). **Avoid Mesoamerica** — pre-Columbian, it
-   would be an island. Reusable recipe in memory `sdb-breadth-paused`.
+   (0022), **Chinese tech** (0023) and **West Africa/Islam** (0024); then the **Renaissance** (0033 —
+   which filled the last two empty realms, `culture` and `art`, and relieved `plato`/`constantinople`).
+   The graph now spans most major Old-World civilisations. Possible future clusters that still connect
+   via existing hubs: **Byzantine–Ottoman** (via Constantinople/Byzantine Empire/Fall of
+   Constantinople — now doubly hooked), the **Enlightenment** proper (via Newton/Galileo/the printing
+   press), **South/Southeast Asia** (via Buddhism/India), or **Judaism/the Abrahamic web** (via the
+   Islam node + Christianity). **Avoid Mesoamerica** — pre-Columbian, it would be an island.
+   Reusable recipe in memory `sdb-breadth-paused`.
 2. **Deploy polish (small, optional).** (a) Add a `<personal-site>/CLAUDE.md` pointer so that repo's
    Claude auto-picks-up the `/six-degrees` embed, and wire its SPA-rewrite to exclude `/six-degrees/*`
    (else the CRA fallback serves the React app instead of the static files — the one real gotcha).

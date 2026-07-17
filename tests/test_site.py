@@ -41,15 +41,27 @@ def test_bundle_includes_the_laid_out_graph(seed_graph: KnowledgeGraph, tmp_path
 def test_strict_is_confident_and_loose_is_a_superset(
     seed_graph: KnowledgeGraph, tmp_path: Path
 ) -> None:
+    """Lowering the gate is *strictly additive*, as a property over every topic in the seed.
+
+    This was pinned to `trojan_war` until ADR 0033, whose `Ancient Greece -> Renaissance humanism`
+    edge gave Troy's war a confident journey — so the one hand-picked "speculative" topic stopped
+    being speculative and the test broke on a seed improvement rather than a regression. Asserting
+    over all topics keeps the same two claims without betting on any one topic's evidence level.
+    """
     data = _build(seed_graph, tmp_path)
-    # Speculative topic: lowering the gate is strictly additive — the loose journey endpoints are a
-    # proper superset of the strict ones (not merely "not fewer", which a no-op would also satisfy).
-    strict = data["results"]["trojan_war"]["strict"]["journey"]
-    loose = data["results"]["trojan_war"]["loose"]["journey"]
-    assert all(not card["possibly"] for card in strict)  # strict = confident only
-    strict_endpoints = {card["endpoint"] for card in strict}
-    loose_endpoints = {card["endpoint"] for card in loose}
-    assert strict_endpoints < loose_endpoints
+    additive = []
+    for topic in data["results"].values():
+        strict, loose = topic["strict"]["journey"], topic["loose"]["journey"]
+        assert all(not card["possibly"] for card in strict)  # strict = confident only
+        strict_endpoints = {card["endpoint"] for card in strict}
+        loose_endpoints = {card["endpoint"] for card in loose}
+        # Loosening never *displaces* a confident result, even though it competes for the same
+        # top-N slots (a `possibly` path can outrank on surprise while losing on trust).
+        assert strict_endpoints <= loose_endpoints
+        additive.append(strict_endpoints < loose_endpoints)
+    # ...and on at least one topic it genuinely adds something, so the gate is not a no-op (which
+    # "not fewer" alone would satisfy). Currently the mythic starts: troy, aeneas.
+    assert any(additive)
 
 
 def test_index_html_is_the_packaged_page(seed_graph: KnowledgeGraph, tmp_path: Path) -> None:

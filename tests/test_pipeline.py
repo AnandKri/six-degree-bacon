@@ -348,3 +348,51 @@ def test_archetypes_never_return_the_same_path(seed_graph: KnowledgeGraph) -> No
         unlikely = discover(seed_graph, topic, archetype=Archetype.UNLIKELY, top=1)
         if journey and unlikely:
             assert journey[0].path.node_ids != unlikely[0].path.node_ids, topic
+
+
+def test_renaissance_cluster_connects_via_antiquity_byzantium_and_chinese_paper(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0033: the Renaissance cluster is not an island — it re-enters the graph through three
+    # independent bridges, asserted structurally (which hub is on the route) rather than by
+    # hardcoded endpoint, since the seed's winners shift as it grows.
+    renaissance_bridges = {"plato", "ancient_greece", "fall_of_constantinople", "printing_press"}
+    journeys = discover(seed_graph, "Renaissance", top=5)
+    assert journeys
+    assert any(renaissance_bridges & set(r.path.node_ids) for r in journeys)
+
+    # The classical bridge: humanism revived Plato (Ficino's Florentine Academy), so the culture
+    # cluster reaches back into antiquity rather than terminating in Florence.
+    humanism = discover(seed_graph, "Renaissance humanism", top=5)
+    assert humanism
+    assert any({"plato", "ancient_greece"} & set(r.path.node_ids) for r in humanism)
+
+    # The cross-cultural bridge, and the cluster's best TIL: Gutenberg's press ran on paper — a
+    # Chinese invention — so Europe's printing revolution routes back to China and the Silk Road.
+    press = discover(seed_graph, "Printing press", top=5)
+    assert press
+    assert any("paper" in r.path.node_ids for r in press)
+
+
+def test_renaissance_cluster_relieves_the_starved_classical_starts(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0033: `plato` and `constantinople` were "starved" — every destination within the pair's
+    # 1-2 hop range was one their own Wikipedia article already links, so their top improbable pair
+    # was a foregone conclusion (Plato -> Alexander, Constantinople -> Constantine). The cluster
+    # gives each a genuinely unlinked destination to reach. This is the measured payoff, so it is
+    # locked: `_assert_worlds_apart` requires the obvious neighbour not to *win*.
+    for topic, node_id in (("Plato", "plato"), ("Constantinople", "constantinople")):
+        pairs = discover(seed_graph, topic, archetype=Archetype.UNLIKELY, top=5)
+        _assert_worlds_apart(seed_graph, node_id, pairs)
+
+
+def test_culture_domain_is_populated_and_holds_no_harvest_fallout(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # ADR 0032 split the harvest fallback out of `culture` into `other` precisely so a curated
+    # culture cluster could land in a clean realm; ADR 0033 then populated it. Together they mean:
+    # `culture` has real nodes, and no curated node ever carries the unclassified bucket.
+    domains = {node.domain for node in seed_graph.nodes()}
+    assert Domain.CULTURE in domains
+    assert Domain.OTHER not in domains  # `other` is harvest-only, never curated

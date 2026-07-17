@@ -170,13 +170,27 @@ def test_two_node_graph_produces_no_nan() -> None:
     assert (ax, ay) != (bx, by)  # repulsion separates them
 
 
-def test_single_node_domain_is_placed(seed_graph: KnowledgeGraph) -> None:
-    layout = compute_layout(seed_graph)
+def test_single_node_domain_is_placed() -> None:
+    """A lone node in its domain still lands at a finite point.
+
+    Its domain centroid *is* itself, so the cohesion force is exactly zero (`compute_layout` relies
+    on that rather than special-casing) — the risk being a 0/0 in the force term. Built here rather
+    than read off the seed: this asserted "the seed has a single-node domain (art)" until ADR 0033
+    added three more artists, at which point a real invariant failed for a reason that had nothing
+    to do with it. Any domain count in the seed is incidental; the property is not.
+    """
+    nodes = (
+        _node("a", Domain.HISTORY),
+        _node("b", Domain.HISTORY),
+        _node("lonely", Domain.ART),  # the only node in its domain
+    )
+    graph = KnowledgeGraph(nodes, (_stmt("a", "b"), _stmt("b", "lonely")))
+    layout = compute_layout(graph)
     counts: dict[str, int] = defaultdict(int)
-    for node in seed_graph.nodes():
+    for node in graph.nodes():
         counts[node.domain.value] += 1
-    singletons = [n.id for n in seed_graph.nodes() if counts[n.domain.value] == 1]
-    assert singletons  # the seed has at least one single-node domain (art)
+    singletons = [n.id for n in graph.nodes() if counts[n.domain.value] == 1]
+    assert singletons == ["lonely"]
     for node_id in singletons:
         x, y = layout[node_id]
         assert math.isfinite(x) and math.isfinite(y)

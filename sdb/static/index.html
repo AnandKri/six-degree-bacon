@@ -46,8 +46,12 @@
   svg#map.focused .territory { opacity: .45; }
   svg#map.focused .dlabel { opacity: .22; }
 
-  .territory { stroke-width: 58; stroke-linejoin: round; paint-order: stroke;
-    fill-opacity: .11; stroke-opacity: .3; transition: opacity .45s ease; }
+  /* The stroke rounds the hull corners and pads each territory into a soft blob; it also inflates
+     the hull by ~half its width on every side, so a big stroke reads as heavy overlap between
+     neighbours. Kept modest (ADR 0040) now that the layout spreads territories apart structurally —
+     enough padding to feel like a region, not so much that adjacent realms bleed together. */
+  .territory { stroke-width: 34; stroke-linejoin: round; paint-order: stroke;
+    fill-opacity: .12; stroke-opacity: .28; transition: opacity .45s ease; }
   .t-world { fill: var(--world); stroke: var(--world); }
   .t-expression { fill: var(--expression); stroke: var(--expression); }
   .t-knowledge { fill: var(--knowledge); stroke: var(--knowledge); }

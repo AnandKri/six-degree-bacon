@@ -52,6 +52,54 @@ def _cohesion_ratio(layout: Mapping[str, Point], domain_of: Mapping[str, str]) -
     return (sum(intra) / len(intra)) / (sum(inter) / len(inter))
 
 
+def _hull(points: list[Point]) -> list[Point]:
+    """Andrew's monotone-chain convex hull (counter-clockwise), matching the map's own hull."""
+    pts = sorted(set(points))
+    if len(pts) <= 2:
+        return pts
+    cross = lambda o, a, b: (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])  # noqa: E731
+    lower: list[Point] = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper: list[Point] = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    return lower[:-1] + upper[:-1]
+
+
+def _in_hull(p: Point, poly: list[Point]) -> bool:
+    """True if p is strictly inside the convex (CCW) polygon — right of any edge means outside."""
+    if len(poly) < 3:
+        return False
+    for i in range(len(poly)):
+        a, b = poly[i], poly[(i + 1) % len(poly)]
+        if (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]) < 0:
+            return False
+    return True
+
+
+def _foreign_intrusions(layout: Mapping[str, Point], domain_of: Mapping[str, str]) -> int:
+    """Count how many nodes fall inside a *different* domain's territory hull.
+
+    A direct, chaos-robust proxy for territory overlap: a hull that swallows foreign nodes is one
+    the eye reads as overlapping. Fewer intrusions == cleaner, more separated territories.
+    """
+    by_domain: dict[str, list[Point]] = defaultdict(list)
+    for node_id, point in layout.items():
+        by_domain[domain_of[node_id]].append(point)
+    hulls = {domain: _hull(points) for domain, points in by_domain.items()}
+    return sum(
+        1
+        for node_id, point in layout.items()
+        for domain, hull in hulls.items()
+        if domain_of[node_id] != domain and _in_hull(point, hull)
+    )
+
+
 # --- determinism -------------------------------------------------------------------------------
 def test_layout_is_deterministic(seed_graph: KnowledgeGraph) -> None:
     first = compute_layout(seed_graph)
@@ -138,6 +186,20 @@ def test_cohesion_term_is_necessary(seed_graph: KnowledgeGraph) -> None:
     domain_of = {n.id: n.domain.value for n in seed_graph.nodes()}
     assert _cohesion_ratio(compute_layout(seed_graph), domain_of) < 0.75
     assert _cohesion_ratio(compute_layout(seed_graph, domain_cohesion=0.0), domain_of) > 0.75
+
+
+def test_separation_reduces_territory_overlap(seed_graph: KnowledgeGraph) -> None:
+    """The separation force spreads territories apart, so fewer foreign nodes intrude on a hull.
+
+    Negative control for ADR 0040's other lever: holding cohesion at the shipped default, turning
+    the separation force off lets more nodes fall inside a *different* domain's territory (more
+    visual overlap) than leaving it on. Measured on foreign-node intrusions — a chaos-robust proxy
+    for hull overlap — rather than an absolute coordinate, matching this suite's property style.
+    """
+    domain_of = {n.id: n.domain.value for n in seed_graph.nodes()}
+    with_separation = _foreign_intrusions(compute_layout(seed_graph), domain_of)
+    without = _foreign_intrusions(compute_layout(seed_graph, domain_separation=0.0), domain_of)
+    assert with_separation < without
 
 
 def test_connected_nodes_are_closer_than_unconnected(seed_graph: KnowledgeGraph) -> None:

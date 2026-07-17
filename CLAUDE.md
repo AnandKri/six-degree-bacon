@@ -31,8 +31,10 @@ connections win — e.g. Roman Empire → Silk Road → Persia → Alexander →
 zero-LLM, deterministic, reproducible by hand, and now with a **map-first** zero-dependency web UI
 (`sdb serve`) — a bird's-eye view of the whole knowledge base as domain territories, with the
 discovered route lighting up in place — plus a static export (`sdb build-site`, theme-able) for free
-hosting. The map is laid out by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030)
-and themed "minimal terminal" (dark slate, single teal accent; ADR 0031). Each hop now renders its
+hosting. The map is laid out by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030;
+its domain territories are spread apart by a centroid-separation force so the crowded centre stops
+overlapping — ADR 0040) and themed "minimal terminal" (dark slate, single teal accent; ADR 0031).
+Each hop now renders its
 curated one-line **evidence** — the `Statement.evidence` prose that shipped in the data model since
 ADR 0002 but reached no surface until ADR 0037. A **South/SE Asia cluster** (ADR 0038 —
 Hinduism, Sanskrit, Maurya, Ashoka, Chola, Srivijaya, Khmer, Angkor Wat, Borobudur) then extended the
@@ -44,7 +46,10 @@ the graph through the maritime Silk Road. Then a **cultural-region surprise term
 lineage (Copernicus → al-Tusi → Euclid → Jagannatha Samrat) crossed **zero** domains; a new `Region`
 macro-sphere axis + an additive `region_jumps` term (mirroring ADR 0034's weighting) scores that
 cross-cultural surprise, restoring the science lineage to #1 and pushing Western-canon walking tours
-out of the top results — on merit, not by tuning. All checks green (ruff, format, mypy, 146 tests).
+out of the top results — on merit, not by tuning. A **map-layout tidy** (ADR 0040) then spread the
+domain territories apart — a new centroid-separation force plus a cohesion bump cut hull overlap
+~33%→~16% while keeping the cross-domain bridges visible (presentation only; no score touched). All
+checks green (ruff, format, mypy, 147 tests).
 
 ## How to run
 
@@ -96,7 +101,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   `merge.py` (overlay a harvest onto the curated graph: QID node-unification + independent-source
   corroboration), `snapshot.py` (pin to `data/harvest/`, git-ignored).
 - `sdb/layout.py` — a deterministic, pure-Python force-directed layout (`compute_layout`, ADR 0030)
-  that groups same-domain nodes into territories for the map; byte-identical every run, no numpy.
+  that groups same-domain nodes into territories for the map, then spreads those territories apart
+  with a centroid-separation force so they stop overlapping (ADR 0040); byte-identical every run, no
+  numpy.
 - `sdb/serialize.py` — the `DiscoveryResult` → JSON fields the CLI (`--json`) and the web API share
   (`result_core` + `source_dicts` + `hop_dicts`), so a new result field can't reach one surface and
   miss the other. `hop_dicts` renders the per-hop `chain` incl. each statement's curated `evidence`
@@ -134,11 +141,12 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   0032 `other` domain / harvest-fallback split, 0033 Renaissance cluster,
   0034 domain-jump information weighting, 0035 closed temporal extents, 0036 interval separation
   measured & rejected — keep midpoint distance, 0037 surface the curated `Statement.evidence` prose
-  on every hop, 0038 South/SE Asia cluster, 0039 cultural-region surprise term).
+  on every hop, 0038 South/SE Asia cluster, 0039 cultural-region surprise term, 0040 spread domain
+  territories to reduce map overlap).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 146 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 147 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the South/SE Asia cluster's bridges (ADR 0038 — Indo-European/Sanskrit,
@@ -146,7 +154,8 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   a worked example, the domain/region independence property, and a guard that every curated node has a
   region), the web UI (payload + graph payload + real localhost HTTP
   round-trips), the static-site export, a deterministic-layout suite (`test_layout.py`: reproducibility
-  + the domain-cohesion property + a negative control), a guided-walk scaling/perf test, the seed
+  + the domain-cohesion property + its negative control + a domain-separation negative control that
+  fewer nodes intrude on a foreign territory (ADR 0040)), a guided-walk scaling/perf test, the seed
   loaders (`test_loader.py`: single-parse + missing-sidecar tolerance), and the per-hop evidence
   contract — shared across both surfaces + a guard that every curated statement carries it (ADR 0037);
   `eval/golden.json` — ranker regression (characterization values).

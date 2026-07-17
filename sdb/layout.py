@@ -33,7 +33,15 @@ from sdb.schema.enums import Domain
 VIEWBOX_SIZE = 1000.0  # coordinates are normalized into [0, VIEWBOX_SIZE]
 VIEWBOX_MARGIN = 30.0  # keep nodes this far from the viewBox edge
 LAYOUT_ITERATIONS = 320  # cohesion plateaus by ~100; 3x headroom (see ADR 0030)
-DOMAIN_COHESION = 1.0  # a domain pulls exactly as hard as one edge; >2 blobs at topology's expense
+DOMAIN_COHESION = 2.4  # a domain pulls as hard as ~2.4 edges (ADR 0040 raised it from 1.0). ADR
+#   0030 swept cohesion *alone* and found >2 blobs; with DOMAIN_SEPARATION now sharing the work the
+#   operating point moved — 2.4 tightens territories without collapsing them (every domain still
+#   passes the per-domain cohesion test; edge/all length ratio 0.40 > the 0.34 baseline, i.e.
+#   bridges are expressed, not sucked in — the blob signature is the ratio *dropping*, and it rose).
+DOMAIN_SEPARATION = 8.0  # centroid-vs-centroid repulsion that spreads whole territories apart so
+#   their hulls stop overlapping (ADR 0040). With cohesion it cuts hull overlap ~33%->~16% while
+#   keeping cross-domain edges expressed; the exact value is one point in a robustly-good band (the
+#   layout is chaotic — ADR 0030 — so no decimal is "optimal", the region is what's earned)
 GRAVITY = 0.012  # centre-ward pull; the disconnected-component / isolate fix, not decoration
 INITIAL_TEMPERATURE_FRACTION = 0.06  # T0 = fraction * VIEWBOX_SIZE; linear cooling to 0
 INIT_RADIUS = 350.0  # half-size of the square-perimeter seed ring
@@ -99,6 +107,7 @@ def compute_layout(
     *,
     iterations: int = LAYOUT_ITERATIONS,
     domain_cohesion: float = DOMAIN_COHESION,
+    domain_separation: float = DOMAIN_SEPARATION,
     viewbox: float = VIEWBOX_SIZE,
     margin: float = VIEWBOX_MARGIN,
     precision: int = COORDINATE_PRECISION,
@@ -110,6 +119,8 @@ def compute_layout(
         iterations: Number of cooling iterations (the default is well past convergence).
         domain_cohesion: Strength of the same-domain pull; ``0.0`` disables territory formation
             (used as a negative control in the tests).
+        domain_separation: Strength of the centroid-vs-centroid push that spreads territories apart
+            so their hulls stop overlapping (ADR 0040); ``0.0`` disables it (negative control).
         viewbox: Coordinates are normalized into ``[0, viewbox]`` on both axes.
         margin: Minimum distance kept between nodes and the viewBox edge.
         precision: Decimal places coordinates are rounded to.
@@ -192,6 +203,40 @@ def compute_layout(
                 force = domain_cohesion * (dist * dist) / ideal
                 dx[i] += ddx / dist * force
                 dy[i] += ddy / dist * force
+
+        # Domain-centroid separation: repel each domain's centroid from every other, then push the
+        # whole domain by that one vector (the same displacement to every member). The counterpart
+        # to cohesion — cohesion tightens a territory, separation spreads territories apart so their
+        # convex hulls stop overlapping (ADR 0040). Rigid per domain, so internal shape is intact;
+        # inverse-distance (k^2/d, the node-repulsion law at territory scale) so far-apart domains
+        # barely feel it and only the cramped centre is pried open. Iterate the sorted-domain order
+        # already fixed by `members_by_domain`, so this stays deterministic.
+        if domain_separation > 0.0:
+            centroids = []
+            for members in members_by_domain.values():
+                size = len(members)
+                cx = sum(xs[i] for i in members) / size
+                cy = sum(ys[i] for i in members) / size
+                centroids.append((members, cx, cy))
+            for p in range(len(centroids)):
+                members_p, cxp, cyp = centroids[p]
+                for query in range(p + 1, len(centroids)):
+                    members_q, cxq, cyq = centroids[query]
+                    ddx = cxp - cxq
+                    ddy = cyp - cyq
+                    dist2 = ddx * ddx + ddy * ddy
+                    if dist2 < MIN_SEPARATION_SQUARED:
+                        dist2 = MIN_SEPARATION_SQUARED
+                    dist = math.sqrt(dist2)
+                    force = domain_separation * (ideal * ideal) / dist
+                    fx = ddx / dist * force
+                    fy = ddy / dist * force
+                    for i in members_p:
+                        dx[i] += fx
+                        dy[i] += fy
+                    for i in members_q:
+                        dx[i] -= fx
+                        dy[i] -= fy
 
         # Gravity toward the origin: keeps islands and isolates from being repelled out of frame.
         for i in range(count):

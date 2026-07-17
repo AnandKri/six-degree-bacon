@@ -3,10 +3,12 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**146 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
+green (**147 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now also carries
-a **`Region`** cultural axis (ADR 0039).
+a **`Region`** cultural axis (ADR 0039). Most recent change is presentation-only: the map's domain
+territories are spread apart (a centroid-separation force + a cohesion bump) so the crowded centre
+stops overlapping — hull overlap ~33%→~16%, no score touched (ADR 0040).
 
 **Read this first — the rule the project nearly broke (ADR 0034/0035).** Data and the rubric are the
 truth; **a test may only verify what the rubric claims, never that a favourite wins**. This was

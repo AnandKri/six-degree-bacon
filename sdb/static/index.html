@@ -130,6 +130,7 @@
     border: 1px solid var(--border-2); color: var(--muted); cursor: pointer; font-family: var(--font-mono);
     font-size: 1rem; display: grid; place-items: center; transition: color .15s, border-color .15s, box-shadow .15s; }
   .iconbtn:hover { color: var(--accent); border-color: var(--accent); box-shadow: var(--glow); }
+  .iconbtn svg { width: 15px; height: 15px; }
 
   .legend { position: fixed; right: 1.15rem; bottom: 1.15rem; z-index: 15; background: var(--panel);
     border: 1px solid var(--border); border-radius: 3px; padding: .65rem .8rem; font-family: var(--font-mono);
@@ -221,17 +222,22 @@
   .tip .sum { font-family: var(--font-sans); color: var(--muted); margin-top: .3rem; }
 
   @media (max-width: 720px) {
+    /* Header stacks and centres: title on top, [search][+ speculative] aligned in a row below. */
+    .topbar { flex-direction: column; align-items: center; gap: .55rem; }
+    .brand { text-align: center; }
     .brand p { display: none; }
+    .controls { margin: 0; align-items: center; }
     #zin, #zout { display: none; }                 /* redundant on mobile — keep only fit-to-screen */
-    .zoomdock { left: auto; right: 1.15rem; }      /* single control, bottom-right, clear of the hint */
-    /* Collapsed search = just the magnifier, sitting by the brand on the header row. */
-    .controls:not(.open) .search .mag { position: static; transform: none; width: 34px; height: 34px;
+    /* Collapsed search = just the magnifier, matched in height to the + speculative pill. */
+    .controls:not(.open) .search .mag { position: static; transform: none; width: 40px; height: 34px;
       border: 1px solid var(--border-2); border-radius: 3px; color: var(--muted); }
     .controls:not(.open) .search .mag:hover { color: var(--accent); border-color: var(--accent); }
     .controls:not(.open) .search input { width: 0; min-width: 0; padding: 0; opacity: 0;
       border-color: transparent; pointer-events: none; }
-    /* Tapping it expands to a full-width search bar over the header. */
-    .controls.open { position: fixed; top: .8rem; left: 1.15rem; right: 1.15rem; margin: 0; z-index: 22; }
+    #spec { height: 34px; }
+    /* Tapping the magnifier expands it to a full-width search bar over the header. */
+    .controls.open { position: fixed; top: .8rem; left: 1.15rem; right: 1.15rem; margin: 0; z-index: 22;
+      flex-direction: row; }
     .controls.open .search { flex: 1 1 auto; width: 100%; }
     .controls.open .search input { width: 100%; min-width: 0; opacity: 1; padding-left: 2.1rem; }
     .controls.open #spec { display: none; }
@@ -239,7 +245,10 @@
     .card { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 64vh; border-radius: 0;
       border-left: 0; border-right: 0; border-bottom: 0; transform: translateY(112%); }
     .card.open { transform: none; }
-    .hint { left: .75rem; right: 4rem; transform: none; max-width: none; justify-content: flex-start; }
+    /* Bottom row: the hint (left) and the fit button (right), same height and baseline. */
+    .zoomdock { left: auto; right: 1.15rem; bottom: 1.15rem; }
+    .hint { left: .75rem; right: 4.2rem; bottom: 1.15rem; transform: none; max-width: none;
+      min-height: 34px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
     body.card-open .zoomdock { display: none; }   /* the card owns the corner */
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
@@ -283,7 +292,7 @@
 <div class="zoomdock">
   <button class="iconbtn" id="zin" aria-label="Zoom in">+</button>
   <button class="iconbtn" id="zout" aria-label="Zoom out">&#8722;</button>
-  <button class="iconbtn" id="zfit" title="Fit whole map" aria-label="Fit whole map">&#10530;</button>
+  <button class="iconbtn" id="zfit" title="Fit whole map" aria-label="Fit whole map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"></path><path d="M10 20H4v-6"></path></svg></button>
 </div>
 
 <div class="legend" id="legend">
@@ -562,7 +571,6 @@ function drawRoute(ids) {
 }
 function highlight(ids) {
   const set = new Set(ids);
-  svg.classList.add("focused");
   for (const [id, el] of nodeEl) {
     el.classList.toggle("on", set.has(id));
     el.classList.toggle("origin", id === ids[0]);
@@ -573,6 +581,12 @@ function highlight(ids) {
     const line = edgeByKey.get(ekey(ids[i], ids[i + 1]));
     if (line) line.classList.add("on");
   }
+  applyFocus();
+}
+function applyFocus() {
+  // Dim the field to spotlight the route only when the card is open AND expanded; a minimized card
+  // means "explore", so the whole palette stays bright (like the initial view).
+  svg.classList.toggle("focused", !!selected && !$("#card").classList.contains("min"));
 }
 function clearSelection() {
   selected = null; curPath = []; svg.classList.remove("focused"); gRoute.innerHTML = "";
@@ -586,6 +600,7 @@ function setMinimized(min) {
   const b = $("#cardmin");
   b.innerHTML = min ? "&#9633;" : "&#8211;";  // restore (square) vs minimize (dash)
   b.setAttribute("aria-label", min ? "Expand" : "Minimize");
+  applyFocus();  // bright map when minimized, dimmed when expanded
 }
 function toggleMinimized() {
   setMinimized(!$("#card").classList.contains("min"));
@@ -602,7 +617,10 @@ function showHint() {
   const h = $("#hint");
   if (selected) { h.style.display = "none"; return; }
   h.style.display = "";
-  h.innerHTML = `<span class="lbl">select a node &rarr; its most surprising route</span>`
+  // Concise on mobile so it stays one line and lines up with the fit button.
+  const label = matchMedia("(max-width: 720px)").matches
+    ? "select a node" : "select a node &rarr; its most surprising route";
+  h.innerHTML = `<span class="lbl">${label}</span>`
     + `<span class="sep">&middot;</span><span class="stat">${NODES.length}</span> nodes`;
 }
 

@@ -32,8 +32,9 @@ zero-LLM, deterministic, reproducible by hand, and now with a **map-first** zero
 (`sdb serve`) — a bird's-eye view of the whole knowledge base as domain territories, with the
 discovered route lighting up in place — plus a static export (`sdb build-site`, theme-able) for free
 hosting. The map is laid out by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030)
-and themed "minimal terminal" (dark slate, single teal accent; ADR 0031). All checks green (ruff,
-format, mypy, 130 tests).
+and themed "minimal terminal" (dark slate, single teal accent; ADR 0031). Each hop now renders its
+curated one-line **evidence** — the `Statement.evidence` prose that shipped in the data model since
+ADR 0002 but reached no surface until ADR 0037. All checks green (ruff, format, mypy, 141 tests).
 
 ## How to run
 
@@ -66,12 +67,15 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   sources corroborate a fact.
 - `sdb/constants.py` — **the scoring rubric**: the single source of truth for every weight/threshold.
 - `sdb/graph/` — `build.py` (`KnowledgeGraph`: networkx graph + cached degree/rarity/counts + topic
-  lookup) and `loader.py`.
+  lookup) and `loader.py` (`load_seed`/`load_cooccurrence`/`load_similarity`, plus `graph_from_seed`
+  and the one-call `load_graph` that both the CLI and `sdb serve` use — the sole JSON→graph path,
+  moved here from `web.py` in ADR 0037).
 - `sdb/engine/` — `traversal.py` (`find_paths`: exact enumeration under a budget, else a bounded
   best-first **guided walk** — ADR 0010), `surprise.py` (information-theoretic +
   **endpoint-unexpectedness** from co-occurrence), `confidence.py` (source rubric → noisy-OR
   corroboration → link quality → validators → weakest-link path trust), `narrate.py` (template TIL — a
-  single quantized claim, ADR 0028; + `Possibly:` flag), `pipeline.py` (`discover()`).
+  single quantized claim, ADR 0028; + `Possibly:` flag), `pipeline.py` (`discover()`, and the shared
+  `discover_all`/`trust_gate` the CLI and web both dispatch through — ADR 0037).
 - `sdb/harvest/` — ingestion (all deterministic given a snapshot): `client.py`
   (`SparqlClient` protocol + live `WikidataClient` + offline `FakeSparqlClient`), `mapping.py`
   (Wikidata rank/reference → `Source`, `P31` → `Domain`, PID → `Predicate` incl. alias PIDs),
@@ -81,8 +85,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `sdb/layout.py` — a deterministic, pure-Python force-directed layout (`compute_layout`, ADR 0030)
   that groups same-domain nodes into territories for the map; byte-identical every run, no numpy.
 - `sdb/serialize.py` — the `DiscoveryResult` → JSON fields the CLI (`--json`) and the web API share
-  (`result_core` + `source_dicts`), so a new result field can't reach one surface and miss the other.
-  Each caller keeps its own extras (CLI `rank`/`path`, web `chain`), rounding, and appends `sources`
+  (`result_core` + `source_dicts` + `hop_dicts`), so a new result field can't reach one surface and
+  miss the other. `hop_dicts` renders the per-hop `chain` incl. each statement's curated `evidence`
+  (ADR 0037); each caller keeps its own extras (CLI `rank`/`path`), rounding, and appends `sources`
   last.
 - `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
   `validate-qids`, `serve`, `build-site`). `sdb/web.py` + `sdb/static/index.html` — a zero-dependency
@@ -113,16 +118,19 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   0029 full-link Jaccard similarity, 0030 deterministic graph layout, 0031 map-first terminal UI,
   0032 `other` domain / harvest-fallback split, 0033 Renaissance cluster,
   0034 domain-jump information weighting, 0035 closed temporal extents, 0036 interval separation
-  measured & rejected — keep midpoint distance).
+  measured & rejected — keep midpoint distance, 0037 surface the curated `Statement.evidence` prose
+  on every hop).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 130 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 141 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the web UI (payload + graph payload + real localhost HTTP
   round-trips), the static-site export, a deterministic-layout suite (`test_layout.py`: reproducibility
-  + the domain-cohesion property + a negative control), and a guided-walk scaling/perf test;
+  + the domain-cohesion property + a negative control), a guided-walk scaling/perf test, the seed
+  loaders (`test_loader.py`: single-parse + missing-sidecar tolerance), and the per-hop evidence
+  contract — shared across both surfaces + a guard that every curated statement carries it (ADR 0037);
   `eval/golden.json` — ranker regression (characterization values).
 
 ## Scoring in one paragraph

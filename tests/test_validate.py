@@ -48,6 +48,23 @@ def test_curated_seed_qids_are_well_formed_and_unique() -> None:
     assert len(qids) == len(set(qids))  # each Wikidata entity used once
 
 
+def test_every_curated_statement_carries_evidence() -> None:
+    """Every hop now renders its curated justification, so a blank one is a hole in the card.
+
+    `Statement.evidence` defaults to `""`, so nothing in the schema enforces this — the value of
+    surfacing the prose (ADR 0037) rests entirely on the curation staying complete. Deliberately
+    checks non-emptiness only: prose style is not asserted, since legitimate evidence starts
+    lower-case ("al-Khwarizmi ...").
+    """
+    seed = load_seed(SEED_PATH)
+    missing = [
+        f"{s.subject} --{s.predicate.value}--> {s.object}"
+        for s in seed.statements
+        if not s.evidence.strip()
+    ]
+    assert not missing, f"statements with no curated evidence: {missing}"
+
+
 def test_cooccurrence_references_only_real_nodes() -> None:
     seed = load_seed(SEED_PATH)
     cooccurrence = load_cooccurrence(COOCCURRENCE_PATH)

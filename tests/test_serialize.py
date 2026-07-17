@@ -5,7 +5,7 @@ from __future__ import annotations
 from sdb.cli import _result_to_dict
 from sdb.engine.pipeline import discover
 from sdb.graph.build import KnowledgeGraph
-from sdb.serialize import result_core, source_dicts, unique_sources
+from sdb.serialize import hop_dicts, result_core, source_dicts, unique_sources
 
 # Every field both surfaces agree on. `sources` is intentionally absent: each caller appends it last
 # so both payloads keep their original key order (see the sdb.serialize module docstring).
@@ -21,6 +21,9 @@ _SHARED_FIELDS = {
     "possibly",
     "til",
 }
+
+# Every field of a `chain` step. `evidence` is the curated justification (ADR 0037).
+_CHAIN_FIELDS = {"from", "from_id", "phrase", "to", "to_id", "evidence"}
 
 
 def _a_result(graph: KnowledgeGraph):
@@ -52,6 +55,39 @@ def test_both_surfaces_expose_every_shared_field(seed_graph: KnowledgeGraph) -> 
     assert cli["til"] == web["til"]
     assert cli["hops"] == web["hops"]
     assert round(float(cli["trust"]), 3) == web["trust"]
+
+
+def test_hop_dicts_render_one_sourced_step_per_hop(seed_graph: KnowledgeGraph) -> None:
+    result = _a_result(seed_graph)
+    steps = hop_dicts(seed_graph, result)
+
+    assert len(steps) == result.path.length
+    assert all(set(step) == _CHAIN_FIELDS for step in steps)
+    # Each step joins onto the next, and the whole chain spans the path's endpoints.
+    assert [step["from_id"] for step in steps] == list(result.path.node_ids[:-1])
+    assert [step["to_id"] for step in steps] == list(result.path.node_ids[1:])
+
+
+def test_hop_dicts_carry_each_statement_s_own_curated_evidence(seed_graph: KnowledgeGraph) -> None:
+    """The evidence must be the hop's *own* claim, not the path's or the neighbour's (ADR 0037)."""
+    result = _a_result(seed_graph)
+    steps = hop_dicts(seed_graph, result)
+
+    for step, hop in zip(steps, result.path.hops, strict=True):
+        assert step["evidence"] == hop.statement.evidence
+    assert all(step["evidence"] for step in steps)  # the curated seed justifies every hop
+
+
+def test_both_surfaces_expose_the_same_evidence_chain(seed_graph: KnowledgeGraph) -> None:
+    """`chain` is shared, so evidence cannot ship to one surface and silently miss the other."""
+    from sdb.web import _result_payload
+
+    result = _a_result(seed_graph)
+    cli = _result_to_dict(seed_graph, result, 1)
+    web = _result_payload(seed_graph, result)
+
+    assert cli["chain"] == web["chain"]
+    assert all(set(step) == _CHAIN_FIELDS for step in cli["chain"])
 
 
 def test_sources_stay_last_in_both_payloads(seed_graph: KnowledgeGraph) -> None:

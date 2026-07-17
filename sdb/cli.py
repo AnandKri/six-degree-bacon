@@ -16,17 +16,19 @@ import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 
-from sdb.constants import POSSIBLY_THRESHOLD, TOP_DEFAULT, TRUST_FLOOR
-from sdb.engine.pipeline import TopicNotFoundError, discover
+from sdb.constants import TOP_DEFAULT
+from sdb.engine.pipeline import TopicNotFoundError, discover_all, trust_gate
 from sdb.graph.build import KnowledgeGraph
-from sdb.graph.loader import load_cooccurrence, load_seed, load_similarity
-from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED, Archetype
+from sdb.graph.loader import graph_from_seed, load_seed
+from sdb.schema.enums import Archetype
 from sdb.schema.models import DiscoveryResult
-from sdb.serialize import result_core, source_dicts, unique_sources
+from sdb.serialize import hop_dicts, result_core, source_dicts, unique_sources
 
 _DEFAULT_SEED = Path("data/seed.json")
 _DEFAULT_COOCCURRENCE = Path("data/cooccurrence.json")
 _WRAP_WIDTH = 66
+# Evidence sits one level indented under its hop, so it wraps narrower than the card's prose.
+_EVIDENCE_WIDTH = _WRAP_WIDTH - 8
 _UNICODE_PROBE = "⇢→█░⚠"
 
 
@@ -219,8 +221,8 @@ def _run_serve(args: argparse.Namespace) -> int:
 
 def _run_build_site(args: argparse.Namespace) -> int:
     """Pre-render the static site (deterministic; deployable to any static host)."""
+    from sdb.graph.loader import load_graph
     from sdb.site import build_site
-    from sdb.web import load_graph
 
     if not args.seed.exists():
         print(f"seed file not found: {args.seed}", file=sys.stderr)
@@ -267,29 +269,17 @@ def _run_discover(args: argparse.Namespace) -> int:
                 file=sys.stderr,
             )
 
-    has_cooc = args.cooccurrence.exists()
-    cooccurrence = load_cooccurrence(args.cooccurrence) if has_cooc else None
-    similarity = load_similarity(args.cooccurrence) if has_cooc else None
-    graph = KnowledgeGraph.from_seed(seed, cooccurrence, similarity)
-    min_trust = TRUST_FLOOR if args.include_possibly else POSSIBLY_THRESHOLD
-    archetypes = (
-        [Archetype.JOURNEY, Archetype.UNLIKELY]
-        if args.archetype == "both"
-        else [Archetype(args.archetype)]
-    )
+    graph = graph_from_seed(seed, args.cooccurrence)
     try:
-        by_archetype = {
-            archetype: discover(
-                graph,
-                topic,
-                archetype=archetype,
-                min_hops=args.min_hops,
-                max_hops=args.max_hops,
-                top=args.top,
-                min_trust=min_trust,
-            )
-            for archetype in archetypes
-        }
+        by_archetype = discover_all(
+            graph,
+            topic,
+            archetype=args.archetype,
+            min_hops=args.min_hops,
+            max_hops=args.max_hops,
+            top=args.top,
+            min_trust=trust_gate(args.include_possibly),
+        )
     except TopicNotFoundError as error:
         print(f"Topic not found: {topic!r}", file=sys.stderr)
         if error.suggestions:
@@ -305,17 +295,16 @@ def _run_discover(args: argparse.Namespace) -> int:
     if args.as_json:
         payload = [
             _result_to_dict(graph, result, i)
-            for archetype in archetypes
-            for i, result in enumerate(by_archetype[archetype], 1)
+            for results in by_archetype.values()
+            for i, result in enumerate(results, 1)
         ]
         _emit(json.dumps(payload, indent=2))  # ensure_ascii=True -> always console-safe
         return 0
 
     glyphs = _glyphs()
     _emit(f"\nSix Degree Bacon - {topic}\n" + "=" * _WRAP_WIDTH)
-    for archetype in archetypes:
+    for archetype, results in by_archetype.items():
         _emit(f"\n{_ARCHETYPE_HEADING[archetype]}")
-        results = by_archetype[archetype]
         if not results:
             _emit(f"   (no confident {archetype.value} found)\n")
             continue
@@ -409,10 +398,13 @@ def _render_card(
         "",
     ]
     lines.append(f"   {start}")
-    for hop in result.path.hops:
-        phrases = PREDICATE_PHRASE_REVERSED if hop.is_reversed else PREDICATE_PHRASE
-        phrase = phrases[hop.statement.predicate]
-        lines.append(f"     {glyphs.step} ({phrase}) {graph.node(hop.to_id).label}")
+    for step in hop_dicts(graph, result):
+        lines.append(f"     {glyphs.step} ({step['phrase']}) {step['to']}")
+        # The curated one-line justification for this hop (ADR 0037). Blank for any statement
+        # without curated prose, which wraps to nothing rather than an empty line.
+        lines.extend(
+            f"        {line}" for line in textwrap.wrap(step["evidence"], width=_EVIDENCE_WIDTH)
+        )
     lines.append("")
 
     lines.extend(f"   {line}" for line in textwrap.wrap(result.til, width=_WRAP_WIDTH))
@@ -449,11 +441,14 @@ def _result_to_dict(
     """Convert a result to a JSON-friendly dict.
 
     Machine-facing, so the shared fields keep 4 dp; ``rank`` and the flat ``path`` of labels are the
-    CLI's own (the web card renders a phrased ``chain`` instead).
+    CLI's own. ``chain`` is the same per-hop evidence the web card renders — a machine consumer
+    wants the sourced justification for each claim as much as a reader does, and sharing one
+    renderer is what keeps it from reaching a single surface (ADR 0037).
     """
     return {
         "rank": index,
         **result_core(graph, result, score_dp=4, trust_dp=4, metric_dp=4),
         "path": [graph.node(node_id).label for node_id in result.path.node_ids],
+        "chain": hop_dicts(graph, result),
         "sources": source_dicts(result),
     }

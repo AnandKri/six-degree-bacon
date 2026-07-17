@@ -5,19 +5,25 @@ near-identical serializers, each with its own copy of the source de-duplication 
 ``DiscoveryResult`` had to be remembered in two places. This module owns the part they agree on.
 
 What they legitimately *don't* share stays with each caller: the CLI adds ``rank`` and a flat
-``path`` of labels, the web adds a per-hop ``chain`` with phrasing for the card. Rounding is a
-parameter rather than a fixed choice because the two surfaces have different jobs — the CLI's
-``--json`` is machine-facing and keeps 4 dp, the web card is display-facing and keeps 2-3 dp.
+``path`` of labels. Rounding is a parameter rather than a fixed choice because the two surfaces
+have different jobs — the CLI's ``--json`` is machine-facing and keeps 4 dp, the web card is
+display-facing and keeps 2-3 dp.
 
 :func:`result_core` deliberately omits ``sources``, which each caller appends last via
 :func:`source_dicts` — the *logic* (de-duplication) is shared, only the placement is the caller's.
 Both payloads have always ended with ``sources``, and keeping it that way makes this refactor
 byte-identical on both surfaces rather than merely equivalent.
+
+:func:`hop_dicts` renders the ``chain`` — the per-hop evidence. It was the web's private payload
+until the curated ``Statement.evidence`` prose shipped (ADR 0037); the moment both front-ends
+needed it, it became exactly the kind of field this module exists to keep from reaching one surface
+and missing the other.
 """
 
 from __future__ import annotations
 
 from sdb.graph.build import KnowledgeGraph
+from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED
 from sdb.schema.models import DiscoveryResult, Source
 
 
@@ -50,6 +56,41 @@ def source_dicts(result: DiscoveryResult) -> list[dict[str, str | None]]:
         {"id": source.id, "type": source.source_type.value, "url": source.url}
         for source in unique_sources(result)
     ]
+
+
+def hop_dicts(graph: KnowledgeGraph, result: DiscoveryResult) -> list[dict[str, str]]:
+    """Render the path as one dict per hop, in the direction each hop was traversed.
+
+    Each step is ``{from, from_id, phrase, to, to_id, evidence}``. ``phrase`` is the correctly
+    directed predicate phrasing; ``evidence`` is the curated one-sentence justification for that
+    specific claim (:attr:`~sdb.schema.models.Statement.evidence`) — the thing that makes the chain
+    read as sourced evidence rather than a mechanical list of predicates (ADR 0037). It is ``""``
+    for any statement without curated prose, which callers must tolerate.
+
+    The ``*_id`` node ids let the map light the discovered route in place (join a hop back to a map
+    node); the labels are what a card renders.
+
+    Args:
+        graph: The knowledge graph the result came from, used to resolve node labels.
+        result: The discovery result whose path to render.
+
+    Returns:
+        One JSON-friendly dict per hop, in path order.
+    """
+    steps: list[dict[str, str]] = []
+    for hop in result.path.hops:
+        phrases = PREDICATE_PHRASE_REVERSED if hop.is_reversed else PREDICATE_PHRASE
+        steps.append(
+            {
+                "from": graph.node(hop.from_id).label,
+                "from_id": hop.from_id,
+                "phrase": phrases[hop.statement.predicate],
+                "to": graph.node(hop.to_id).label,
+                "to_id": hop.to_id,
+                "evidence": hop.statement.evidence,
+            }
+        )
+    return steps
 
 
 def result_core(

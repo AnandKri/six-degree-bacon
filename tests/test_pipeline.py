@@ -10,7 +10,12 @@ from sdb.constants import (
     POSSIBLY_THRESHOLD,
     TRUST_FLOOR,
 )
-from sdb.engine.pipeline import TopicNotFoundError, discover
+from sdb.engine.pipeline import (
+    TopicNotFoundError,
+    discover,
+    discover_all,
+    trust_gate,
+)
 from sdb.graph.build import KnowledgeGraph
 from sdb.schema.enums import Archetype, Domain, Predicate, SourceType
 from sdb.schema.models import DiscoveryResult, Node, Source, Statement
@@ -49,6 +54,35 @@ def test_topic_not_found_has_suggestions(seed_graph: KnowledgeGraph) -> None:
     with pytest.raises(TopicNotFoundError) as excinfo:
         discover(seed_graph, "Rmoan Empire")
     assert excinfo.value.suggestions
+
+
+def test_trust_gate_picks_the_documented_thresholds() -> None:
+    assert trust_gate(include_possibly=False) == POSSIBLY_THRESHOLD
+    assert trust_gate(include_possibly=True) == TRUST_FLOOR
+
+
+def test_discover_all_dispatches_both_archetypes_like_the_per_archetype_call(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # The shared dispatch both front-ends use must agree, key-for-key, with calling `discover` per
+    # archetype — that equivalence is the whole point of hoisting the loop out of the CLI and web.
+    both = discover_all(seed_graph, "Roman Empire", archetype="both", top=3)
+    assert list(both) == [Archetype.JOURNEY, Archetype.UNLIKELY]  # presentation order preserved
+    for archetype, results in both.items():
+        expected = discover(seed_graph, "Roman Empire", archetype=archetype, top=3)
+        assert [r.path.node_ids for r in results] == [r.path.node_ids for r in expected]
+
+
+def test_discover_all_narrows_to_one_archetype_and_falls_back_on_junk(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    # A single-archetype request returns just that key; an unrecognised name falls back to "both"
+    # (the web hands it straight from a query string, so junk must not crash).
+    only = discover_all(seed_graph, "Roman Empire", archetype="unlikely", top=1)
+    assert list(only) == [Archetype.UNLIKELY]
+
+    junk = discover_all(seed_graph, "Roman Empire", archetype="nonsense", top=1)
+    assert list(junk) == [Archetype.JOURNEY, Archetype.UNLIKELY]
 
 
 def test_discover_ranked_by_wow_score_unique_endpoints(seed_graph: KnowledgeGraph) -> None:

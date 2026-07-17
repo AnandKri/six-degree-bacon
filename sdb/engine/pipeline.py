@@ -9,6 +9,7 @@ from sdb.constants import (
     MIN_HOPS_UNLIKELY,
     POSSIBLY_THRESHOLD,
     TOP_DEFAULT,
+    TRUST_FLOOR,
 )
 from sdb.engine.confidence import score_trust
 from sdb.engine.narrate import narrate
@@ -27,6 +28,62 @@ class TopicNotFoundError(LookupError):
         self.topic = topic
         self.suggestions = suggestions
         super().__init__(f"topic not found: {topic!r}")
+
+
+# The archetype vocabulary both front-ends expose as `--archetype` / `?archetype=`. Order is the
+# order results are presented in, so it is a tuple, not a set.
+ARCHETYPE_CHOICES: dict[str, tuple[Archetype, ...]] = {
+    "journey": (Archetype.JOURNEY,),
+    "unlikely": (Archetype.UNLIKELY,),
+    "both": (Archetype.JOURNEY, Archetype.UNLIKELY),
+}
+
+
+def trust_gate(include_possibly: bool) -> float:
+    """The minimum trust a path must clear to be surfaced.
+
+    The default gate is :data:`~sdb.constants.POSSIBLY_THRESHOLD` (a genuine "wow with evidence"
+    bar); ``include_possibly`` lowers it to :data:`~sdb.constants.TRUST_FLOOR`, below which a path
+    is never shown at all.
+    """
+    return TRUST_FLOOR if include_possibly else POSSIBLY_THRESHOLD
+
+
+def discover_all(
+    graph: KnowledgeGraph,
+    topic: str,
+    *,
+    archetype: str = "both",
+    min_hops: int | None = None,
+    max_hops: int | None = None,
+    top: int = TOP_DEFAULT,
+    min_trust: float = POSSIBLY_THRESHOLD,
+) -> dict[Archetype, list[DiscoveryResult]]:
+    """Run :func:`discover` for each archetype named by ``archetype``, keyed by archetype.
+
+    Both front-ends offer the same journey/unlikely/both choice and then run the identical loop, so
+    the loop lives here rather than being copied into each. An unrecognised name falls back to
+    ``"both"`` — the web takes it straight from a query string.
+
+    Returns:
+        ``{archetype: results}`` in presentation order (dicts preserve insertion order).
+
+    Raises:
+        TopicNotFoundError: If ``topic`` does not resolve to a node.
+    """
+    archetypes = ARCHETYPE_CHOICES.get(archetype, ARCHETYPE_CHOICES["both"])
+    return {
+        each: discover(
+            graph,
+            topic,
+            archetype=each,
+            min_hops=min_hops,
+            max_hops=max_hops,
+            top=top,
+            min_trust=min_trust,
+        )
+        for each in archetypes
+    }
 
 
 def _hop_range(archetype: Archetype, min_hops: int | None, max_hops: int | None) -> tuple[int, int]:
@@ -50,12 +107,18 @@ def discover(
 ) -> list[DiscoveryResult]:
     """Discover the highest-scoring paths from ``topic`` for a given archetype.
 
-    ``JOURNEY`` scores each path ``surprise x trust`` over ``[3, 4]`` hops; ``UNLIKELY`` (the
-    improbable adjacency) scores ``endpoint_unexpectedness x trust`` over ``[1, 3]`` hops so the
-    improbability of the *destination* decides it. Results are ranked by that score and deduplicated
-    to the best path per endpoint. Paths below ``min_trust`` are dropped — the default
-    (:data:`~sdb.constants.POSSIBLY_THRESHOLD`) is the "wow with evidence" gate; lower it to
-    :data:`~sdb.constants.TRUST_FLOOR` to include speculative ``Possibly:`` paths.
+    ``JOURNEY`` scores each path ``surprise x trust`` over the ``MIN_HOPS_DEFAULT..
+    MAX_HOPS_DEFAULT`` range; ``UNLIKELY`` (the improbable adjacency) scores
+    ``endpoint_unexpectedness x trust`` over the shorter ``MIN_HOPS_UNLIKELY..MAX_HOPS_UNLIKELY``
+    range, so the improbability of the *destination* rather than the distance decides it. The two
+    ranges are disjoint by construction, which is what stops both archetypes returning the same
+    path (ADR 0027). The figures live in :mod:`sdb.constants` and are deliberately not repeated
+    here — restating them is how this docstring came to claim the pre-ADR-0021/0027 ranges.
+
+    Results are ranked by that score and deduplicated to the best path per endpoint. Paths below
+    ``min_trust`` are dropped — the default (:data:`~sdb.constants.POSSIBLY_THRESHOLD`) is the "wow
+    with evidence" gate; lower it to :data:`~sdb.constants.TRUST_FLOOR` to include speculative
+    ``Possibly:`` paths.
 
     Raises:
         TopicNotFoundError: If ``topic`` does not resolve to a node.

@@ -21,50 +21,28 @@ from pathlib import Path
 from typing import cast
 from urllib.parse import parse_qs, urlparse
 
-from sdb.constants import POSSIBLY_THRESHOLD, TOP_DEFAULT, TRUST_FLOOR
-from sdb.engine.pipeline import TopicNotFoundError, discover
+from sdb.constants import TOP_DEFAULT
+from sdb.engine.pipeline import TopicNotFoundError, discover_all, trust_gate
 from sdb.graph.build import KnowledgeGraph
-from sdb.graph.loader import load_cooccurrence, load_seed, load_similarity
+from sdb.graph.loader import load_graph
 from sdb.layout import compute_layout
-from sdb.schema.enums import PREDICATE_PHRASE, PREDICATE_PHRASE_REVERSED, Archetype
-from sdb.schema.models import DiscoveryResult, Hop
-from sdb.serialize import result_core, source_dicts
+from sdb.schema.models import DiscoveryResult
+from sdb.serialize import hop_dicts, result_core, source_dicts
 
 # The single self-contained page, loaded once from package data (works from a source tree or wheel).
 _PAGE = resources.files("sdb").joinpath("static", "index.html").read_text(encoding="utf-8")
-
-_ARCHETYPES: dict[str, list[Archetype]] = {
-    "journey": [Archetype.JOURNEY],
-    "unlikely": [Archetype.UNLIKELY],
-    "both": [Archetype.JOURNEY, Archetype.UNLIKELY],
-}
-
-
-def _hop_payload(graph: KnowledgeGraph, hop: Hop) -> dict[str, str]:
-    """One step of a path as ``{from, from_id, phrase, to, to_id}``, in the direction traversed.
-
-    The ``*_id`` node ids let the map light the discovered route in place (join a hop back to a map
-    node); the labels are what the card renders.
-    """
-    phrases = PREDICATE_PHRASE_REVERSED if hop.is_reversed else PREDICATE_PHRASE
-    return {
-        "from": graph.node(hop.from_id).label,
-        "from_id": hop.from_id,
-        "phrase": phrases[hop.statement.predicate],
-        "to": graph.node(hop.to_id).label,
-        "to_id": hop.to_id,
-    }
 
 
 def _result_payload(graph: KnowledgeGraph, result: DiscoveryResult) -> dict[str, object]:
     """A single result as a JSON-friendly dict — richer than the CLI's, with per-hop phrasing.
 
-    Display-facing, so the shared fields round to 2-3 dp; ``chain`` is the web's own (the CLI
-    emits a flat ``path`` of labels instead).
+    Display-facing, so the shared fields round to 2-3 dp; ``chain`` carries the sourced evidence
+    the card renders under each step (the CLI emits a flat ``path`` of labels alongside its own
+    copy of the same chain).
     """
     return {
         **result_core(graph, result, score_dp=2, trust_dp=3, metric_dp=2),
-        "chain": [_hop_payload(graph, hop) for hop in result.path.hops],
+        "chain": hop_dicts(graph, result),
         "sources": source_dicts(result),
     }
 
@@ -86,27 +64,23 @@ def discover_payload(
     """
     if not topic.strip():
         return {"topic": topic, "error": "empty"}
-    archetypes = _ARCHETYPES.get(archetype, _ARCHETYPES["both"])
-    min_trust = TRUST_FLOOR if include_possibly else POSSIBLY_THRESHOLD
     try:
-        by_archetype = {
-            a: discover(
-                graph,
-                topic,
-                archetype=a,
-                top=top,
-                min_trust=min_trust,
-                min_hops=min_hops,
-                max_hops=max_hops,
-            )
-            for a in archetypes
-        }
+        by_archetype = discover_all(
+            graph,
+            topic,
+            archetype=archetype,
+            top=top,
+            min_trust=trust_gate(include_possibly),
+            min_hops=min_hops,
+            max_hops=max_hops,
+        )
     except TopicNotFoundError as error:
         return {"topic": topic, "error": "not_found", "suggestions": error.suggestions}
     return {
         "topic": topic,
         "results": {
-            a.value: [_result_payload(graph, r) for r in by_archetype[a]] for a in archetypes
+            each.value: [_result_payload(graph, result) for result in results]
+            for each, results in by_archetype.items()
         },
     }
 
@@ -151,14 +125,6 @@ def graph_payload(
         seen.add(key)
         edges.append({"source": key[0], "target": key[1]})
     return {"nodes": nodes, "edges": edges}
-
-
-def load_graph(seed_path: Path, cooccurrence_path: Path) -> KnowledgeGraph:
-    """Load the knowledge graph (with co-occurrence if the sidecar exists) for serving."""
-    exists = cooccurrence_path.exists()
-    cooccurrence = load_cooccurrence(cooccurrence_path) if exists else None
-    similarity = load_similarity(cooccurrence_path) if exists else None
-    return KnowledgeGraph.from_seed(load_seed(seed_path), cooccurrence, similarity)
 
 
 class _AppServer(ThreadingHTTPServer):

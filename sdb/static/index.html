@@ -206,6 +206,8 @@
     place-items: center; }
   .route-list .start .dot { background: var(--border-2); color: var(--fg); }
   .route-list .via { color: var(--faint); }
+  .route-list .ev { font-family: var(--font-sans); font-size: .8rem; line-height: 1.45;
+    color: var(--muted); margin: .28rem 0 .1rem; }
   .meters { display: flex; gap: 1.5rem; margin: 1.05rem 0 .2rem; font-family: var(--font-mono); }
   .meter { flex: 1; }
   .meter .lab { font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
@@ -672,7 +674,9 @@ function renderNoResult(node) {
 function chainList(card) {
   const items = [`<li class="start"><span class="dot"></span><b>${xml(card.topic)}</b></li>`];
   card.chain.forEach((h, i) => {
-    items.push(`<li><span class="dot">${i + 1}</span> <span class="via">${xml(h.phrase)}</span> <b>${xml(h.to)}</b></li>`);
+    // The curated one-sentence justification for this hop, when the statement carries one.
+    const ev = h.evidence ? `<div class="ev">${xml(h.evidence)}</div>` : "";
+    items.push(`<li><span class="dot">${i + 1}</span> <span class="via">${xml(h.phrase)}</span> <b>${xml(h.to)}</b>${ev}</li>`);
   });
   return `<ul class="route-list">${items.join("")}</ul>`;
 }

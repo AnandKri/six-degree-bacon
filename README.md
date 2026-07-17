@@ -38,8 +38,9 @@ topic ─▶ graph (networkx) ─▶ traverse ─▶ score surprise ─▶ rank 
 
   Both gate at `trust ≥ 0.50` by default, so tight, well-evidenced connections win — or an honest
   "nothing confident" when none qualify (`--include-possibly` lowers the gate and flags `Possibly:`).
-- **Narrate** — a template composes the TIL, citing sources. (A free/local LLM narrator is an
-  optional later upgrade behind the same seam; the template stays the deterministic fallback.)
+- **Narrate** — a template composes the TIL, and each hop of the chain carries its curated
+  one-sentence **evidence**, citing sources (ADR 0037). (A free/local LLM narrator is an optional
+  later upgrade behind the same seam; the template stays the deterministic fallback.)
 
 Example — `sdb discover "Japan"` surfaces the journey **Japan → Zen → Buddhism → India → Alexander
 the Great** and the improbable pair **Japan ⇢ Silk Road** (2 hops, via the Tang dynasty).
@@ -91,19 +92,22 @@ backing the endpoint-surprise term.
 ```
 sdb/
   schema/     enums (Domain, Predicate, SourceType, Archetype, …) + Pydantic models (Node, Statement …)
-  graph/      build a networkx graph + cache derived features (degree, rarity, co-occurrence)
+  graph/      build a networkx graph + cache derived features (degree, rarity, co-occurrence); loader
   engine/     traversal · surprise · confidence · narrate · pipeline    (pure, deterministic)
   harvest/    ingestion: Wikidata SPARQL client · rank/ref mapping · k-hop harvester · Wikipedia-link
               co-occurrence · merge-into-curated + corroboration · pinned snapshots · QID validator
   constants.py  the scoring rubric — the single source of truth for every weight and threshold
+  layout.py     deterministic pure-Python force layout for the map (ADR 0030)
+  serialize.py  the shared CLI/web result serializer, incl. per-hop sourced evidence (ADR 0037)
   web.py / static/  a zero-dependency stdlib web UI (sdb serve); site.py pre-renders it (build-site)
   cli.py      discover · harvest · build-cooccurrence · validate-qids · serve · build-site
 data/seed.json          the curated graph (verified QIDs, full provenance)
 data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-surprise term
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        130 tests: human-vs-code confidence, surprise & endpoint checks, harvester, both
-              archetypes, the clusters, the web round-trip, and a guided-walk scaling/perf test
+tests/        141 tests: human-vs-code confidence, surprise & endpoint checks, harvester, both
+              archetypes, the clusters, the web round-trip, the seed loaders, the per-hop evidence
+              contract, and a guided-walk scaling/perf test
 ```
 
 ## Design decisions

@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**130 tests**). Seed: **98 nodes / 141 statements**, 10 curated domains — **all now
+green (**141 tests**). Seed: **98 nodes / 141 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033).
 
@@ -21,12 +21,22 @@ rubric via ADR + worked example. Never the data — data changes only when a *fa
 `eval/golden.json` is a change-*detector*, not a correctness oracle; re-characterising it would have
 enshrined the bug.
 
-Newest work: **all ten curated realms are populated.** ADR 0032 split the harvest fallback out of
-`culture` (which was ~100% unmapped fallout and 0% culture) into a dedicated `other` bucket; ADR 0033
-then filled `culture` and `art` with a **Renaissance cluster**, which also relieved two of the
-"starved" starts measured in §5 — breadth, not a scoring change, was the fix. Best new TIL:
-**Gutenberg → Printing press → Paper → Silk Road** (Europe's printing revolution ran on a Chinese
-invention). Before that: a **map-first UI** — the whole knowledge base as domain territories, laid out
+Newest work (ADR 0037): **the curated `Statement.evidence` prose now ships on every hop.** All 141
+statements had a hand-written, sourced one-line justification since ADR 0002, read by *nothing* — the
+narrator, CLI, web and static bundle all ignored it, and the shipped TIL chained predicates
+mechanically while a better sentence sat unused beside each hop. It went dark on a terminology
+collision: ADR 0028 reasoned about "the evidence" meaning the *hop chain* and walked past a field of
+that exact name. Now a shared `serialize.hop_dicts` renders the `chain` with per-hop `evidence` on
+both surfaces (so it can't reach one and miss the other), guarded by a seed-integrity test that every
+curated statement carries it. Bundled refactor in the same change: `load_graph` moved from `web.py`
+into `graph/loader.py` (the sole JSON→graph path; also stops a double-parse of the co-occurrence
+sidecar), and the archetype dispatch + trust gate moved into `pipeline.discover_all`/`trust_gate`,
+shared by the CLI and web. Before that: **all ten curated realms are populated.** ADR 0032 split the
+harvest fallback out of `culture` (which was ~100% unmapped fallout and 0% culture) into a dedicated
+`other` bucket; ADR 0033 then filled `culture` and `art` with a **Renaissance cluster**, which also
+relieved two of the "starved" starts measured in §5 — breadth, not a scoring change, was the fix.
+Best TIL: **Gutenberg → Printing press → Paper → Silk Road** (Europe's printing revolution ran on a
+Chinese invention). Before that: a **map-first UI** — the whole knowledge base as domain territories, laid out
 by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030) and themed "minimal terminal"
 (dark slate + single teal accent, ADR 0031). Click a node → its discovered route lights up in place.
 The engine is untouched; the map is a pure consumer of `discover()` via a new `graph_payload()` /
@@ -73,14 +83,20 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   `trust ≥ 0.50`; UNLIKELY hop range `[1,2]`; JOURNEY `[3,3]` — a fixed-length 3-hop chain (cap cut
   6→4 ADR 0012, then 4→3 ADR 0021; still `--max-hops`-overridable). No length reward.
 - `sdb/graph/build.py` — `KnowledgeGraph`: networkx graph + cached rarity/degree + **co-occurrence**
-  (`endpoint_unexpectedness`). `loader.py` — `load_seed`, `load_cooccurrence`.
+  (`endpoint_unexpectedness`). `loader.py` — `load_seed`, `load_cooccurrence`, `load_similarity`, and
+  the JSON→graph helpers `graph_from_seed` / `load_graph` (moved here from `web.py`, ADR 0037; the
+  latter is the one loader the CLI and `serve` share).
 - `sdb/engine/` — `traversal.py` (`find_paths`: exact `enumerate_paths` under budget, else bounded
   best-first `guided_paths` — ADR 0010), `surprise.py`, `confidence.py` (trust), `narrate.py`
-  (template TIL), `pipeline.py` (`discover(..., archetype=...)`).
+  (template TIL), `pipeline.py` (`discover(..., archetype=...)`, plus `discover_all` + `trust_gate`,
+  the shared dispatch the CLI and web both go through — ADR 0037).
 - `sdb/harvest/` — `client.py` (SPARQL, live + fake), `mapping.py` (rank/ref→Source, P31→Domain,
   temporal extent, PID→Predicate + aliases), `harvester.py` (k-hop BFS→SeedData), `cooccurrence.py`
   (Wikipedia-link matrix; **chunks `pltitles` by 50 — MediaWiki caps it, ADR 0017**), `merge.py`,
   `snapshot.py` (git-ignored `data/harvest/`), `validate.py` (QID guard).
+- `sdb/serialize.py` — the shared CLI/web result serializer: `result_core` + `source_dicts` +
+  `hop_dicts` (the per-hop `chain`, carrying each statement's curated `evidence`, ADR 0037), so a new
+  result field can't reach one surface and miss the other.
 - `sdb/cli.py` — `discover`, `harvest`, `build-cooccurrence`, `validate-qids`, `serve`, `build-site`
   (`--theme`). `sdb/web.py` + `sdb/static/index.html` — zero-dep dual-mode web UI (ADR 0013):
   `discover_payload()` (pure/testable) behind a stdlib `http.server`. `sdb/site.py` — `build_site()`
@@ -115,8 +131,14 @@ same path — they collided on Roman Empire/Christianity), **0028 single-claim T
 emits one sentence stating the connection; the hop chain is the *evidence* the callers already render,
 not prose to restate), **0029 full-link Jaccard similarity** (measure shared context over each
 article's *whole* outbound link set, not the seed keyhole — kills the peripheral-node saturation:
-max tie-fraction 94%→1.1%, every start now fully distinct). Plus: theme-able embed (`build-site
---theme`), CI for QID-validation + Pages, and the push to a public GitHub repo with Pages live.
+max tie-fraction 94%→1.1%, every start now fully distinct), **0030/0031 map-first terminal UI**
+(deterministic pure-Python layout + the bird's-eye map), **0032 `other` domain / harvest-fallback
+split**, **0033 Renaissance cluster** (filled the last two empty realms), **0034 domain-jump
+information weighting** (+ **0035 closed temporal extents** — the scoring fix behind the al-Tusi
+reversal; see the rule at the top), **0036 interval separation measured & rejected**, **0037 surface
+the curated `Statement.evidence` on every hop** (+ the `load_graph`/`discover_all` refactor). Plus:
+theme-able embed (`build-site --theme`), CI for QID-validation + Pages, and the push to a public
+GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
 is already high; the only sub-gate edges are speculative/mythic ones a structured KB can't attest; and
@@ -210,10 +232,13 @@ simulation (SIR) is likewise out for scoring (nondeterministic) — fine only as
 **Product direction (owner's steer):** a TIL should read as **one quantized surprising fact**
 (e.g. "Japan's imperial line traces to the sun goddess", "Elizabeth II descends from Odin"), not a
 narrated walking tour. The **improbable pair** already has that shape and is the archetype to lean
-into. Likely evolution: narrate the (start → endpoint) claim as a single sentence with the connecting
-path demoted to collapsible *evidence*; then the **journey** either becomes "a surprising
-lineage/origin stated as one fact" or is dropped. A natural breadth target for that flavour is
-genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_from`).
+into. **Half of this shipped in ADR 0037:** the connecting path is now rendered as its curated
+per-hop *evidence* (not a bare predicate list), on every surface. The remaining, still-open half is
+the *narrator* decision — with the evidence surfaced, the journey's generated TIL is now visibly the
+weakest line on the card, so the **journey** should either become "a surprising lineage/origin stated
+as one fact" (ideally curated prose, not a mechanical chain) or be dropped. That is a `narrate.py`
+change needing its own ADR, and no measurement backs it yet. A natural breadth target for that
+flavour is genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_from`).
 
 1. **Breadth — the main ongoing thread.** Add coherent, well-connected clusters, **one commit each**,
    following the process in §6. Done this round: **East Asia** (ADR 0020), **Norse/Celtic myth**
@@ -259,6 +284,10 @@ genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_fr
 - **After ANY `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → run tests →
   re-characterise `eval/golden.json` if a winner shifted (adding edges shifts predicate rarity). This
   pushing to `main` also triggers the `qid-validation` CI job. Regenerate the personal-site embed too.
+- **Every new curated statement needs a one-sentence `evidence` (ADR 0037).** It now renders under
+  its hop on every surface, so a blank is a visible hole in the card — `test_validate.py` fails if any
+  curated statement omits it. It is a plain sourced sentence justifying that specific claim; don't
+  restate the predicate mechanically (that is what the generated TIL already does).
 - **`data/harvest/` snapshots go stale silently after a `mapping.py` change — regenerate them.**
   Regenerated 2026-07-17 (`sdb harvest Q2277 --hops 2 --out data/harvest/roman_2hop.json`;
   `Q34266 --hops 1`), so they are currently clean: **0 `"domain": "culture"`, 13 `"other"`**, and a

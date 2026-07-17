@@ -219,6 +219,22 @@ genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_fr
 - **Commit only when asked; push only when asked.** Conventional Commits; identity `AnandKri
   <anand.krishna0802@gmail.com>`; end messages with the `Co-Authored-By: Claude …` trailer. `main`,
   now tracking `origin/main` (public).
+- **Update the docs in the same commit as the change — `README.md` included.** The live-truth docs
+  are `README.md`, `CLAUDE.md` and this note. If a commit moves a user-visible fact, fix it in all
+  three: **seed size** (98 nodes / 141 statements), **test count**, the **rubric's worked-example
+  figures**, the module list, the ADR list, domain counts. **Grep the old number** — prose lies, and
+  a figure can be quoted in a file you didn't touch. **ADRs are records: never back-edit them.** Mark
+  a superseded one with a status line + a pointer to its successor (see ADR 0033's header) and leave
+  the body intact — historical figures inside an ADR (0006's `8.6`, 0033's `123 → 140`) were true
+  when written and must stay. **README is the one that rots**: it is the public face of a public repo
+  and nobody reads it locally, so it sat at 88 nodes / 123 statements / **99 tests** (off by 23)
+  while CLAUDE.md was current — because the recipe used to say "CLAUDE.md + HANDOVER" and stopped
+  there. A stale doc is a defect in *this* project, not a cosmetic issue: the whole claim is that the
+  record is trustworthy.
+- **The drift sweep, when in doubt:** `len(seed['nodes'])` / `len(seed['statements'])` / the `pytest`
+  count, then grep every `.md` for the old figures. And **verify before flagging a contradiction** —
+  two "conflicts" found in review dissolved on measurement (README's "9 domains" vs CLAUDE's "10"
+  were populated-vs-declared, both right at the time; "11 starved" vs "12" were post- vs pre-cluster).
 - **After ANY `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → run tests →
   re-characterise `eval/golden.json` if a winner shifted (adding edges shifts predicate rarity). This
   pushing to `main` also triggers the `qid-validation` CI job. Regenerate the personal-site embed too.

@@ -142,6 +142,16 @@ ranked `endpoint_unexpectedness × trust`). Both gate at `trust ≥ 0.50` by def
 constants, `test_<module>.py`, ADRs `NNNN-kebab.md`. Type hints + docstrings on public APIs. Ruff +
 mypy + pytest must stay green (CI enforces it).
 
+**Docs move with the code, in the same commit — `README.md` included.** If a commit changes a
+user-visible fact, update it everywhere in that commit: seed size (98 nodes / 141 statements), test
+count, the rubric's worked-example figures, the module list, the ADR list, domain counts. **Grep the
+old number; don't trust the prose.** The live-truth docs are `README.md`, this file, and
+`docs/HANDOVER.md`. **ADRs are records — never back-edit them**; mark a superseded one with a status
+line + a pointer (see ADR 0033) and leave the body, including figures that were true when written.
+README is the one that rots — it is the public face of a public repo and nobody reads it locally, so
+it silently sat at 88 nodes / 123 statements / 99 tests while this file was current. A stale doc is a
+defect here, not a cosmetic issue: the project's claim is that its record is trustworthy.
+
 ## Phase 1 — done (see ADR 0003, 0004)
 
 1. ✅ **Wikidata SPARQL harvester** (`sdb/harvest/`): k-hop neighbourhood → `Statement` model,

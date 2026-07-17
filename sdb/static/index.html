@@ -23,6 +23,7 @@
     --accent: #5eead4;    /* teal-300  the only accent — the discovered route */
     --accent-2: #99f6e4;  /* teal-200 */
     --edge: #263449;      /* faint link */
+    --nlabel-fill: var(--fg);  /* node-label ink; muted while exploring a minimized card */
     /* 5 realm tints — teal-harmonized, validated dark all-pairs (worst CVD dE 11.5) */
     --world: #4d9bf0; --expression: #d99a3e; --knowledge: #0f8f18; --power: #ef5f6b; --belief: #d857a3;
     --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", "Cascadia Code", Consolas, "SFMono-Regular", Menlo, monospace;
@@ -68,9 +69,11 @@
   .node.on circle { fill: var(--accent); stroke: var(--bg); filter: drop-shadow(0 0 4px rgba(94,234,212,.7)); }
   .node.origin circle { fill: var(--accent); filter: drop-shadow(0 0 6px rgba(94,234,212,.85)); }
 
-  .nlabel { font-family: var(--font-mono); font-size: 11px; fill: var(--fg); paint-order: stroke;
+  .nlabel { font-family: var(--font-mono); font-size: 11px; fill: var(--nlabel-fill); paint-order: stroke;
     stroke: var(--bg); stroke-width: 3.5px; stroke-linejoin: round; pointer-events: none;
     opacity: 0; transition: opacity .18s ease; }
+  /* Minimized card = exploring a bright map: soften the label ink so it isn't a wall of white. */
+  svg#map.explore { --nlabel-fill: #a7b1c1; }
   .nlabel.show { opacity: 1; }
   .node.on .nlabel { opacity: 1; fill: var(--accent-2); }
   .node.hover .nlabel { opacity: 1; fill: var(--white); }
@@ -584,9 +587,11 @@ function highlight(ids) {
   applyFocus();
 }
 function applyFocus() {
-  // Dim the field to spotlight the route only when the card is open AND expanded; a minimized card
-  // means "explore", so the whole palette stays bright (like the initial view).
-  svg.classList.toggle("focused", !!selected && !$("#card").classList.contains("min"));
+  // Expanded card -> dim the field to spotlight the route. Minimized card -> "explore": keep the
+  // palette bright but soften the node labels so they don't read as a wall of white.
+  const min = $("#card").classList.contains("min");
+  svg.classList.toggle("focused", !!selected && !min);
+  svg.classList.toggle("explore", !!selected && min);
 }
 function clearSelection() {
   selected = null; curPath = []; svg.classList.remove("focused"); gRoute.innerHTML = "";

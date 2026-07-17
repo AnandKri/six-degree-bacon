@@ -103,11 +103,13 @@
   .search { position: relative; }
   .search input { width: min(28vw, 300px); min-width: 170px; font-family: var(--font-mono);
     font-size: .82rem; padding: .5rem .7rem .5rem 1.9rem; color: var(--fg); background: var(--panel);
-    border: 1px solid var(--border); border-radius: 3px; }
+    border: 1px solid var(--border); border-radius: 3px; transition: width .2s ease, opacity .15s ease; }
   .search input::placeholder { color: var(--faint); }
   .search input:focus { outline: none; border-color: var(--accent); box-shadow: var(--glow); }
-  .search .mag { position: absolute; left: .55rem; top: 50%; transform: translateY(-50%);
-    width: 14px; height: 14px; stroke: var(--faint); fill: none; }
+  .search .mag { position: absolute; left: .35rem; top: 50%; transform: translateY(-50%); padding: 0;
+    width: 26px; height: 26px; display: grid; place-items: center; border: 0; background: none;
+    color: var(--faint); cursor: pointer; }
+  .search .mag svg { width: 14px; height: 14px; stroke: currentColor; fill: none; }
   .suggest { position: absolute; top: calc(100% + 5px); left: 0; right: 0; background: var(--panel);
     border: 1px solid var(--border); border-radius: 3px; overflow: hidden; font-family: var(--font-mono);
     font-size: .8rem; display: none; z-index: 25; }
@@ -210,9 +212,17 @@
 
   @media (max-width: 720px) {
     .brand p { display: none; }
-    .controls { width: 100%; margin-left: 0; }   /* wrap to their own row so search gets real width */
-    .search { flex: 1 1 auto; }
-    .search input { width: 100%; min-width: 0; }
+    .controls { width: 100%; margin-left: 0; justify-content: flex-end; }
+    #zin, #zout { display: none; }                 /* redundant on mobile — keep only fit-to-screen */
+    /* Collapsed search = just the magnifier; tapping it expands the field (.controls gets .open). */
+    .controls:not(.open) .search { flex: 0 0 auto; }
+    .controls:not(.open) .search input { width: 0; min-width: 0; padding: 0; opacity: 0;
+      border-color: transparent; pointer-events: none; }
+    .controls:not(.open) .search .mag { position: static; transform: none; width: 38px; height: 38px;
+      border: 1px solid var(--border-2); border-radius: 3px; color: var(--muted); }
+    .controls:not(.open) .search .mag:hover { color: var(--accent); border-color: var(--accent); }
+    .controls.open .search { flex: 1 1 auto; }
+    .controls.open .search input { width: 100%; min-width: 0; }
     .legend { display: none; }
     .card { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 64vh; border-radius: 0;
       border-left: 0; border-right: 0; border-bottom: 0; transform: translateY(112%); }
@@ -246,9 +256,11 @@
     <h1><span class="tl">&gt;</span> six-degree-bacon<span class="cursor">&#9612;</span></h1>
     <p>// a bird's-eye map of the knowledge base &mdash; every link true &amp; sourced, zero AI</p>
   </div>
-  <div class="controls">
+  <div class="controls" id="controls">
     <div class="search">
-      <svg class="mag" viewBox="0 0 24 24" stroke-width="2.2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+      <button type="button" class="mag" id="magbtn" aria-label="Search a topic">
+        <svg viewBox="0 0 24 24" stroke-width="2.2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+      </button>
       <input id="q" type="text" placeholder="search a topic&hellip;" autocomplete="off" spellcheck="false">
       <div class="suggest" id="suggest"></div>
     </div>
@@ -406,14 +418,24 @@ function runLOD() {
 function applyVB() { svg.setAttribute("viewBox", `${VB.x} ${VB.y} ${VB.w} ${VB.h}`); scheduleLOD(); }
 function aspect() { const r = svg.getBoundingClientRect(); return r.height / (r.width || 1) || 1; }
 
-// The layout normalizes into ~[10, 1030] around (510, 510); a full view covers it on the short axis.
+// The layout normalizes into ~[10, 1030] around (510, 510).
 const GRAPH_SPAN = 1060, GRAPH_CENTRE = 510;
-function fullView() {
-  const a = aspect();
-  const w = a >= 1 ? GRAPH_SPAN : GRAPH_SPAN / a;
-  const h = w * a;
-  return { x: GRAPH_CENTRE - w / 2, y: GRAPH_CENTRE - h / 2, w, h };
+// Fraction of the viewport the fixed top header covers — reserved so a fit never tucks nodes behind
+// it. Measured from the real element, so it adapts to the taller wrapped header on mobile.
+function topInset() {
+  const t = document.querySelector(".topbar");
+  return t ? Math.min(0.34, t.offsetHeight / (innerHeight || 1)) : 0;
 }
+// Frame a bounding box (centre cx,cy, size bw x bh) into the band between the header and an optional
+// bottom sheet, filling the width — so content sits clear of both the header and the card.
+function frame(cx, cy, bw, bh, pad, bottomFrac) {
+  const a = aspect(), top = topInset(), bottom = bottomFrac || 0;
+  const vis = Math.max(0.25, 1 - top - bottom);
+  const w = Math.max(bw + pad * 2, (bh + pad * 2) / (a * vis), 170);
+  const h = w * a;
+  return { x: cx - w / 2, y: cy - h * (top + vis / 2), w, h };
+}
+function fullView() { return frame(GRAPH_CENTRE, GRAPH_CENTRE, GRAPH_SPAN, GRAPH_SPAN, 0, 0); }
 Object.assign(VB, fullView());
 applyVB();
 
@@ -488,10 +510,7 @@ function fitTo(ids, pad, bottomFrac) {
   if (!ps.length) return;
   const xs = ps.map((p) => p.x), ys = ps.map((p) => p.y);
   const minx = Math.min(...xs), maxx = Math.max(...xs), miny = Math.min(...ys), maxy = Math.max(...ys);
-  const a = aspect(), vis = 1 - (bottomFrac || 0);
-  const w = Math.max(maxx - minx + pad * 2, (maxy - miny + pad * 2) / (a * vis), 170);
-  const h = w * a;
-  animateVB({ x: (minx + maxx) / 2 - w / 2, y: (miny + maxy) / 2 - h * vis / 2, w, h });
+  animateVB(frame((minx + maxx) / 2, (miny + maxy) / 2, maxx - minx, maxy - miny, pad, bottomFrac));
 }
 function zoomButton(factor) {
   const cx = VB.x + VB.w / 2, cy = VB.y + VB.h / 2;
@@ -682,6 +701,14 @@ q.addEventListener("keydown", (e) => {
 });
 function markSug() { suggest.querySelectorAll("button").forEach((b, i) => b.classList.toggle("active", i === sugIdx)); }
 document.addEventListener("click", (e) => { if (!e.target.closest(".search")) suggest.classList.remove("open"); });
+
+// Collapsed-to-icon search on mobile: tap the magnifier to expand the field; blurring it (empty)
+// collapses back. On desktop the field is always shown, so the button just focuses it.
+const controls = $("#controls"), magbtn = $("#magbtn");
+magbtn.addEventListener("click", () => { controls.classList.add("open"); q.focus(); });
+q.addEventListener("blur", () => setTimeout(() => {
+  if (document.activeElement !== q) controls.classList.remove("open");
+}, 150));
 
 // ================= speculative toggle =================
 $("#spec").onclick = () => {

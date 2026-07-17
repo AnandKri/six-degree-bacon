@@ -222,34 +222,34 @@
   .tip .sum { font-family: var(--font-sans); color: var(--muted); margin-top: .3rem; }
 
   @media (max-width: 720px) {
-    /* Header stacks and centres: title on top, [search][+ speculative] aligned in a row below. */
+    /* Header: just the centred title + the speculative toggle. */
     .topbar { flex-direction: column; align-items: center; gap: .55rem; }
     .brand { text-align: center; }
     .brand p { display: none; }
     .controls { margin: 0; align-items: center; }
+    #spec { height: 34px; }
     #zin, #zout { display: none; }                 /* redundant on mobile — keep only fit-to-screen */
-    /* Collapsed search = just the magnifier, matched in height to the + speculative pill. */
+    /* Search magnifier + fit button share the bottom-right. The search expands to a bar at the *top*
+       on tap, so the on-screen keyboard never covers it. */
+    .zoomdock { left: auto; right: 1.15rem; bottom: 1.15rem; }
+    .controls:not(.open) .search { position: fixed; right: 3.95rem; bottom: 1.15rem; z-index: 20; }
     .controls:not(.open) .search .mag { position: static; transform: none; width: 40px; height: 34px;
       border: 1px solid var(--border-2); border-radius: 3px; color: var(--muted); }
     .controls:not(.open) .search .mag:hover { color: var(--accent); border-color: var(--accent); }
-    .controls:not(.open) .search input { width: 0; min-width: 0; padding: 0; opacity: 0;
-      border-color: transparent; pointer-events: none; }
-    #spec { height: 34px; }
-    /* Tapping the magnifier expands it to a full-width search bar over the header. */
-    .controls.open { position: fixed; top: .8rem; left: 1.15rem; right: 1.15rem; margin: 0; z-index: 22;
-      flex-direction: row; }
-    .controls.open .search { flex: 1 1 auto; width: 100%; }
-    .controls.open .search input { width: 100%; min-width: 0; opacity: 1; padding-left: 2.1rem; }
+    .controls:not(.open) .search input { display: none; }
+    .controls.open .search { position: fixed; top: .8rem; left: 1.15rem; right: 1.15rem; z-index: 22; }
+    .controls.open .search input { display: block; width: 100%; min-width: 0; opacity: 1;
+      padding: .5rem .7rem .5rem 2.1rem; }
     .controls.open #spec { display: none; }
     .legend { display: none; }
     .card { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 64vh; border-radius: 0;
       border-left: 0; border-right: 0; border-bottom: 0; transform: translateY(112%); }
     .card.open { transform: none; }
-    /* Bottom row: the hint (left) and the fit button (right), same height and baseline. */
-    .zoomdock { left: auto; right: 1.15rem; bottom: 1.15rem; }
-    .hint { left: .75rem; right: 4.2rem; bottom: 1.15rem; transform: none; max-width: none;
+    /* Hint at the bottom-left, clearing the two bottom-right buttons; same height + baseline. */
+    .hint { left: .75rem; right: 7rem; bottom: 1.15rem; transform: none; max-width: none;
       min-height: 34px; flex-wrap: nowrap; white-space: nowrap; overflow: hidden; }
-    body.card-open .zoomdock { display: none; }   /* the card owns the corner */
+    body.card-open .zoomdock,
+    body.card-open .controls:not(.open) .search { display: none; }   /* the card owns the corner */
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>

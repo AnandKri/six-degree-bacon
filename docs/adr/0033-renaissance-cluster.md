@@ -1,7 +1,18 @@
 # ADR 0033 — Renaissance cluster (populating `culture` and `art`, and relieving the starved classical starts)
 
-- **Status:** accepted
+- **Status:** accepted — except the removal of `copernicus part_of renaissance`, **superseded by
+  ADR 0034**
 - **Phase:** 2
+
+> **Superseded in part.** The §"What was deliberately *not* claimed" decision to delete
+> `copernicus part_of renaissance` was reversed by [ADR 0034](0034-domain-jump-information.md), which
+> calls it "the wrong fix": the edge is **true**, and the real defect was a rubric that paid full
+> `W_DOMAIN` for tautological crossings. 0034 fixed the rubric and **restored the edge** (seed 140 →
+> 141 statements); 0035 removed the temporal artifact propping the same bogus route up. The
+> *observation* below — a dense new sub-cluster can hijack an existing flagship — stands, and
+> re-checking existing flagships after any cluster is still the right practice. The *remedy* below
+> does not: never delete a true edge to restore a favourite. Ask whether the rubric mis-specifies
+> surprise, and fix it via ADR + worked example. The rest of this ADR is unaffected.
 
 ## Context
 

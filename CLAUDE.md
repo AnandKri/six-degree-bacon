@@ -88,7 +88,7 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page (now incl. the laid-out
   `graph`) for free GitHub Pages hosting. `sdb/viz.py` — legacy matplotlib path drawing (`viz` extra),
   orphaned (superseded by the web map).
-- `data/seed.json` — curated 98-node / 140-statement graph across 10 curated domains, all now
+- `data/seed.json` — curated 98-node / 141-statement graph across 10 curated domains, all now
   populated (an 11th, `other`, is the harvest-only "unclassified" bucket and is never curated —
   ADR 0032), full provenance (incl. a Renaissance cluster — Florence/Medici/Leonardo/the printing
   press, ADR 0033 — reaching antiquity via Plato, Byzantium via the Fall of Constantinople, and China
@@ -113,7 +113,7 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 126 tests incl. human-vs-code confidence (0.75), surprise (8.6), and endpoint (0.49 vs
+- `tests/` — 126 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the web UI (payload + graph payload + real localhost HTTP

@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**126 tests**). Seed: **98 nodes / 140 statements**, 10 curated domains — **all now
+green (**126 tests**). Seed: **98 nodes / 141 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033).
 
@@ -88,7 +88,7 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   (ADR 0015).
 - `.github/workflows/` — `ci.yaml` (offline lint/type/test on every push), `pages.yaml` (build+deploy
   Pages), `qid-validation.yaml` (network QID guard on `data/seed.json` changes + weekly + manual).
-- `data/seed.json` (98 nodes / 140 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (98 nodes / 141 statements, verified QIDs) + `data/cooccurrence.json` (committed).
   `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -164,11 +164,15 @@ sweep: for each node, `discover(archetype=UNLIKELY, top=25)` and compare the win
 Paper). If a fix is ever built, it needs an honest "no worlds-apart pair exists here" path for the
 starved 11, not a silent empty.
 
-**Watch for cluster hijack (found in ADR 0033).** A dense new sub-cluster can out-compete an existing
-flagship on domain jumps: `copernicus part_of renaissance` — one true edge — pushed al-Tusi out of
-Copernicus's top 4 entirely, replacing ADR 0019's flagship with a bland `→ Renaissance → Florence →
-House of Medici` walking tour. The edge was dropped. After adding any cluster, re-check the *existing*
-flagships, not just the new nodes.
+**Watch for cluster hijack (found in ADR 0033; the fix corrected in 0034/0035).** A dense new
+sub-cluster can out-compete an existing flagship on domain jumps: `copernicus part_of renaissance` —
+one true edge — pushed al-Tusi out of Copernicus's top 4 entirely, replacing ADR 0019's flagship with
+a bland `→ Renaissance → Florence → House of Medici` walking tour. **ADR 0033 dropped the edge; that
+was the wrong fix and ADR 0034 reversed it** — the edge is true and is now restored. The defect was
+the rubric (flat `domain_jumps` paid full price for tautological `located_in → geography` crossings),
+and 0034 fixed it there; al-Tusi is #1 again on merit, edge intact. So: after adding any cluster,
+re-check the *existing* flagships, not just the new nodes — but when one is hijacked, **fix the
+rubric, never the data**. See the rule at the top of this note.
 
 **A further rung if the endpoint term ever needs one: deterministic diffusion, not a GA.** Saturation
 is already solved (0029), so this is no longer motivated by it — but **personalized PageRank /

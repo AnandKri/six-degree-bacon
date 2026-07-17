@@ -212,7 +212,7 @@ genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_fr
 3. **Corroboration** — deferred (ADR 0014); only if both prerequisites in §4 are genuinely met.
 4. **Documented graduations (adopt only when earned):** Neo4j (scale / NL→Cypher for ~10k+ nodes), an
    optional free/local LLM narrator behind the existing template seam. The guided walk (0010) already
-   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 81 nodes.
+   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 98 nodes.
 
 ## 6. Conventions / gotchas
 
@@ -238,6 +238,15 @@ genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_fr
 - **After ANY `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → run tests →
   re-characterise `eval/golden.json` if a winner shifted (adding edges shifts predicate rarity). This
   pushing to `main` also triggers the `qid-validation` CI job. Regenerate the personal-site embed too.
+- **Your local `data/harvest/` snapshots are stale (pre-ADR-0032) — regenerate before trusting a
+  `--harvest` run.** Both pinned snapshots predate the fallback split and have **32 nodes with
+  `"domain": "culture"`** baked in (24 in `roman_2hop.json`, 8 in `q34266.json`), zero `"other"`.
+  `merge.py` adds an unmatched overlay node *with the domain the snapshot recorded*, so overlaying one
+  today re-injects the exact confusion 0032 removed — and it is now **worse than when 0032 was
+  written**: back then `culture` was empty, so fallout was at least homogeneous; since ADR 0033 filled
+  it, stale fallout lands indistinguishably on top of real curated culture nodes, and `domain` is a
+  scoring input. Fix: re-run `sdb harvest` (network). Git-ignored and local-only, so **CI cannot catch
+  this** — it is invisible until a `--harvest` result looks wrong.
 - **Verify every new QID** — resolve label → Wikipedia article → `wikibase_item` (validate.py does
   this). My from-memory QID guesses are frequently wrong (a fish family, Jean-Claude Killy, a military
   school…); never trust memory for a QID.

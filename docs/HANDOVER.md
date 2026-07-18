@@ -188,6 +188,44 @@ deterministic predicate-alignment table. **Breadth is the higher-leverage invest
 
 ## 5. What's next (forward-looking)
 
+### ▶ NEXT TASK IN LINE — the temporal active-period (floruit) axis on `Node`
+
+This is **the** highest-value non-breadth work now that the cultural axis shipped (ADR 0039). It is
+the *second and last* of the two schema-blocker terms; the first just closed, so this is the clean
+pick-up.
+
+**The problem (ADR 0036).** `Node`'s temporal extent models *existence*, not the **active period**.
+For a still-living civilisation `end_year = 2025`, so India's midpoint is `(-3300 + 2025)/2 = -638` —
+a year describing *nothing*, that belongs to no era India was actually influential in. Both the
+`temporal_gap` surprise term (which sums `|midpointₐ − midpoint_b|`) and any endpoint reasoning
+inherit this garbage number, so a hop into a long-lived node books a fake or muted temporal leap.
+
+**The fix (data, not engine — mirror ADR 0039 exactly, it is the template):**
+1. **Add a second temporal axis to `Node`** — e.g. `active_start` / `active_end` (the floruit / period
+   of influence), *distinct* from the existence extent already there. Optional + nullable like
+   `region`, with a completeness guard for curated nodes.
+2. **Point `midpoint_year` (and thus `temporal_gap`) at the active period when present**, falling back
+   to the existence extent — so India reads as its classical floruit, not `-638`.
+3. **Curate all 107 nodes** with an active period (a person's floruit ≈ their existing birth/death, so
+   many are quick; the work is the long-lived polities/religions/regions/languages).
+4. **Measure the design *before* building** (truth hierarchy): does keying `temporal_gap` off the
+   active period change which journeys win, and are the new winners *more* honest? Re-characterise
+   `eval/golden.json` from the engine only, never to a favourite. Add a hand-reproducible worked
+   example to `docs/confidence-rubric.md` + an ADR (0040).
+5. Follow the same guardrails as every scoring change: after any `data/seed.json` edit run
+   `validate-qids` → `build-cooccurrence` → tests; re-check existing flagships for shifts (report, do
+   not tune); bump counts in README + CLAUDE + this note.
+
+**DO NOT rebuild interval separation (ADR 0036) as part of this** — it was measured and killed
+(per-hop separation collapses to 0 because linked entities overlap; see §"Interval separation" below
+and memory `sdb-node-schema-blocker`). This task changes what the *midpoint* means, which is a
+different, live lever.
+
+Full context for *why* this is the top item is in §"The real blocker" below (it names both
+schema-blocker terms and marks the cultural one closed).
+
+---
+
 **Endpoint saturation — fixed (ADR 0025 → 0029).** 0025's second-order term only *narrowed* the
 saturation; the review (Finding 2) showed the periphery still tied (`house_of_wessex` tied 94% of the
 graph), because 0025 measured shared context inside the seed keyhole. **0029 measures Jaccard overlap

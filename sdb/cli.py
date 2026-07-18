@@ -16,6 +16,7 @@ import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 
+from sdb.brains import BrainSpec, available_brains
 from sdb.constants import TOP_DEFAULT
 from sdb.engine.pipeline import TopicNotFoundError, discover_all, trust_gate
 from sdb.graph.build import KnowledgeGraph
@@ -202,29 +203,41 @@ def main(argv: list[str] | None = None) -> int:
     return dispatch[args.command](args)
 
 
+def _selected_brains(args: argparse.Namespace) -> list[BrainSpec]:
+    """The brains to serve/build: the whole registry by default, or a single custom ``--seed``.
+
+    A default ``--seed`` means "the main brain", so the user gets every brain under
+    ``data/brains/*`` too (ADR 0044); an explicit ``--seed other.json`` is an override, so
+    serve/build just that one.
+    """
+    if args.seed == _DEFAULT_SEED:
+        return available_brains()
+    return [BrainSpec("main", "Main", args.seed, args.cooccurrence)]
+
+
 def _run_serve(args: argparse.Namespace) -> int:
     """Serve the local web UI (deferred import so the CLI's other commands stay lightweight)."""
     from sdb.web import serve
 
-    if not args.seed.exists():
-        print(f"seed file not found: {args.seed}", file=sys.stderr)
+    brains = _selected_brains(args)
+    if not brains[0].seed_path.exists():
+        print(f"seed file not found: {brains[0].seed_path}", file=sys.stderr)
         return 2
-    serve(args.host, args.port, seed_path=args.seed, cooccurrence_path=args.cooccurrence)
+    serve(args.host, args.port, brains=brains)
     return 0
 
 
 def _run_build_site(args: argparse.Namespace) -> int:
     """Pre-render the static site (deterministic; deployable to any static host)."""
-    from sdb.graph.loader import load_graph
-    from sdb.site import build_site
+    from sdb.site import build_multi_site
 
-    if not args.seed.exists():
-        print(f"seed file not found: {args.seed}", file=sys.stderr)
+    brains = _selected_brains(args)
+    if not brains[0].seed_path.exists():
+        print(f"seed file not found: {brains[0].seed_path}", file=sys.stderr)
         return 2
-    graph = load_graph(args.seed, args.cooccurrence)
-    index_path = build_site(graph, args.out)
+    index_path = build_multi_site(brains, args.out)
     print(
-        f"Wrote static site for {len(graph.nodes())} topics to {index_path.parent}"
+        f"Wrote static site for {len(brains)} brain(s) to {index_path.parent}"
         f" — serve with any static host (e.g. GitHub Pages)."
     )
     return 0

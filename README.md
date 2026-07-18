@@ -87,6 +87,18 @@ revolution ran on a Chinese invention), or **Sanskrit → Proto-Indo-European �
 [`data/cooccurrence.json`](data/cooccurrence.json) holds the committed Wikipedia-link co-occurrence
 backing the endpoint-surprise term.
 
+### Multiple brains
+
+A **brain** is a self-contained `(seed, cooccurrence)` pair (ADR 0044). The engine and every CLI
+command were already parameterised by both, so serving several graphs the user switches between needs
+no engine change — the main graph stays at `data/seed.json`, and extra brains live under
+[`data/brains/<name>/`](data/brains/). The first is a **detached 20th-century brain**
+([`data/brains/twentieth_century/`](data/brains/twentieth_century/), 27 nodes / 27 statements —
+film, music, politics, technology) whose surprise comes from cross-domain and cross-culture jumps
+*within* the century: **Gandhi → MLK → civil rights → jazz**, **Alan Turing → computer → Star Wars →
+The Hidden Fortress**, **blues → rock and roll → The Beatles → Ravi Shankar**. `sdb serve` shows a
+switcher; `sdb build-site` bundles every brain behind one page.
+
 ## Deployment
 
 - **GitHub Pages** (free, live) — a workflow builds `sdb build-site` and deploys on every push to
@@ -105,18 +117,22 @@ sdb/
   harvest/    ingestion: Wikidata SPARQL client · rank/ref mapping · k-hop harvester · Wikipedia-link
               co-occurrence · merge-into-curated + corroboration · pinned snapshots · QID validator
   constants.py  the scoring rubric — the single source of truth for every weight and threshold
+  brains.py     the brain registry: a "brain" is a (seed, cooccurrence) pair (ADR 0044)
   layout.py     deterministic pure-Python force layout for the map; territories spread apart to
                 reduce overlap (ADR 0030, 0040)
   serialize.py  the shared CLI/web result serializer, incl. per-hop sourced evidence (ADR 0037)
-  web.py / static/  a zero-dependency stdlib web UI (sdb serve); site.py pre-renders it (build-site)
+  web.py / static/  a zero-dependency stdlib web UI (sdb serve); site.py pre-renders it (build-site).
+                Both are multi-brain: serve selects with ?brain=, build-site emits a brain per bundle
   cli.py      discover · harvest · build-cooccurrence · validate-qids · serve · build-site
-data/seed.json          the curated graph (verified QIDs, full provenance)
+data/seed.json          the curated main graph (verified QIDs, full provenance)
 data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-surprise term
+data/brains/<name>/     additional detached brains (e.g. twentieth_century/) — each its own graph
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        154 tests: human-vs-code confidence, surprise & endpoint checks (incl. region jumps),
-              harvester, both archetypes, the clusters, the web round-trip, the seed loaders,
-              the per-hop evidence contract, and a guided-walk scaling/perf test
+tests/        169 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
+              per-brain integrity guards), human-vs-code confidence, surprise & endpoint checks (incl.
+              region jumps), harvester, both archetypes, the clusters, the web round-trip, the seed
+              loaders, the per-hop evidence contract, and a guided-walk scaling/perf test
 ```
 
 ## Design decisions

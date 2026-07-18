@@ -14,7 +14,7 @@ Two north stars:
    evaluated, fully provenanced. **Correctness never depends on an LLM.** Every score is reproducible
    by hand from `docs/confidence-rubric.md`.
 
-## Status: Phase 2 in progress — see [`docs/HANDOVER.md`](docs/HANDOVER.md) for the pick-up guide
+## Status: Phase 2 done; Phase 3 (multi-brain platform) kicked off — see [`docs/HANDOVER.md`](docs/HANDOVER.md)
 
 A local-first, **zero-LLM**, fully deterministic engine over a curated graph, now with (1) a
 **Wikidata SPARQL harvester** that ingests a k-hop neighbourhood into the `Statement` model with
@@ -62,7 +62,17 @@ sentence; the mechanical chain survives only as the harvest fallback, and the **
 now the default archetype. Narration only — scoring and `eval/golden.json` unchanged. Then a **Judaism/Abrahamic-web cluster**
 (ADR 0043) filled the obvious gap — the third Abrahamic religion — tying Judaism/Christianity/Islam
 together through Abraham the shared patriarch and Jerusalem under Rome (9 nodes / 17 statements; seed
-**107→116 / 158→175**). All checks green (ruff, format, mypy, 154 tests).
+**107→116 / 158→175**). Most recent change (**Phase 3 kickoff, ADR 0044**): the **multi-brain
+platform** — a "brain" is a self-contained `(seed, cooccurrence)` pair, and the engine/CLI were
+already parameterised by both, so serving *several* graphs the user switches between needed **no
+engine change**, only a brain registry (`sdb/brains.py`), a `?brain=` selector on `sdb serve`
+(`/api/brains`), a per-brain static bundle from `sdb build-site` (a `brains.json` manifest), and a
+switcher in the map UI. The first extra brain is a **detached 20th-century graph**
+(`data/brains/twentieth_century/`, 27 nodes / 27 statements — film/music/politics/tech, cross-culture
+via Kurosawa↔Hollywood, Beatles↔Ravi Shankar, MLK↔Gandhi): its surprise comes from cross-domain +
+cross-region jumps *within* the century (the temporal-gap term goes quiet), so it is journey-led. The
+main brain is unchanged (**116 nodes / 175 statements**). All checks green (ruff, format, mypy,
+**169 tests**).
 
 ## How to run
 
@@ -127,13 +137,18 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   miss the other. `hop_dicts` renders the per-hop `chain` incl. each statement's curated `evidence`
   (ADR 0037); each caller keeps its own extras (CLI `rank`/`path`), rounding, and appends `sources`
   last.
+- `sdb/brains.py` — the **brain registry** (ADR 0044): a "brain" is a `(seed, cooccurrence)` pair;
+  `available_brains()` lists the main graph (`data/seed.json`) plus every `data/brains/*` (label from
+  an optional per-brain `meta.json`), main first / default.
 - `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
   `validate-qids`, `serve`, `build-site`). `sdb/web.py` + `sdb/static/index.html` — a zero-dependency
   stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change: a **map-first**
   page (ADR 0031) drawing the whole graph from `graph_payload()`/`/api/graph`, themed "minimal
-  terminal" (dark slate + single teal accent). The page is dual-mode, so `sdb/site.py`
-  (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page (now incl. the laid-out
-  `graph`) for free GitHub Pages hosting.
+  terminal" (dark slate + single teal accent). **Multi-brain (ADR 0044):** `serve` loads every brain
+  and selects with `?brain=` (`/api/brains` lists them); the page shows a switcher. The page is
+  dual-mode, so `sdb/site.py` (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page;
+  `build_multi_site` writes one `data.json`/`data-<name>.json` per brain plus a `brains.json` manifest
+  for free GitHub Pages hosting.
 - `data/seed.json` — curated 116-node / 175-statement graph across 10 curated domains, all now
   populated (an 11th, `other`, is the harvest-only "unclassified" bucket and is never curated —
   ADR 0032), full provenance (incl. a Judaism/Abrahamic-web cluster — Judaism/Hebrew Bible/Jerusalem/
@@ -150,6 +165,10 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   → Zoroastrianism → Mithra, Elizabeth II → Alfred the Great → House of Wessex → Odin, and Naruhito →
   Jimmu → Amaterasu → Shinto).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
+- `data/brains/<name>/` — **additional detached brains** (ADR 0044), each its own `seed.json` +
+  `cooccurrence.json` (+ optional `meta.json` label). First: `twentieth_century/` — a 27-node /
+  27-statement 20th-century graph (film/music/politics/tech), self-contained with its own internal
+  cross-domain + cross-region density; journey-led (its one-century span mutes the temporal-gap term).
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair, 0009 harvest
   node enrichment, 0010 guided-walk scaling, 0011 Hellenistic–India–Buddhism bridge, 0012 default
@@ -165,11 +184,14 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   on every hop, 0038 South/SE Asia cluster, 0039 cultural-region surprise term, 0040 spread domain
   territories to reduce map overlap, 0041 active-period (floruit) temporal axis on `Node`, 0042
   curated per-`Statement` `headline` as the TIL + improbable pair as the default archetype, 0043
-  Judaism/Abrahamic-web cluster).
+  Judaism/Abrahamic-web cluster, 0044 multi-brain platform + a detached 20th-century brain).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 154 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 169 tests incl. the multi-brain platform (`test_brains.py`: registry + a real
+  two-brain HTTP round-trip + the `build_multi_site` manifest), the per-brain integrity guards now
+  parametrised over **every** brain (`test_validate.py`), human-vs-code confidence (0.75), surprise
+  (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the South/SE Asia cluster's bridges (ADR 0038 — Indo-European/Sanskrit,

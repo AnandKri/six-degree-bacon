@@ -1,9 +1,10 @@
 # Hand-over — Six Degree Bacon (for the next session)
 
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
-and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
-(public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**154 tests**). Seed: **116 nodes / 175 statements**, 10 curated domains — **all now
+and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 done, Phase 3 (the multi-brain
+platform) kicked off**, **pushed to `origin/main`** (public repo
+`github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks green
+(**169 tests**). Main seed: **116 nodes / 175 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
 **both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
@@ -15,6 +16,25 @@ Renaissance `1450`. Measured: 11/107 journey winners shifted toward more trans-r
 (Florence → Renaissance → printing press → Paper), every flagship intact, no new weight. Before that
 (ADR 0040): a presentation-only map-layout tidy — domain territories spread apart (centroid-separation
 force + cohesion bump), hull overlap ~33%→~16%, no score touched.
+
+**Newest work (Phase 3 kickoff, ADR 0044): the multi-brain platform + a detached 20th-century brain.**
+Phase 2 is **done** (both schema-blocker terms + the narrator closed; a coverage sweep found 104/116
+starts return a good improbable pair, the 12 starved all degree ≤ 4 — the plateau). A **probe** first
+added 20th-century nodes to the *shared* brain and measured two things: the material is excellent
+(`Alan Turing ⇢ al-Khwarizmi`, `Gandhi → Hinduism → Rigveda → Thor`), **but** modern nodes contaminate
+the ancient results — being maximally distant from everything ancient, they win as surprise
+destinations and displace flagships (`Roman Empire` journey Zen → Joseph Campbell; `Algebra` re-routed
+through the new `algorithm` node). That decided **separation**. A "brain" is a `(seed, cooccurrence)`
+pair; the engine and every CLI command were **already** parameterised by both, so multi-brain needed
+**no engine change** — only `sdb/brains.py` (the registry: main + `data/brains/*`), a `?brain=`
+selector on `sdb serve` (`/api/brains`) and the map UI's switcher, and `build_multi_site` (a
+`brains.json` manifest + one `data.json`/`data-<name>.json` per brain). First extra brain:
+`data/brains/twentieth_century/` (**27 nodes / 27 statements**, film/music/politics/tech), journey-led
+because its one-century span mutes the temporal-gap term, its surprise carried by cross-domain +
+cross-region jumps (`Gandhi → MLK → civil rights → jazz`, `transistor → rock and roll → blues → jazz`,
+`Turing → computer → Star Wars → Hidden Fortress`). Per-brain integrity guards (`test_validate.py`)
+now run over **every** brain, so a new brain inherits the whole curation contract for free. Main brain
+untouched.
 
 **Read this first — the rule the project nearly broke (ADR 0034/0035).** Data and the rubric are the
 truth; **a test may only verify what the rubric claims, never that a favourite wins**. This was
@@ -193,7 +213,10 @@ payoff hop's headline; the mechanical chain is now the fallback; improbable pair
 archetype — resolves the narrator half of the product steer), **0043 Judaism/Abrahamic-web cluster**
 (9 nodes / 17 statements — the third Abrahamic religion; Abraham the shared patriarch of Judaism +
 Islam, Christianity ← Judaism, Jerusalem under Rome; Christianity's flagship re-characterised Zhang Qian
-→ Roman Republic). Plus: CI for QID-validation
+→ Roman Republic), **0044 multi-brain platform + a detached 20th-century brain** (Phase 3 kickoff — a
+brain is a `(seed, cooccurrence)` pair; `sdb/brains.py` registry, `?brain=` on serve, `build_multi_site`
+manifest, UI switcher; first extra brain `data/brains/twentieth_century/` 27 nodes / 27 statements).
+Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
@@ -233,15 +256,34 @@ carry the arc), while the improbable pair — whose fact *is* the endpoint edge 
 Narration only: scoring and `eval/golden.json` unchanged. If a true start→end *arc* sentence is ever
 wanted, that is the per-path / optional-local-LLM route (recorded, not built).
 
-### ▶ NEXT TASK IN LINE — breadth (the main ongoing thread)
+### ▶ NEXT TASK IN LINE — grow / polish the multi-brain platform (Phase 3)
 
-With both schema-blocker terms **and** the narrator decision closed, there is no outstanding non-breadth
-item. **Breadth** (§5.1) is the top thread: add a coherent, well-connected cluster (one commit each,
-process in §6), re-checking existing flagships after. Most recent: **Judaism/the Abrahamic web**
-(ADR 0043 — done). Remaining candidate clusters that connect via existing hubs: **Byzantine–Ottoman**
-(via Constantinople + the Fall of Constantinople), or the **Enlightenment** proper (via Newton/Galileo/
-the press — but note it is almost entirely `WESTERN`, so it scores low cross-cultural surprise, the
-ADR 0039 walking-tour lesson). Avoid pre-Columbian Mesoamerica (it would be an island).
+Phase 2 is done and the multi-brain platform is kicked off (ADR 0044). The open Phase-3 increments,
+one commit each:
+
+1. **Grow the 20th-century brain.** It is a 27-node starter. Add more film/music and — once a modern
+   `Region` refinement lands (below) — Cold War / space race / decolonisation. Same recipe as a main
+   brain cluster (§6): verify QIDs, source `evidence` + `headline`, rebuild that brain's co-occurrence
+   (`sdb build-cooccurrence --seed data/brains/twentieth_century/seed.json --out
+   data/brains/twentieth_century/cooccurrence.json`), re-check its own results. **It is journey-led**
+   (its one-century span mutes the temporal-gap term; the improbable pair often returns a documented
+   adjacency, still a good TIL), so grow its *cross-domain* and *cross-region* connective tissue, not
+   time depth.
+2. **A modern `Region` refinement (measured, per ADR 0039's caution).** The 20th-c. brain reuses the
+   coarse `WESTERN` for American *and* British nodes — correct for now (the jumps that matter, →Japan,
+   →India, still fire) but it flattens US vs USSR vs Europe, which blocks a proper Cold War cluster.
+   Adding `AMERICAN` / `SOVIET` / `SUB_SAHARAN` etc. is a shared-enum, scoring-surface change — do it
+   the ADR 0039 way (measure that the split reflects real cultural distance, doesn't just let a walking
+   tour farm crossings) with a new ADR + worked example.
+3. **A third brain, when a good candidate appears** — the platform now makes this cheap (a directory
+   under `data/brains/` + its co-occurrence; the registry, serve, build-site and guards pick it up
+   automatically).
+
+**Main-brain breadth** is still available but lower-value (§5.1; the graph already spans most Old-World
+civilisations, the starved count is plateauing). Candidates if wanted: **Byzantine–Ottoman** (via
+Constantinople + the Fall of Constantinople); the **Enlightenment** is almost entirely `WESTERN`, so
+low cross-cultural surprise (the ADR 0039 walking-tour lesson). Avoid pre-Columbian Mesoamerica (an
+island) — **or** make it a *new brain*, where islanding is a feature, not a bug.
 
 ---
 

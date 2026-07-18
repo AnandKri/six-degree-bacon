@@ -14,13 +14,13 @@ from __future__ import annotations
 
 import json
 import os
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib import resources
-from pathlib import Path
 from typing import cast
 from urllib.parse import parse_qs, urlparse
 
+from sdb.brains import BrainSpec
 from sdb.constants import TOP_DEFAULT
 from sdb.engine.pipeline import TopicNotFoundError, discover_all, trust_gate
 from sdb.graph.build import KnowledgeGraph
@@ -128,18 +128,38 @@ def graph_payload(
 
 
 class _AppServer(ThreadingHTTPServer):
-    """A threaded HTTP server carrying the (immutable, shared) knowledge graph."""
+    """A threaded HTTP server carrying one or more (immutable, shared) brains.
 
-    def __init__(self, address: tuple[str, int], graph: KnowledgeGraph) -> None:
-        self.graph = graph
-        # The map payload is computed once, lazily, on first request (the layout costs ~1s), then
-        # shared read-only across request threads.
-        self.graph_payload_cache: dict[str, object] | None = None
+    A "brain" is a named :class:`~sdb.graph.build.KnowledgeGraph` (ADR 0044). ``graphs`` maps each
+    brain's name to its graph; ``order`` is the display order (first = default); ``labels`` the
+    display names. A request selects a brain with ``?brain=<name>``, defaulting to
+    ``default_brain``; an unknown name falls back to the default rather than erroring.
+    """
+
+    def __init__(
+        self,
+        address: tuple[str, int],
+        graphs: Mapping[str, KnowledgeGraph],
+        labels: Mapping[str, str],
+        order: Sequence[str],
+        default_brain: str,
+    ) -> None:
+        self.graphs = dict(graphs)
+        self.brain_labels = dict(labels)
+        self.brain_order = list(order)
+        self.default_brain = default_brain
+        # Each brain's map payload is computed once, lazily, on first request (the layout costs
+        # ~1s), then shared read-only across request threads.
+        self.graph_payload_cache: dict[str, dict[str, object]] = {}
         super().__init__(address, _Handler)
+
+    def resolve(self, name: str | None) -> str:
+        """The requested brain if it exists, else the default (never raises on a bad ?brain=)."""
+        return name if name in self.graphs else self.default_brain
 
 
 class _Handler(BaseHTTPRequestHandler):
-    """Serves the single page at ``/`` and JSON at ``/api/discover`` and ``/api/graph``."""
+    """Serves the page at ``/`` and JSON at ``/api/brains``, ``/api/discover``, ``/api/graph``."""
 
     server_version = "SixDegreeBacon/0.1"
 
@@ -147,21 +167,37 @@ class _Handler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path in ("/", "/index.html"):
             self._send(200, "text/html; charset=utf-8", _PAGE.encode("utf-8"))
+        elif parsed.path == "/api/brains":
+            self._send_json(self._brains())
         elif parsed.path == "/api/discover":
             self._send_json(self._discover(parse_qs(parsed.query)))
         elif parsed.path == "/api/graph":
-            self._send_json(self._graph())
+            self._send_json(self._graph(parse_qs(parsed.query)))
         else:
             self._send_json({"error": "not_found"}, status=404)
 
-    def _graph(self) -> dict[str, object]:
+    def _brain(self, params: dict[str, list[str]]) -> str:
         server = cast(_AppServer, self.server)
-        if server.graph_payload_cache is None:
-            server.graph_payload_cache = graph_payload(server.graph)
-        return server.graph_payload_cache
+        return server.resolve(params.get("brain", [server.default_brain])[0])
+
+    def _brains(self) -> dict[str, object]:
+        server = cast(_AppServer, self.server)
+        return {
+            "brains": [
+                {"name": name, "label": server.brain_labels[name]} for name in server.brain_order
+            ]
+        }
+
+    def _graph(self, params: dict[str, list[str]]) -> dict[str, object]:
+        server = cast(_AppServer, self.server)
+        name = self._brain(params)
+        if name not in server.graph_payload_cache:
+            server.graph_payload_cache[name] = graph_payload(server.graphs[name])
+        return server.graph_payload_cache[name]
 
     def _discover(self, params: dict[str, list[str]]) -> dict[str, object]:
-        graph = cast(_AppServer, self.server).graph
+        server = cast(_AppServer, self.server)
+        graph = server.graphs[self._brain(params)]
 
         def first(key: str, default: str) -> str:
             return params.get(key, [default])[0]
@@ -193,23 +229,33 @@ class _Handler(BaseHTTPRequestHandler):
 
 
 def make_server(graph: KnowledgeGraph, host: str = "127.0.0.1", port: int = 8000) -> _AppServer:
-    """Build (but do not start) the HTTP server. ``port=0`` binds an ephemeral port (for tests)."""
-    return _AppServer((host, port), graph)
+    """Build (but do not start) a **single-brain** server. ``port=0`` binds an ephemeral port.
+
+    The single graph is registered as the ``main`` brain, so a request with no ``?brain=`` (or an
+    unknown one) resolves to it — which is exactly the pre-multi-brain behaviour this preserves.
+    """
+    return _AppServer((host, port), {"main": graph}, {"main": "Main"}, ["main"], "main")
 
 
 def serve(
     host: str = "127.0.0.1",
     port: int = 8000,
     *,
-    seed_path: Path,
-    cooccurrence_path: Path,
+    brains: Sequence[BrainSpec],
 ) -> None:
-    """Load the graph and serve the UI until interrupted (``PORT`` env overrides ``port``)."""
-    graph = load_graph(seed_path, cooccurrence_path)
+    """Load every brain and serve the UI until interrupted (``PORT`` env overrides ``port``).
+
+    The first brain is the default (served when no ``?brain=`` is given); the page's switcher offers
+    the rest. All brains are loaded up front so switching is instant.
+    """
+    graphs = {b.name: load_graph(b.seed_path, b.cooccurrence_path) for b in brains}
+    labels = {b.name: b.label for b in brains}
+    order = [b.name for b in brains]
     port = int(os.environ.get("PORT", str(port)))
-    server = make_server(graph, host, port)
+    server = _AppServer((host, port), graphs, labels, order, order[0])
     bound_host, bound_port = cast("tuple[str, int]", server.server_address)
     print(f"Six Degree Bacon UI -> http://{bound_host}:{bound_port}  (Ctrl+C to stop)")
+    print(f"  brains: {', '.join(f'{b.label} [{b.name}]' for b in brains)}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

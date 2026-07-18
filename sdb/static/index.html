@@ -135,6 +135,13 @@
   .pill:hover { border-color: var(--accent); color: var(--accent); }
   .pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
     background: rgba(94,234,212,.08); }
+  /* Brain switcher (ADR 0044): hidden entirely when there is only one brain, so the single-brain
+     UI is unchanged. */
+  .brainsel { display: none; font-family: var(--font-mono); font-size: .74rem; padding: .42rem .55rem;
+    color: var(--fg); background: var(--panel); border: 1px solid var(--border-2); border-radius: 3px;
+    cursor: pointer; }
+  .brainsel:focus { outline: none; border-color: var(--accent); box-shadow: var(--glow); }
+  .brainsel.show { display: inline-block; }
 
   .zoomdock { position: fixed; left: 1.15rem; bottom: 1.15rem; z-index: 20; display: flex;
     flex-direction: column; gap: .4rem; }
@@ -292,6 +299,7 @@
     <p>// a bird's-eye map of the knowledge base &mdash; every link true &amp; sourced, zero AI</p>
   </div>
   <div class="controls" id="controls">
+    <select class="brainsel" id="brainsel" aria-label="Choose a knowledge base"></select>
     <div class="search">
       <button type="button" class="mag" id="magbtn" aria-label="Search a topic">
         <svg viewBox="0 0 24 24" stroke-width="2.2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
@@ -347,23 +355,51 @@ const xml = (s) => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</
   .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
-// ---- dual mode: a prebuilt ./data.json (static host) or the live /api server ----
-const staticReady = fetch("./data.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
+// ---- brains + dual mode (ADR 0044) ----
+// A "brain" is a selectable knowledge base. Static host: a ./brains.json manifest lists per-brain
+// data files (falling back to a lone ./data.json for an old single-brain bundle). Live server:
+// /api/brains lists them and ?brain= selects one. Everything downstream just calls getGraph() /
+// getResult() against the current brain.
+let BRAINS = [];        // [{name, label, file?, data?}]
+let currentBrain = 0;   // index into BRAINS
+let serverMode = false; // true = live /api server, false = prebuilt static bundle
+
+const fetchJson = (url) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+async function initBrains() {
+  const manifest = await fetchJson("./brains.json");
+  if (manifest && manifest.brains && manifest.brains.length) { BRAINS = manifest.brains.slice(); serverMode = false; return; }
+  const api = await fetchJson("/api/brains");
+  if (api && api.brains && api.brains.length) { BRAINS = api.brains.slice(); serverMode = true; return; }
+  const single = await fetchJson("./data.json");  // old single-brain static bundle
+  if (single) { BRAINS = [{ name: "main", label: "", data: single }]; serverMode = false; return; }
+  BRAINS = [{ name: "main", label: "" }]; serverMode = true;  // live server, single brain
+}
+
+const curBrain = () => BRAINS[currentBrain];
+
+async function brainData() {
+  // Static mode only: the loaded {graph, results} bundle for the current brain (lazy + cached).
+  if (serverMode) return null;
+  const b = curBrain();
+  if (!b.data) b.data = await fetchJson("./" + b.file);
+  return b.data;
+}
 
 async function getGraph() {
-  const S = await staticReady;
-  if (S) return S.graph;
-  const r = await fetch("/api/graph");
+  const d = await brainData();
+  if (d) return d.graph;
+  const r = await fetch("/api/graph?brain=" + encodeURIComponent(curBrain().name));
   return r.json();
 }
 async function getResult(node, possibly) {
-  const S = await staticReady;
-  if (S) {
-    const entry = S.results[node.id];
+  const d = await brainData();
+  if (d) {
+    const entry = d.results[node.id];
     return { results: entry ? entry[possibly ? "loose" : "strict"] : { journey: [], unlikely: [] } };
   }
   const query = new URLSearchParams({ topic: node.label, archetype: "both",
-    include_possibly: String(possibly), top: "1" });
+    include_possibly: String(possibly), top: "1", brain: curBrain().name });
   const r = await fetch("/api/discover?" + query.toString());
   return r.json();
 }
@@ -800,10 +836,29 @@ $("#spec").onclick = () => {
   if (selected) select(byId.get(selected), kind);
 };
 
+// ================= brain switcher =================
+const brainSel = $("#brainsel");
+function renderBrainSwitcher() {
+  if (BRAINS.length <= 1) { brainSel.classList.remove("show"); return; }
+  brainSel.innerHTML = BRAINS.map((b, i) => `<option value="${i}">${xml(b.label || b.name)}</option>`).join("");
+  brainSel.value = String(currentBrain);
+  brainSel.classList.add("show");
+}
+async function switchBrain(i) {
+  if (i === currentBrain || !BRAINS[i]) return;
+  currentBrain = i;
+  clearSelection();
+  $("#hint").innerHTML = '<span class="lbl">loading&hellip;</span>';
+  try { renderMap(await getGraph()); }
+  catch { $("#hint").innerHTML = '<span class="lbl">could not load this brain</span>'; }
+}
+brainSel.addEventListener("change", () => switchBrain(parseInt(brainSel.value, 10)));
+
 // ================= boot =================
-getGraph().then(renderMap).catch(() => {
-  $("#hint").innerHTML = '<span class="lbl">could not load the map</span>';
-});
+initBrains()
+  .then(() => { renderBrainSwitcher(); return getGraph(); })
+  .then(renderMap)
+  .catch(() => { $("#hint").innerHTML = '<span class="lbl">could not load the map</span>'; });
 window.addEventListener("resize", () => {
   // Keep the viewBox aspect equal to the container's (about its centre), so it never letterboxes.
   const cx = VB.x + VB.w / 2, cy = VB.y + VB.h / 2;

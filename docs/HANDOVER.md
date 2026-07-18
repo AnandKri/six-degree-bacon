@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**153 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
+green (**154 tests**). Seed: **116 nodes / 175 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
 **both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
@@ -150,7 +150,7 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   (ADR 0015).
 - `.github/workflows/` — `ci.yaml` (offline lint/type/test on every push), `pages.yaml` (build+deploy
   Pages), `qid-validation.yaml` (network QID guard on `data/seed.json` changes + weekly + manual).
-- `data/seed.json` (107 nodes / 158 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (116 nodes / 175 statements, verified QIDs) + `data/cooccurrence.json` (committed).
   `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -190,7 +190,10 @@ only), **0041 active-period (floruit) temporal axis** (the `Node.active_start`/`
 `midpoint_year` prefers it over the existence extent — closes the *second and last* schema-blocker
 term), **0042 curated `Statement.headline` as the TIL** (each card leads with one quantized fact — the
 payoff hop's headline; the mechanical chain is now the fallback; improbable pair is the default
-archetype — resolves the narrator half of the product steer). Plus: CI for QID-validation
+archetype — resolves the narrator half of the product steer), **0043 Judaism/Abrahamic-web cluster**
+(9 nodes / 17 statements — the third Abrahamic religion; Abraham the shared patriarch of Judaism +
+Islam, Christianity ← Judaism, Jerusalem under Rome; Christianity's flagship re-characterised Zhang Qian
+→ Roman Republic). Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
@@ -234,11 +237,11 @@ wanted, that is the per-path / optional-local-LLM route (recorded, not built).
 
 With both schema-blocker terms **and** the narrator decision closed, there is no outstanding non-breadth
 item. **Breadth** (§5.1) is the top thread: add a coherent, well-connected cluster (one commit each,
-process in §6), re-checking existing flagships after. A natural next target that also suits the new
-one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_from`).
-Candidate clusters that connect via existing hubs: **Byzantine–Ottoman** (via Constantinople), the
-**Enlightenment** proper (via Newton/Galileo/the press), or **Judaism/the Abrahamic web** (via Islam +
-Christianity). Avoid pre-Columbian Mesoamerica (it would be an island).
+process in §6), re-checking existing flagships after. Most recent: **Judaism/the Abrahamic web**
+(ADR 0043 — done). Remaining candidate clusters that connect via existing hubs: **Byzantine–Ottoman**
+(via Constantinople + the Fall of Constantinople), or the **Enlightenment** proper (via Newton/Galileo/
+the press — but note it is almost entirely `WESTERN`, so it scores low cross-cultural surprise, the
+ADR 0039 walking-tour lesson). Avoid pre-Columbian Mesoamerica (it would be an island).
 
 ---
 
@@ -358,7 +361,7 @@ the one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent
 3. **Corroboration** — deferred (ADR 0014); only if both prerequisites in §4 are genuinely met.
 4. **Documented graduations (adopt only when earned):** Neo4j (scale / NL→Cypher for ~10k+ nodes), an
    optional free/local LLM narrator behind the existing template seam. The guided walk (0010) already
-   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 107 nodes.
+   makes traversal scale; Neo4j is about *storage/query* scale, not needed at 116 nodes.
 
 ## 6. Conventions / gotchas
 
@@ -367,7 +370,7 @@ the one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent
   now tracking `origin/main` (public).
 - **Update the docs in the same commit as the change — `README.md` included.** The live-truth docs
   are `README.md`, `CLAUDE.md` and this note. If a commit moves a user-visible fact, fix it in all
-  three: **seed size** (107 nodes / 158 statements), **test count**, the **rubric's worked-example
+  three: **seed size** (116 nodes / 175 statements), **test count**, the **rubric's worked-example
   figures**, the module list, the ADR list, domain counts. **Grep the old number** — prose lies, and
   a figure can be quoted in a file you didn't touch. **ADRs are records: never back-edit them.** Mark
   a superseded one with a status line + a pointer to its successor (see ADR 0033's header) and leave

@@ -59,8 +59,10 @@ flagships intact, no new weight. Most recent change (ADR 0042): each card's **TI
 curated fact** — a per-`Statement` `headline` (a faithful, sourced one-liner, one for all 158 edges),
 surfaced from the discovered path's payoff (last) hop, replacing the mechanically-chained predicate
 sentence; the mechanical chain survives only as the harvest fallback, and the **improbable pair** is
-now the default archetype. Narration only — scoring and `eval/golden.json` unchanged. All checks green
-(ruff, format, mypy, 153 tests).
+now the default archetype. Narration only — scoring and `eval/golden.json` unchanged. Then a **Judaism/Abrahamic-web cluster**
+(ADR 0043) filled the obvious gap — the third Abrahamic religion — tying Judaism/Christianity/Islam
+together through Abraham the shared patriarch and Jerusalem under Rome (9 nodes / 17 statements; seed
+**107→116 / 158→175**). All checks green (ruff, format, mypy, 154 tests).
 
 ## How to run
 
@@ -132,9 +134,12 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   terminal" (dark slate + single teal accent). The page is dual-mode, so `sdb/site.py`
   (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page (now incl. the laid-out
   `graph`) for free GitHub Pages hosting.
-- `data/seed.json` — curated 107-node / 158-statement graph across 10 curated domains, all now
+- `data/seed.json` — curated 116-node / 175-statement graph across 10 curated domains, all now
   populated (an 11th, `other`, is the harvest-only "unclassified" bucket and is never curated —
-  ADR 0032), full provenance (incl. a Renaissance cluster — Florence/Medici/Leonardo/the printing
+  ADR 0032), full provenance (incl. a Judaism/Abrahamic-web cluster — Judaism/Hebrew Bible/Jerusalem/
+  Abraham/Moses/Second Temple/David/Talmud, ADR 0043 — tying the three Abrahamic faiths together via
+  Abraham the shared patriarch, Christianity ← Judaism, and Jerusalem under Rome; a Renaissance
+  cluster — Florence/Medici/Leonardo/the printing
   press, ADR 0033 — reaching antiquity via Plato, Byzantium via the Fall of Constantinople, and China
   via paper; a South/SE Asia cluster — Hinduism/Sanskrit/Maurya/Chola/Srivijaya/Khmer/Angkor Wat,
   ADR 0038 — via the Indo-European language bridge, the wake of Alexander, and the maritime Silk Road;
@@ -159,15 +164,18 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   measured & rejected — keep midpoint distance, 0037 surface the curated `Statement.evidence` prose
   on every hop, 0038 South/SE Asia cluster, 0039 cultural-region surprise term, 0040 spread domain
   territories to reduce map overlap, 0041 active-period (floruit) temporal axis on `Node`, 0042
-  curated per-`Statement` `headline` as the TIL + improbable pair as the default archetype).
+  curated per-`Statement` `headline` as the TIL + improbable pair as the default archetype, 0043
+  Judaism/Abrahamic-web cluster).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 153 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 154 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the South/SE Asia cluster's bridges (ADR 0038 — Indo-European/Sanskrit,
-  Hellenistic/Maurya, maritime Silk Road, worlds-apart Angkor Wat), the region-jump term (ADR 0039 —
+  Hellenistic/Maurya, maritime Silk Road, worlds-apart Angkor Wat), the Abrahamic-web cluster's
+  bridges (ADR 0043 — Christianity←Judaism, Abraham the shared patriarch, Jerusalem under Rome), the
+  region-jump term (ADR 0039 —
   a worked example, the domain/region independence property, and a guard that every curated node has a
   region), the active-period axis (ADR 0041 — a temporal worked example, the active-vs-existence
   midpoint fallback, and completeness + ordering guards over every dated curated node), the web UI
@@ -204,7 +212,7 @@ constants, `test_<module>.py`, ADRs `NNNN-kebab.md`. Type hints + docstrings on 
 mypy + pytest must stay green (CI enforces it).
 
 **Docs move with the code, in the same commit — `README.md` included.** If a commit changes a
-user-visible fact, update it everywhere in that commit: seed size (107 nodes / 158 statements), test
+user-visible fact, update it everywhere in that commit: seed size (116 nodes / 175 statements), test
 count, the rubric's worked-example figures, the module list, the ADR list, domain counts. **Grep the
 old number; don't trust the prose.** The live-truth docs are `README.md`, this file, and
 `docs/HANDOVER.md`. **ADRs are records — never back-edit them**; mark a superseded one with a status

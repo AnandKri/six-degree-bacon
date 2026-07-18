@@ -310,13 +310,11 @@ def test_west_africa_cluster_connects_via_the_islam_hub(
     assert musa
     assert any("islam" in r.path.node_ids for r in musa)
 
-    # The new Islam hub ties into the existing Persia/Zoroastrian thread (and thence the Silk Road).
-    islam = discover(seed_graph, "Islam", top=5)
-    assert islam
-    reached: set[str] = set()
-    for r in islam:
-        reached |= set(r.path.node_ids)
-    assert {"zoroastrianism", "persia", "silk_road"} & reached
+    # The Islam hub is structurally tied to the older Persia/Zoroastrian thread — asserted as an
+    # edge, not via top-N discover, which the Abrahamic-web cluster (ADR 0043) re-routed onto
+    # Islam's newer Abraham/Judaism links.
+    edges = {(s.subject, s.object) for s in seed_graph.statements}
+    assert ("islam", "zoroastrianism") in edges  # Islam succeeded Zoroastrianism in Persia
 
 
 def test_divine_descent_cluster_links_monarchs_to_mythic_ancestors(
@@ -470,6 +468,25 @@ def test_south_southeast_asia_cluster_bridges_hellenistic_and_indo_european(
     # in-cluster neighbours — it reaches the Vedic/Indo-European myth world through Hinduism.
     pairs = discover(seed_graph, "Angkor Wat", archetype=Archetype.UNLIKELY, top=5)
     _assert_worlds_apart(seed_graph, "angkor_wat", pairs)
+
+
+def test_abrahamic_cluster_bridges_the_three_faiths(seed_graph: KnowledgeGraph) -> None:
+    # ADR 0043: the Judaism/Abrahamic-web cluster is not an island. Its bridges are asserted
+    # structurally (gate- and scoring-independent): Christianity derives from Judaism, Abraham is
+    # the shared patriarch that Judaism *and* Islam claim descent from (the fan-in tying the three
+    # faiths), and Jerusalem ties into Roman rule.
+    edges = {(s.subject, s.predicate.value, s.object) for s in seed_graph.statements}
+    assert ("christianity", "derived_from", "judaism") in edges
+    assert ("judaism", "claimed_descent_from", "abraham") in edges
+    assert ("islam", "claimed_descent_from", "abraham") in edges
+    assert ("jerusalem", "part_of", "roman_empire") in edges
+
+    # And it surfaces: a start in the new cluster reaches a pre-existing hub in its top journeys,
+    # rather than terminating inside its own religious cluster.
+    judaism = discover(seed_graph, "Judaism", top=8)
+    assert judaism
+    reached = {node_id for r in judaism for node_id in r.path.node_ids}
+    assert {"christianity", "islam", "roman_empire", "zoroastrianism"} & reached
 
 
 def test_culture_domain_is_populated_and_holds_no_harvest_fallout(

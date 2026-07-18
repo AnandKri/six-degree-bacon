@@ -21,18 +21,12 @@ from sdb.web import discover_payload, graph_payload
 _EMPTY: dict[str, object] = {"journey": [], "unlikely": []}
 
 
-def build_site(
-    graph: KnowledgeGraph, out_dir: Path, *, top: int = 3, theme_css: str | None = None
-) -> Path:
+def build_site(graph: KnowledgeGraph, out_dir: Path, *, top: int = 3) -> Path:
     """Pre-render the whole graph into a static bundle under ``out_dir``; return the ``index.html``.
 
     For every node it precomputes both toggle states the UI offers — ``strict`` (the default
     ``trust ≥ 0.50`` gate) and ``loose`` (speculative, down to the trust floor) — so the static page
     reproduces the live experience exactly. Deterministic, offline, no network.
-
-    ``theme_css`` (optional) is injected as a trailing ``<style>`` override — the page's colours and
-    fonts are all CSS variables, so a small override re-skins it to a host site (e.g. embedding the
-    bundle in a React app's ``public/``) without touching the shared page.
     """
     index: list[dict[str, object]] = []
     results: dict[str, dict[str, object]] = {}
@@ -61,9 +55,6 @@ def build_site(
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     page = resources.files("sdb").joinpath("static", "index.html").read_text(encoding="utf-8")
-    if theme_css:
-        override = f"<style>\n/* embed theme override */\n{theme_css}\n</style>\n</head>"
-        page = page.replace("</head>", override, 1)
     index_path = out_dir / "index.html"
     index_path.write_text(page, encoding="utf-8")
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")  # GitHub Pages: serve files verbatim

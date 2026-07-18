@@ -189,12 +189,6 @@ def main(argv: list[str] | None = None) -> int:
     site_parser.add_argument(
         "--cooccurrence", type=Path, default=_DEFAULT_COOCCURRENCE, help="Co-occurrence JSON."
     )
-    site_parser.add_argument(
-        "--theme",
-        type=Path,
-        default=None,
-        help="Optional CSS file injected as a theme override (for embedding in another site).",
-    )
 
     args = parser.parse_args(argv)
     dispatch = {
@@ -227,14 +221,8 @@ def _run_build_site(args: argparse.Namespace) -> int:
     if not args.seed.exists():
         print(f"seed file not found: {args.seed}", file=sys.stderr)
         return 2
-    theme_css: str | None = None
-    if args.theme is not None:
-        if not args.theme.exists():
-            print(f"theme file not found: {args.theme}", file=sys.stderr)
-            return 2
-        theme_css = args.theme.read_text(encoding="utf-8")
     graph = load_graph(args.seed, args.cooccurrence)
-    index_path = build_site(graph, args.out, theme_css=theme_css)
+    index_path = build_site(graph, args.out)
     print(
         f"Wrote static site for {len(graph.nodes())} topics to {index_path.parent}"
         f" — serve with any static host (e.g. GitHub Pages)."

@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**152 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
+green (**151 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
 **both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
@@ -108,11 +108,11 @@ uv run ruff check . && uv run ruff format --check . && uv run mypy sdb && uv run
   live at `https://anandkri.github.io/six-degree-bacon/`. Repo setting already on (Pages → Actions).
 - **Live server** — `sdb serve --host 0.0.0.0` reads `$PORT`, so Render / HF Docker Space / Fly / Cloud
   Run run it as-is.
-- **React embed** — the page is dual-mode; `build-site --theme <css>` injects a theme override. A
-  themed bundle already lives in the user's separate repo at `<personal-site>/public/six-degrees/`
-  (theme `six-degrees-theme.css`, notes `six-degrees-README.md`). **Regenerate after any seed change:**
-  `sdb build-site --out <personal-site>/public/six-degrees --theme <personal-site>/six-degrees-theme.css`.
-  See memory `sdb-deployment-react` (that repo has no CLAUDE.md/memory; point its Claude at the README).
+- **Personal site** — the user's personal site simply **redirects** to the GitHub Pages URL above; it
+  no longer embeds a themed static bundle. So a pushed seed change is all that's needed for the live
+  embed (Pages auto-rebuilds), and there is **nothing to regenerate**. The `build-site --theme`
+  embed-override path that fed the old bundle was removed as redundant. See memory
+  `sdb-deployment-react`.
 
 Windows note: prefix ad-hoc `python -c` scripts with `PYTHONUTF8=1` or the cp1252 console chokes on
 Unicode labels (the `sdb` CLI already degrades to ASCII safely).
@@ -142,8 +142,8 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
 - `sdb/serialize.py` — the shared CLI/web result serializer: `result_core` + `source_dicts` +
   `hop_dicts` (the per-hop `chain`, carrying each statement's curated `evidence`, ADR 0037), so a new
   result field can't reach one surface and miss the other.
-- `sdb/cli.py` — `discover`, `harvest`, `build-cooccurrence`, `validate-qids`, `serve`, `build-site`
-  (`--theme`). `sdb/web.py` + `sdb/static/index.html` — zero-dep dual-mode web UI (ADR 0013):
+- `sdb/cli.py` — `discover`, `harvest`, `build-cooccurrence`, `validate-qids`, `serve`, `build-site`.
+  `sdb/web.py` + `sdb/static/index.html` — zero-dep dual-mode web UI (ADR 0013):
   `discover_payload()` (pure/testable) behind a stdlib `http.server`. `sdb/site.py` — `build_site()`
   pre-renders that page + a `data.json` bundle to `site/` (git-ignored) for free static hosting
   (ADR 0015).
@@ -187,7 +187,7 @@ South/SE Asia cluster** (Indo-European/Sanskrit + Hellenistic/Maurya + maritime 
 of the two schema-blocker terms), **0040 spread domain territories** (map-layout tidy, presentation
 only), **0041 active-period (floruit) temporal axis** (the `Node.active_start`/`active_end` axis;
 `midpoint_year` prefers it over the existence extent — closes the *second and last* schema-blocker
-term). Plus: theme-able embed (`build-site --theme`), CI for QID-validation
+term). Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
@@ -336,11 +336,10 @@ flavour is genealogy/derivation chains (royal descent, `claimed_descent_from` / 
    hooked), the **Enlightenment** proper (via Newton/Galileo/the printing press), or **Judaism/the
    Abrahamic web** (via the Islam node + Christianity). **Avoid Mesoamerica** — pre-Columbian, it would
    be an island. Reusable recipe in memory `sdb-breadth-paused`.
-2. **Deploy polish (small, optional).** (a) Add a `<personal-site>/CLAUDE.md` pointer so that repo's
-   Claude auto-picks-up the `/six-degrees` embed, and wire its SPA-rewrite to exclude `/six-degrees/*`
-   (else the CRA fallback serves the React app instead of the static files — the one real gotcha).
-   (b) A custom domain / nav link for the Pages site. (c) **CORS headers on `sdb/web.py`'s `_Handler`**
-   — only needed if someone builds a native React UI that calls a *live* `sdb serve` API cross-origin.
+2. **Deploy polish (small, optional).** (a) A custom domain / nav link for the Pages site.
+   (b) **CORS headers on `sdb/web.py`'s `_Handler`** — only needed if someone builds a native React UI
+   that calls a *live* `sdb serve` API cross-origin. (The old personal-site static embed is gone — it
+   now redirects to Pages — so the SPA-rewrite / `<personal-site>/CLAUDE.md` pointer items are dropped.)
 3. **Corroboration** — deferred (ADR 0014); only if both prerequisites in §4 are genuinely met.
 4. **Documented graduations (adopt only when earned):** Neo4j (scale / NL→Cypher for ~10k+ nodes), an
    optional free/local LLM narrator behind the existing template seam. The guided walk (0010) already
@@ -368,8 +367,9 @@ flavour is genealogy/derivation chains (royal descent, `claimed_descent_from` / 
   two "conflicts" found in review dissolved on measurement (README's "9 domains" vs CLAUDE's "10"
   were populated-vs-declared, both right at the time; "11 starved" vs "12" were post- vs pre-cluster).
 - **After ANY `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → run tests →
-  re-characterise `eval/golden.json` if a winner shifted (adding edges shifts predicate rarity). This
-  pushing to `main` also triggers the `qid-validation` CI job. Regenerate the personal-site embed too.
+  re-characterise `eval/golden.json` if a winner shifted (adding edges shifts predicate rarity).
+  Pushing to `main` also triggers the `qid-validation` CI job and the Pages rebuild — no personal-site
+  regeneration needed (it redirects to Pages).
 - **Every new curated statement needs a one-sentence `evidence` (ADR 0037).** It now renders under
   its hop on every surface, so a blank is a visible hole in the card — `test_validate.py` fails if any
   curated statement omits it. It is a plain sourced sentence justifying that specific claim; don't

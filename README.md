@@ -111,7 +111,7 @@ data/seed.json          the curated graph (verified QIDs, full provenance)
 data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-surprise term
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        152 tests: human-vs-code confidence, surprise & endpoint checks (incl. region jumps),
+tests/        151 tests: human-vs-code confidence, surprise & endpoint checks (incl. region jumps),
               harvester, both archetypes, the clusters, the web round-trip, the seed loaders,
               the per-hop evidence contract, and a guided-walk scaling/perf test
 ```

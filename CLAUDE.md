@@ -30,7 +30,7 @@ the science/India cluster into the Rome–Silk Road–China web. Tight, well-sou
 connections win — e.g. Roman Empire → Silk Road → Persia → Alexander → India → Buddhism. Still
 zero-LLM, deterministic, reproducible by hand, and now with a **map-first** zero-dependency web UI
 (`sdb serve`) — a bird's-eye view of the whole knowledge base as domain territories, with the
-discovered route lighting up in place — plus a static export (`sdb build-site`, theme-able) for free
+discovered route lighting up in place — plus a static export (`sdb build-site`) for free
 hosting. The map is laid out by a deterministic pure-Python force layout (`sdb/layout.py`, ADR 0030;
 its domain territories are spread apart by a centroid-separation force so the crowded centre stops
 overlapping — ADR 0040) and themed "minimal terminal" (dark slate, single teal accent; ADR 0031).
@@ -55,7 +55,7 @@ India's midpoint was a meaningless `−638`; new nullable `Node.active_start`/`a
 of peak influence and `midpoint_year` (hence the `temporal_gap` term) keys off it, so India reads its
 classical `300`, Rome-the-city its `−138`, Florence its Renaissance `1450` — 11/107 journey winners
 shifted toward more trans-regional destinations (Florence → Renaissance → printing press → Paper), all
-flagships intact, no new weight. All checks green (ruff, format, mypy, 152 tests).
+flagships intact, no new weight. All checks green (ruff, format, mypy, 151 tests).
 
 ## How to run
 
@@ -155,7 +155,7 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 152 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 151 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the South/SE Asia cluster's bridges (ADR 0038 — Indo-European/Sanskrit,

@@ -283,9 +283,48 @@ refinement (`SOVIET`, ADR 0045) has landed. The open Phase-3 increments, one com
    nodes is untestable), and only when the split reflects real cultural distance, not a farmable
    crossing. Note the deliberate non-split recorded in 0045: the US/UK/W-European pop continuum stays
    `WESTERN` (an `AMERICAN → BRITISH` hop would be the walking-tour trap).
-3. **A third brain, when a good candidate appears** — the platform makes this cheap (a directory under
-   `data/brains/` + its co-occurrence; the registry, serve, build-site and guards pick it up
-   automatically). Mesoamerica, an island in the main brain, would be a fine *new* brain.
+3. **Stay at two brains for now (owner's steer).** A third brain is cheap when wanted (a directory
+   under `data/brains/` + its co-occurrence; registry/serve/build-site/guards pick it up
+   automatically — Mesoamerica would be a clean island-as-a-feature candidate) — but **parked**; put
+   the effort into the 20th-century brain (backlog below).
+
+### 20th-century brain — growth backlog (ideas, not yet built)
+
+Journey-led brain: grow *connective tissue that crosses a discipline or a culture*, not time depth.
+Each thread is one commit (recipe in §6: batch-verify QIDs with `LiveTitleResolver`, source
+`evidence` + `headline`, rebuild **this brain's** co-occurrence with the `--seed …/twentieth_century/
+seed.json --out …/twentieth_century/cooccurrence.json` command, re-check its own results). Connect
+every new node to an existing hub — no islands.
+
+- **A. Architecture (owner's pick).** A whole new cross-region thread; architecture (domain `art`,
+  like the brain's other art forms) has unusually rich cross-culture reach:
+  - `art_deco` (WESTERN, 1920s–30s) → hooks into the film cluster (Hollywood/Chrysler-Building glamour).
+  - `bauhaus` (WESTERN, 1919–33) ↔ **`soviet_constructivism` (SOVIET)** — a real historical exchange,
+    so a *second* WESTERN↔SOVIET Cold-War-era crossing that isn't the space race (reuses ADR 0045's
+    region on a fresh axis). Bauhaus → the International Style → American skyscrapers.
+  - `frank_lloyd_wright` (WESTERN) ↔ Japanese architecture — Wright was openly influenced by Japan: a
+    WESTERN↔JAPANESE jump echoing Kurosawa↔Hollywood on a new domain.
+  - `le_corbusier` (WESTERN) → `chandigarh` (SOUTH_ASIAN) — Corbusier designed Chandigarh in India: a
+    WESTERN↔SOUTH_ASIAN crossing that plugs architecture into the existing Indian cluster.
+  - `brutalism` (WESTERN, postwar concrete) — off Corbusier; the era's concrete monuments.
+  - **Gothic is out of era** for a *20th-century* brain (12th–16th c.). It enters only as **Gothic
+    Revival / neo-Gothic** — e.g. the Woolworth Building, the 1913 "Cathedral of Commerce" (WESTERN) —
+    or belongs to a *different* brain. Add the revival node if wanted; never medieval Gothic here.
+- **B. Global cinema.** `bollywood` (SOUTH_ASIAN, ← Hollywood), `italian_neorealism` → `satyajit_ray`
+  (WESTERN↔SOUTH_ASIAN — neorealism shaped Indian parallel cinema; Ray cited *Bicycle Thieves*),
+  `french_new_wave` (← Hollywood B-movies → New Hollywood), `anime`/`osamu_tezuka` (JAPANESE ← Disney).
+  All cross-region, all hook to the existing film cluster.
+- **C. Deeper tech/science.** `world_wide_web`/`tim_berners_lee` (→ the internet), the
+  `manhattan_project`/`nuclear_weapon` (WESTERN — the Cold War pillar beside the space race),
+  `dna`/the double helix, `v2_rocket` → `apollo_11` (the German-rocket lineage behind the US space
+  programme — a WESTERN←German wartime link).
+- **D. More music.** jazz → 20th-c. classical (Gershwin/Stravinsky borrowing jazz), disco, punk,
+  and reggae/`bob_marley` (which would *earn* a Caribbean sphere — see regions).
+
+**Regions these would earn (add only when a thread populates them, per ADR 0045):** `LATIN_AMERICAN`
+(bossa nova, the Cuban Revolution, magical realism), a modern `SUB_SAHARAN` (African independence, Fela
+Kuti, `picasso ← African masks` — the famous WESTERN←African moment), a Caribbean sphere (reggae). Do
+**not** pre-add a region with no nodes; the US/UK/W-European continuum stays `WESTERN` (ADR 0045).
 
 **Main-brain breadth** is still available but lower-value (§5.1; the graph already spans most Old-World
 civilisations, the starved count is plateauing). Candidates if wanted: **Byzantine–Ottoman** (via

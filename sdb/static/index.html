@@ -135,13 +135,36 @@
   .pill:hover { border-color: var(--accent); color: var(--accent); }
   .pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
     background: rgba(94,234,212,.08); }
-  /* Brain switcher (ADR 0044): hidden entirely when there is only one brain, so the single-brain
-     UI is unchanged. */
-  .brainsel { display: none; font-family: var(--font-mono); font-size: .74rem; padding: .42rem .55rem;
-    color: var(--fg); background: var(--panel); border: 1px solid var(--border-2); border-radius: 3px;
-    cursor: pointer; }
-  .brainsel:focus { outline: none; border-color: var(--accent); box-shadow: var(--glow); }
-  .brainsel.show { display: inline-block; }
+  /* Brain switcher (ADR 0044): a custom dropdown, not a native <select> — a browser renders a
+     <select>'s option list itself (light panel, OS radio buttons), which can't be themed. This
+     mirrors the search-suggest styling so it reads as the same minimal-terminal system. Hidden
+     entirely when there is only one brain, so the single-brain UI is unchanged. */
+  .brainpick { display: none; position: relative; }
+  .brainpick.show { display: inline-block; }
+  .brainpick-btn { display: inline-flex; align-items: center; gap: .5rem; font-family: var(--font-mono);
+    font-size: .74rem; padding: .42rem .6rem; color: var(--fg); background: var(--panel);
+    border: 1px solid var(--border-2); border-radius: 3px; cursor: pointer; white-space: nowrap;
+    transition: color .15s, border-color .15s, box-shadow .15s; }
+  .brainpick-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .brainpick-btn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent);
+    box-shadow: var(--glow); }
+  .brainpick-btn .chev { width: 11px; height: 11px; stroke: currentColor; fill: none; stroke-width: 2.4;
+    opacity: .85; transition: transform .18s ease; }
+  .brainpick-btn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .brainpick-menu { position: absolute; top: calc(100% + 5px); left: 0; min-width: 100%;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 3px; overflow: hidden;
+    font-family: var(--font-mono); font-size: .78rem; display: none; z-index: 25;
+    box-shadow: 0 10px 26px -10px rgba(0,0,0,.65); }
+  .brainpick-menu.open { display: block; }
+  .brainpick-menu button { display: flex; align-items: center; justify-content: space-between;
+    gap: 1.4rem; width: 100%; text-align: left; padding: .55rem .75rem; background: none; border: 0;
+    color: var(--fg); cursor: pointer; font: inherit; white-space: nowrap; }
+  .brainpick-menu button::after { content: ""; width: 7px; height: 7px; border-radius: 50%; flex: none;
+    border: 1px solid var(--border-2); background: transparent; }
+  .brainpick-menu button.sel { color: var(--accent); }
+  .brainpick-menu button.sel::after { background: var(--accent); border-color: var(--accent);
+    box-shadow: var(--glow); }
+  .brainpick-menu button:hover, .brainpick-menu button.active { background: var(--bg); color: var(--accent); }
 
   .zoomdock { position: fixed; left: 1.15rem; bottom: 1.15rem; z-index: 20; display: flex;
     flex-direction: column; gap: .4rem; }
@@ -299,7 +322,14 @@
     <p>// a bird's-eye map of the knowledge base &mdash; every link true &amp; sourced, zero AI</p>
   </div>
   <div class="controls" id="controls">
-    <select class="brainsel" id="brainsel" aria-label="Choose a knowledge base"></select>
+    <div class="brainpick" id="brainpick">
+      <button type="button" class="brainpick-btn" id="brainpick-btn" aria-haspopup="listbox"
+              aria-expanded="false" aria-label="Choose a knowledge base">
+        <span id="brainpick-label"></span>
+        <svg class="chev" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </button>
+      <div class="brainpick-menu" id="brainpick-menu" role="listbox"></div>
+    </div>
     <div class="search">
       <button type="button" class="mag" id="magbtn" aria-label="Search a topic">
         <svg viewBox="0 0 24 24" stroke-width="2.2"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
@@ -836,23 +866,37 @@ $("#spec").onclick = () => {
   if (selected) select(byId.get(selected), kind);
 };
 
-// ================= brain switcher =================
-const brainSel = $("#brainsel");
+// ================= brain switcher (a themed dropdown, not a native <select>) =================
+const brainPick = $("#brainpick"), brainBtn = $("#brainpick-btn"),
+  brainMenu = $("#brainpick-menu"), brainLabel = $("#brainpick-label");
+const brainName = (i) => BRAINS[i].label || BRAINS[i].name;
 function renderBrainSwitcher() {
-  if (BRAINS.length <= 1) { brainSel.classList.remove("show"); return; }
-  brainSel.innerHTML = BRAINS.map((b, i) => `<option value="${i}">${xml(b.label || b.name)}</option>`).join("");
-  brainSel.value = String(currentBrain);
-  brainSel.classList.add("show");
+  if (BRAINS.length <= 1) { brainPick.classList.remove("show"); return; }
+  brainMenu.innerHTML = BRAINS.map((b, i) =>
+    `<button type="button" role="option" data-i="${i}" class="${i === currentBrain ? "sel" : ""}"><span>${xml(brainName(i))}</span></button>`).join("");
+  brainMenu.querySelectorAll("button").forEach((b) =>
+    b.onclick = () => { closeBrainMenu(); switchBrain(parseInt(b.dataset.i, 10)); });
+  brainLabel.textContent = brainName(currentBrain);
+  brainPick.classList.add("show");
 }
+function openBrainMenu() { brainMenu.classList.add("open"); brainBtn.setAttribute("aria-expanded", "true"); }
+function closeBrainMenu() { brainMenu.classList.remove("open"); brainBtn.setAttribute("aria-expanded", "false"); }
+brainBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (brainMenu.classList.contains("open")) closeBrainMenu(); else openBrainMenu();
+});
+document.addEventListener("click", (e) => { if (!e.target.closest("#brainpick")) closeBrainMenu(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeBrainMenu(); });
 async function switchBrain(i) {
   if (i === currentBrain || !BRAINS[i]) return;
   currentBrain = i;
+  brainLabel.textContent = brainName(i);
+  brainMenu.querySelectorAll("button").forEach((b) => b.classList.toggle("sel", Number(b.dataset.i) === i));
   clearSelection();
   $("#hint").innerHTML = '<span class="lbl">loading&hellip;</span>';
   try { renderMap(await getGraph()); }
   catch { $("#hint").innerHTML = '<span class="lbl">could not load this brain</span>'; }
 }
-brainSel.addEventListener("change", () => switchBrain(parseInt(brainSel.value, 10)));
 
 // ================= boot =================
 initBrains()

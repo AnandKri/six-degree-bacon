@@ -132,6 +132,40 @@ def test_region_and_domain_jumps_are_independent_axes() -> None:
     assert region_only.region_jumps == pytest.approx(0.25)
 
 
+def test_temporal_gap_keys_off_the_active_period() -> None:
+    """ADR 0041: a hop into a long-lived node measures the gap to its *active period*, not its
+    existence extent stretched to the present.
+
+    ``india`` exists to 2025 (existence midpoint a meaningless -637.5) but its floruit midpoint is
+    300; a hop from a Hellenistic figure reads the honest gap off the floruit, not a muted or false
+    one off the garbage number.
+    """
+    alexander = Node(
+        id="alexander",
+        label="Alexander",
+        domain=Domain.HISTORY,
+        type="king",
+        start_year=-356,
+        end_year=-323,  # midpoint -339.5
+    )
+    india = Node(
+        id="india",
+        label="India",
+        domain=Domain.HISTORY,
+        type="region",
+        start_year=-3300,
+        end_year=2025,
+        active_start=-600,
+        active_end=1200,  # active midpoint 300.0
+    )
+    st = _statement("alexander", Predicate.INFLUENCED_BY, "india")
+    graph = KnowledgeGraph((alexander, india), (st,))
+    score = score_surprise(graph, _one_hop(graph, 0, "alexander", "india"))
+    # |-339.5 - 300.0| = 639.5 years, / TEMPORAL_NORM_YEARS (1000) = 0.6395. Off the existence
+    # extent it muted to |-339.5 - (-637.5)| = 298 -> 0.298 — the distortion the axis removes.
+    assert score.temporal_gap == pytest.approx(0.6395)
+
+
 def test_region_jump_weight_discounts_a_jump_the_predicate_guarantees() -> None:
     """The region twin of the domain-jump base rate (ADR 0039).
 

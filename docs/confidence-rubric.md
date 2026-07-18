@@ -126,7 +126,7 @@ surprise = W_RARITY·Σ rarity
 | `rarity` (per edge) | `−log2( count(predicate) / total_edges )` — self-information; rarer ⇒ more surprising | `W_RARITY = 1.0` |
 | `domain_jumps` | Σ over **discipline**-crossing hops of `1 − P(jump \| predicate)`, the jump's unexpectedness given the predicate that made it — Laplace-smoothed with `DOMAIN_JUMP_ALPHA = 0.5` and learned from the graph (ADR 0034). Was a flat count, which paid full price for tautological crossings like `located_in → geography`. | `W_DOMAIN = 2.0` |
 | `region_jumps` | Σ over **culture**-crossing hops of `1 − P(region_jump \| predicate)`, the same machinery on an independent axis (ADR 0039). `domain` is discipline, so a same-discipline chain across four civilisations (Copernicus → al-Tusi → Euclid → Jagannatha Samrat, all `science`) scores 0 domain jumps but banks its cultural surprise here. Only edges whose endpoints both carry a `Region` feed the rate; `REGION_JUMP_ALPHA = 0.5`. | `W_REGION = 2.0` |
-| `normalized_temporal_gap` | `Σ |midpoint_yearₐ − midpoint_year_b| / 1000` | `W_TEMPORAL = 1.5` |
+| `normalized_temporal_gap` | `Σ |midpoint_yearₐ − midpoint_year_b| / 1000`, where `midpoint_year` is the node's **active-period** (floruit) midpoint when curated, else its existence-extent midpoint (ADR 0041). A still-living node's existence extent runs to the present, so its raw midpoint describes nothing — India's is `(−3300 + 2025)/2 = −638`; keyed off its floruit `[−600, 1200]` it reads `300`, its real classical era. | `W_TEMPORAL = 1.5` |
 | `endpoint_unexpectedness` | `−log2 P(endpoint | start)` — an *unexpected destination* (see below) | `W_ENDPOINT = 4.0` |
 | `hub_penalty` | for each **intermediate** node, `max(0, degree − 6) / 6` | `W_HUB = 0.75` |
 

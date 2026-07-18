@@ -48,7 +48,18 @@ class Source(BaseModel):
 
 
 class Node(BaseModel):
-    """An entity in the graph. ``start_year``/``end_year`` are signed (negative = BCE)."""
+    """An entity in the graph. Year fields are signed (negative = BCE).
+
+    A node carries **two** temporal axes (ADR 0041). ``start_year``/``end_year`` are the *existence*
+    extent ("does this still exist?"). For a still-living civilisation ``end_year`` is the present,
+    so the extent's midpoint describes nothing — India's is ``(-3300 + 2025) / 2 = -638``, an
+    Iron-Age year it means nothing in. ``active_start``/``active_end`` are the *active period*: the
+    floruit / era of peak influence — which is what the surprise rubric actually wants when it asks
+    "when was this thing?". :attr:`midpoint_year` (and thus the ``temporal_gap`` term and the
+    ``FOLLOWS`` check that read it) prefers the active period, falling back to the existence extent
+    when it is absent. All curated nodes carry an active period; harvested nodes may not, and fall
+    back.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -62,16 +73,37 @@ class Node(BaseModel):
     summary: str = ""
     start_year: int | None = None
     end_year: int | None = None
+    active_start: int | None = None
+    active_end: int | None = None
     time_precision: TimePrecision | None = None
+
+    @staticmethod
+    def _midpoint(start: int | None, end: int | None) -> float | None:
+        """Midpoint of a signed-year interval, filling one open side from the other."""
+        lo = start if start is not None else end
+        hi = end if end is not None else start
+        if lo is None or hi is None:
+            return None
+        return (lo + hi) / 2.0
+
+    @property
+    def active_midpoint(self) -> float | None:
+        """Midpoint of the node's active period (floruit), or ``None`` if it has none."""
+        return self._midpoint(self.active_start, self.active_end)
 
     @property
     def midpoint_year(self) -> float | None:
-        """Midpoint of the node's temporal extent, or ``None`` if undated."""
-        start = self.start_year if self.start_year is not None else self.end_year
-        end = self.end_year if self.end_year is not None else self.start_year
-        if start is None or end is None:
-            return None
-        return (start + end) / 2.0
+        """Representative year for temporal scoring: the active-period midpoint when present.
+
+        Prefers the *active period* (:attr:`active_midpoint`) so a long-lived node reads its floruit
+        rather than a midpoint stretched to the present (ADR 0041). Falls back to the *existence*
+        extent (``start_year``/``end_year``) when no active period is curated, and is ``None`` when
+        the node is wholly undated.
+        """
+        active = self.active_midpoint
+        if active is not None:
+            return active
+        return self._midpoint(self.start_year, self.end_year)
 
 
 class Statement(BaseModel):

@@ -75,6 +75,35 @@ def test_every_curated_node_carries_a_region() -> None:
     assert not missing, f"curated nodes with no region: {missing}"
 
 
+def test_every_dated_curated_node_carries_an_active_period() -> None:
+    """ADR 0041: ``midpoint_year`` (and thus the temporal_gap term + the FOLLOWS check) keys off the
+    active period when present, so a *dated* curated node without one silently scores off its
+    existence extent — the very distortion the axis removes (India's existence midpoint is a
+    meaningless -638). Genuinely undated nodes (myth/abstract, e.g. Amaterasu) legitimately have
+    neither extent, so the invariant is scoped to dated nodes; `active_*` defaults to `None`, so the
+    schema can't enforce this — this guards it, mirroring the region/evidence guards above."""
+    seed = load_seed(SEED_PATH)
+    missing = [
+        n.id
+        for n in seed.nodes
+        if (n.start_year is not None or n.end_year is not None)
+        and (n.active_start is None or n.active_end is None)
+    ]
+    assert not missing, f"dated curated nodes with no active period: {missing}"
+
+
+def test_curated_active_periods_are_well_ordered() -> None:
+    """A disordered active interval (``active_start`` after ``active_end``) feeds a nonsense
+    midpoint, so guard the ordering as the date-disorder validator guards the existence extent."""
+    seed = load_seed(SEED_PATH)
+    disordered = [
+        n.id
+        for n in seed.nodes
+        if n.active_start is not None and n.active_end is not None and n.active_start > n.active_end
+    ]
+    assert not disordered, f"curated nodes with active_start > active_end: {disordered}"
+
+
 def test_region_is_an_axis_independent_of_domain() -> None:
     """ADR 0039: the region term earns its keep only if some edges cross a culture without crossing
     a domain — the cross-cultural, same-discipline hops the domain term is blind to (e.g. al-Tusi

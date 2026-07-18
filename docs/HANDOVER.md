@@ -3,12 +3,18 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**147 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
+green (**152 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
-then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now also carries
-a **`Region`** cultural axis (ADR 0039). Most recent change is presentation-only: the map's domain
-territories are spread apart (a centroid-separation force + a cohesion bump) so the crowded centre
-stops overlapping — hull overlap ~33%→~16%, no score touched (ADR 0040).
+then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
+**both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
+**active-period (floruit)** temporal axis (ADR 0041) — so **both schema-blocker terms are now CLOSED**.
+Most recent change (ADR 0041): `Node.active_start`/`active_end` carry the era of peak influence, and
+`midpoint_year` (hence the `temporal_gap` term) keys off it, falling back to the existence extent — so
+India reads its classical `300` not a meaningless `−638`, Rome-the-city its `−138`, Florence its
+Renaissance `1450`. Measured: 11/107 journey winners shifted toward more trans-regional destinations
+(Florence → Renaissance → printing press → Paper), every flagship intact, no new weight. Before that
+(ADR 0040): a presentation-only map-layout tidy — domain territories spread apart (centroid-separation
+force + cohesion bump), hull overlap ~33%→~16%, no score touched.
 
 **Read this first — the rule the project nearly broke (ADR 0034/0035).** Data and the rubric are the
 truth; **a test may only verify what the rubric claims, never that a favourite wins**. This was
@@ -115,8 +121,9 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
 
 - `sdb/schema/` — `enums.py` (Domain=discipline, **Region**=macro-culture (ADR 0039),
   Predicate→Wikidata props, SourceType, **Archetype**),
-  `models.py` (Pydantic; `Node.region`; `DiscoveryResult` has `archetype`, `score`,
-  `endpoint_unexpectedness`).
+  `models.py` (Pydantic; `Node.region`; `Node.active_start`/`active_end` — the floruit axis
+  `midpoint_year` prefers over the existence extent, ADR 0041; `DiscoveryResult` has `archetype`,
+  `score`, `endpoint_unexpectedness`).
 - `sdb/constants.py` — **the rubric**: every weight/threshold. `wow = surprise × trust`; default gate
   `trust ≥ 0.50`; UNLIKELY hop range `[1,2]`; JOURNEY `[3,3]` — a fixed-length 3-hop chain (cap cut
   6→4 ADR 0012, then 4→3 ADR 0021; still `--max-hops`-overridable). No length reward.
@@ -177,7 +184,10 @@ reversal; see the rule at the top), **0036 interval separation measured & reject
 the curated `Statement.evidence` on every hop** (+ the `load_graph`/`discover_all` refactor), **0038
 South/SE Asia cluster** (Indo-European/Sanskrit + Hellenistic/Maurya + maritime Silk Road bridges),
 **0039 cultural-region surprise term** (the `Node.region` axis + additive `region_jumps`; closes one
-of the two schema-blocker terms). Plus: theme-able embed (`build-site --theme`), CI for QID-validation
+of the two schema-blocker terms), **0040 spread domain territories** (map-layout tidy, presentation
+only), **0041 active-period (floruit) temporal axis** (the `Node.active_start`/`active_end` axis;
+`midpoint_year` prefers it over the existence extent — closes the *second and last* schema-blocker
+term). Plus: theme-able embed (`build-site --theme`), CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
@@ -188,41 +198,32 @@ deterministic predicate-alignment table. **Breadth is the higher-leverage invest
 
 ## 5. What's next (forward-looking)
 
-### ▶ NEXT TASK IN LINE — the temporal active-period (floruit) axis on `Node`
+### ✅ DONE (ADR 0041) — the temporal active-period (floruit) axis on `Node`
 
-This is **the** highest-value non-breadth work now that the cultural axis shipped (ADR 0039). It is
-the *second and last* of the two schema-blocker terms; the first just closed, so this is the clean
-pick-up.
+**The last schema-blocker term is now closed.** `Node` gained nullable `active_start`/`active_end` (the
+floruit / era of peak influence), and `midpoint_year` — hence the `temporal_gap` surprise term and the
+`FOLLOWS` plausibility check — keys off it, falling back to the existence extent. All **102 dated**
+curated nodes were curated per the **peak-influence floruit** rule (the owner's steer); the 5 genuinely
+undated nodes stay undated; guards enforce "every dated curated node has an active period" +
+`active_start ≤ active_end`. No engine change (the property redefinition flowed through both consumers,
+exactly like ADR 0039's `region`), no new weight. Measured before shipping: **11/107 journey winners
+shifted**, all toward more trans-regional destinations (e.g. `Florence → Renaissance → printing press →
+Paper`, replacing a Western walking tour — Florence now reads its 1450 Renaissance floruit, not a
+midpoint dragged to 2025); every flagship intact (Copernicus→al-Tusi, Roman Empire→Zen, the
+divine-descent lineages) and all three `eval/golden.json` cases unchanged. Interval separation was
+**not** rebuilt (ADR 0036 killed it; this task changed what the *midpoint means*, a different lever).
 
-**The problem (ADR 0036).** `Node`'s temporal extent models *existence*, not the **active period**.
-For a still-living civilisation `end_year = 2025`, so India's midpoint is `(-3300 + 2025)/2 = -638` —
-a year describing *nothing*, that belongs to no era India was actually influential in. Both the
-`temporal_gap` surprise term (which sums `|midpointₐ − midpoint_b|`) and any endpoint reasoning
-inherit this garbage number, so a hop into a long-lived node books a fake or muted temporal leap.
+### ▶ NEXT TASK IN LINE — the journey narrator decision (the owner's remaining product-steer half)
 
-**The fix (data, not engine — mirror ADR 0039 exactly, it is the template):**
-1. **Add a second temporal axis to `Node`** — e.g. `active_start` / `active_end` (the floruit / period
-   of influence), *distinct* from the existence extent already there. Optional + nullable like
-   `region`, with a completeness guard for curated nodes.
-2. **Point `midpoint_year` (and thus `temporal_gap`) at the active period when present**, falling back
-   to the existence extent — so India reads as its classical floruit, not `-638`.
-3. **Curate all 107 nodes** with an active period (a person's floruit ≈ their existing birth/death, so
-   many are quick; the work is the long-lived polities/religions/regions/languages).
-4. **Measure the design *before* building** (truth hierarchy): does keying `temporal_gap` off the
-   active period change which journeys win, and are the new winners *more* honest? Re-characterise
-   `eval/golden.json` from the engine only, never to a favourite. Add a hand-reproducible worked
-   example to `docs/confidence-rubric.md` + an ADR (0040).
-5. Follow the same guardrails as every scoring change: after any `data/seed.json` edit run
-   `validate-qids` → `build-cooccurrence` → tests; re-check existing flagships for shifts (report, do
-   not tune); bump counts in README + CLAUDE + this note.
-
-**DO NOT rebuild interval separation (ADR 0036) as part of this** — it was measured and killed
-(per-hop separation collapses to 0 because linked entities overlap; see §"Interval separation" below
-and memory `sdb-node-schema-blocker`). This task changes what the *midpoint* means, which is a
-different, live lever.
-
-Full context for *why* this is the top item is in §"The real blocker" below (it names both
-schema-blocker terms and marks the cultural one closed).
+With **both** schema-blocker terms closed, the top non-breadth item is the **narrator** half of the
+product steer (see §"Product direction" below). ADR 0037 surfaced the curated per-hop `evidence`, which
+makes the **journey**'s *generated* TIL visibly the weakest line on the card. The open decision: the
+journey should either become "a surprising lineage/origin stated as one quantized fact" (ideally curated
+prose, not a mechanical predicate chain) or be dropped in favour of the improbable-pair shape the owner
+prefers. That is a `narrate.py` change needing its own ADR; no measurement backs it yet, and a natural
+breadth target for that flavour is genealogy/derivation chains (royal descent,
+`claimed_descent_from` / `derived_from`). **Breadth** (§5.1) remains the main ongoing thread in
+parallel.
 
 ---
 
@@ -286,19 +287,20 @@ pairwise intuition was right and simply doesn't survive being summed. Its motiva
 Florence route) was already fixed by 0035 itself. `end-to-end` separation is recorded in 0036 as an
 untested option, not a plan.
 
-**The schema blocker — one of its two terms is now CLOSED (ADR 0039), one remains.** The `Node`
-schema was thinner than the surprise the rubric wanted to express, along two independent axes:
-(1) ✅ **CLOSED — `domain` models *discipline*, not culture** (ADR 0034's closing limitation).
-Polish→Persian→Greek→Indian scored **0** domain jumps. **ADR 0039 added the `Region` cultural axis +
-an additive `region_jumps` term** (all 107 nodes curated), the exact fix this note long called for —
-the science lineage now scores its cross-cultural surprise and is Copernicus's #1 on merit. (2) ⬜
-**STILL OPEN — the temporal extent models *existence* (`[start, 2025]`), not the active period**
-(ADR 0036), so India's midpoint is `(-3300+2025)/2 = -638`, a number describing nothing, and both
-midpoint *and* separation inherit it. The fix is a second new axis on `Node` — an
-active-period/floruit one distinct from the existence extent — a curation pass over all 107 nodes,
-data not code. It is now **the** highest-value non-breadth work, and ADR 0039 is the template: measure
-the design (additive? granularity?) before building, curate every node, add a worked example + a
-completeness guard.
+**The schema blocker — BOTH of its two terms are now CLOSED (ADR 0039 + ADR 0041).** The `Node`
+schema was thinner than the surprise the rubric wanted to express, along two independent axes, each
+fixed by a nullable second axis on `Node` + a curation pass (data, not engine):
+(1) ✅ **CLOSED (ADR 0039) — `domain` models *discipline*, not culture** (ADR 0034's closing
+limitation). Polish→Persian→Greek→Indian scored **0** domain jumps. ADR 0039 added the `Region`
+cultural axis + an additive `region_jumps` term (all 107 nodes curated) — the science lineage now
+scores its cross-cultural surprise and is Copernicus's #1 on merit. (2) ✅ **CLOSED (ADR 0041) — the
+temporal extent modelled *existence* (`[start, 2025]`), not the active period** (ADR 0036), so India's
+midpoint was `(-3300+2025)/2 = -638`, a number describing nothing. ADR 0041 added the
+`active_start`/`active_end` floruit axis and pointed `midpoint_year` (hence `temporal_gap`) at it,
+falling back to the existence extent; India now reads its classical `300`. 11/107 journey winners
+shifted toward more honest trans-regional destinations, all flagships intact, no new weight —
+re-characterised from the engine, not tuned. **With both terms closed, the schema is no longer the
+constraint; the top non-breadth item is the narrator decision (see §"NEXT TASK IN LINE" above).**
 
 **A further rung if the endpoint term ever needs one: deterministic diffusion, not a GA.** Saturation
 is already solved (0029), so this is no longer motivated by it — but **personalized PageRank /

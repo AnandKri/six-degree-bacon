@@ -65,6 +65,20 @@ def test_every_curated_statement_carries_evidence() -> None:
     assert not missing, f"statements with no curated evidence: {missing}"
 
 
+def test_every_curated_statement_carries_a_headline() -> None:
+    """ADR 0042: the TIL is the payoff hop's curated `headline`. A curated statement without one
+    would fall back to the mechanical predicate chain — the weak line the headline replaces — so a
+    blank is a visible regression on any card that edge lands. `Statement.headline` defaults to
+    `""`, so the schema can't enforce this; guard it like `evidence`."""
+    seed = load_seed(SEED_PATH)
+    missing = [
+        f"{s.subject} --{s.predicate.value}--> {s.object}"
+        for s in seed.statements
+        if not s.headline.strip()
+    ]
+    assert not missing, f"statements with no curated headline: {missing}"
+
+
 def test_every_curated_node_carries_a_region() -> None:
     """Region is a scoring input (ADR 0039), so a curated node without one is a silent hole — it
     skips the region-jump term, under-counting its cultural surprise. `Node.region` defaults to

@@ -28,7 +28,8 @@ def test_payload_has_journey_and_unlikely_with_sourced_chains(seed_graph: Knowle
     assert all(step["evidence"] for step in card["chain"])  # curated justification per hop
     assert 0.0 <= card["trust"] <= 1.0
     assert card["sources"] and all("id" in s and "type" in s for s in card["sources"])
-    assert card["endpoint"] in card["til"]  # narrative names the destination
+    # ADR 0042: the TIL is the payoff hop's single curated fact (prefixed), not a predicate chain.
+    assert card["til"].startswith("TIL:") and len(card["til"]) > len("TIL: ")
 
 
 def test_payload_reports_not_found_with_suggestions(seed_graph: KnowledgeGraph) -> None:

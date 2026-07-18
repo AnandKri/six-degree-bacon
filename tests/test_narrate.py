@@ -68,11 +68,33 @@ def _chain(middle_type: str) -> tuple[KnowledgeGraph, Path]:
     return KnowledgeGraph(nodes, (first, second)), path
 
 
-def test_til_is_a_single_sentence_with_the_subject_elided() -> None:
-    # ADR 0028: the TIL is one quantized claim — the first hop in full, then relative clauses. The
-    # hop-by-hop chain is rendered separately by every caller, so it is not restated (and there is
-    # no meta-closer), leaving exactly one sentence.
-    graph, path = _chain("deity")
+def test_til_uses_the_payoff_hop_headline() -> None:
+    # ADR 0042: when the payoff (last) hop carries a curated `headline`, the TIL *is* that headline
+    # (prefixed) — a single quantized fact — rather than the mechanical predicate chain.
+    nodes = (
+        Node(id="a", label="Alpha", domain=Domain.HISTORY, type="x"),
+        Node(id="b", label="Beta", domain=Domain.MYTH, type="x"),
+    )
+    statement = Statement(
+        subject="a",
+        predicate=Predicate.PART_OF,
+        object="b",
+        sources=(Source(id="w", source_type=SourceType.WIKIPEDIA),),
+        headline="Alpha and Beta were secretly the same thing.",
+    )
+    graph = KnowledgeGraph(nodes, (statement,))
+    path = Path(
+        node_ids=("a", "b"),
+        hops=(Hop(from_id="a", to_id="b", statement=statement, is_reversed=False),),
+    )
+    text, _ = narrate(graph, path, 0.9)
+    assert text == "TIL: Alpha and Beta were secretly the same thing."
+
+
+def test_til_falls_back_to_the_chain_without_a_headline() -> None:
+    # ADR 0042: a payoff statement with no curated headline (e.g. a harvested edge) falls back to
+    # the mechanical relative-clause chain — first hop in full, then relative clauses, one sentence.
+    graph, path = _chain("deity")  # these statements carry no headline
     text, _ = narrate(graph, path, 0.9)
     assert text == "TIL: Alpha was part of Beta, who was part of Gamma."
     assert text.count(".") == 1  # one sentence: no restated chain, no "It connects ..." closer

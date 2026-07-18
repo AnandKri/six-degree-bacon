@@ -20,7 +20,7 @@ Wikipedia-link co-occurrence — so Rome tops out at Chang'an, not the obvious "
 ## What it does
 
 ```
-topic ─▶ graph (networkx) ─▶ traverse ─▶ score surprise ─▶ rank / filter by trust ─▶ template TIL
+topic ─▶ graph (networkx) ─▶ traverse ─▶ score surprise ─▶ rank / filter by trust ─▶ curated TIL
 ```
 
 - **Traverse** — enumerate candidate multi-hop paths from the topic node exactly while that's cheap,
@@ -34,14 +34,16 @@ topic ─▶ graph (networkx) ─▶ traverse ─▶ score surprise ─▶ rank 
   rewarded.
 - **Trust** (deterministic) — per-source reliability rubric → multi-source corroboration (noisy-OR) →
   entity-link quality → validation penalties → weakest-link path trust.
-- **Rank** — two **archetypes**, surfaced together (ADR 0007):
-  - a **journey** — a fixed-length 3-hop cross-domain chain, ranked by the wow score
-    `surprise × trust`;
+- **Rank** — two **archetypes**, surfaced together (ADR 0007), the improbable pair first / default
+  (ADR 0042):
   - an **improbable pair** — a short 1–2 hop link between entities that feel worlds apart, ranked by
-    `endpoint_unexpectedness × trust` (so the *destination's* improbability decides it, not distance).
+    `endpoint_unexpectedness × trust` (so the *destination's* improbability decides it, not distance);
+  - a **journey** — a fixed-length 3-hop cross-domain chain, ranked by the wow score `surprise × trust`.
 
   Both gate at `trust ≥ 0.50` by default, so tight, well-evidenced connections win — or an honest
   "nothing confident" when none qualify (`--include-possibly` lowers the gate and flags `Possibly:`).
+- **TIL** — each card leads with **one quantized fact**: the curated `headline` of the path's payoff
+  (last) hop — a sourced one-liner, one per statement — not a mechanically chained sentence (ADR 0042).
 - **Narrate** — a template composes the TIL, and each hop of the chain carries its curated
   one-sentence **evidence**, citing sources (ADR 0037). (A free/local LLM narrator is an optional
   later upgrade behind the same seam; the template stays the deterministic fallback.)
@@ -111,7 +113,7 @@ data/seed.json          the curated graph (verified QIDs, full provenance)
 data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-surprise term
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        151 tests: human-vs-code confidence, surprise & endpoint checks (incl. region jumps),
+tests/        153 tests: human-vs-code confidence, surprise & endpoint checks (incl. region jumps),
               harvester, both archetypes, the clusters, the web round-trip, the seed loaders,
               the per-hop evidence contract, and a guided-walk scaling/perf test
 ```

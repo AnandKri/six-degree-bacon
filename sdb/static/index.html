@@ -370,7 +370,7 @@ async function getResult(node, possibly) {
 
 // ================= state =================
 let NODES = [], byId = new Map(), nodeEl = new Map(), edgeByKey = new Map();
-let selected = null, kind = "journey", possibly = false, curPath = [];
+let selected = null, kind = "unlikely", possibly = false, curPath = [];
 const nodeR = (deg) => 3.4 + Math.sqrt(deg) * 1.7;
 
 // ================= convex hull (monotone chain) =================
@@ -655,7 +655,7 @@ async function select(node, preferKind) {
   const res = (data && data.results) || { journey: [], unlikely: [] };
   lastResult = res;
   const has = (k) => res[k] && res[k].length;
-  kind = preferKind && has(preferKind) ? preferKind : (has("journey") ? "journey" : (has("unlikely") ? "unlikely" : "journey"));
+  kind = preferKind && has(preferKind) ? preferKind : (has("unlikely") ? "unlikely" : (has("journey") ? "journey" : "unlikely"));
   const card = has(kind) ? res[kind][0] : null;
   if (!card) { renderNoResult(node); return; }
   const ids = pathIds(card);
@@ -691,8 +691,8 @@ function renderCard(node, res, card) {
   const badge = card.possibly ? '<span class="badge">SPECULATIVE</span>' : "";
   const has = (k) => res[k] && res[k].length;
   const seg = `<div class="seg">`
-    + `<button data-k="journey" class="${kind === "journey" ? "sel" : ""}" ${has("journey") ? "" : "disabled"}>journey</button>`
     + `<button data-k="unlikely" class="${kind === "unlikely" ? "sel" : ""}" ${has("unlikely") ? "" : "disabled"}>improbable pair</button>`
+    + `<button data-k="journey" class="${kind === "journey" ? "sel" : ""}" ${has("journey") ? "" : "disabled"}>journey</button>`
     + `</div>`;
   const srcs = card.sources.map((s) => `<li>${s.url
       ? `<a href="${xml(s.url)}" target="_blank" rel="noopener">${xml(s.id)}</a>`

@@ -31,11 +31,12 @@ class TopicNotFoundError(LookupError):
 
 
 # The archetype vocabulary both front-ends expose as `--archetype` / `?archetype=`. Order is the
-# order results are presented in, so it is a tuple, not a set.
+# order results are presented in, so it is a tuple, not a set. The improbable pair leads (ADR 0042):
+# it already has the "one quantized fact" shape the product wants, so it is shown first / default.
 ARCHETYPE_CHOICES: dict[str, tuple[Archetype, ...]] = {
     "journey": (Archetype.JOURNEY,),
     "unlikely": (Archetype.UNLIKELY,),
-    "both": (Archetype.JOURNEY, Archetype.UNLIKELY),
+    "both": (Archetype.UNLIKELY, Archetype.JOURNEY),
 }
 
 

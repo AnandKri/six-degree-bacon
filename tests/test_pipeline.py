@@ -67,7 +67,8 @@ def test_discover_all_dispatches_both_archetypes_like_the_per_archetype_call(
     # The shared dispatch both front-ends use must agree, key-for-key, with calling `discover` per
     # archetype — that equivalence is the whole point of hoisting the loop out of the CLI and web.
     both = discover_all(seed_graph, "Roman Empire", archetype="both", top=3)
-    assert list(both) == [Archetype.JOURNEY, Archetype.UNLIKELY]  # presentation order preserved
+    # The improbable pair leads (ADR 0042): it is shown first / default.
+    assert list(both) == [Archetype.UNLIKELY, Archetype.JOURNEY]  # presentation order preserved
     for archetype, results in both.items():
         expected = discover(seed_graph, "Roman Empire", archetype=archetype, top=3)
         assert [r.path.node_ids for r in results] == [r.path.node_ids for r in expected]
@@ -82,7 +83,7 @@ def test_discover_all_narrows_to_one_archetype_and_falls_back_on_junk(
     assert list(only) == [Archetype.UNLIKELY]
 
     junk = discover_all(seed_graph, "Roman Empire", archetype="nonsense", top=1)
-    assert list(junk) == [Archetype.JOURNEY, Archetype.UNLIKELY]
+    assert list(junk) == [Archetype.UNLIKELY, Archetype.JOURNEY]
 
 
 def test_discover_ranked_by_wow_score_unique_endpoints(seed_graph: KnowledgeGraph) -> None:

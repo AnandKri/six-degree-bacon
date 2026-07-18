@@ -3,7 +3,7 @@
 A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md) (the canonical guide)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2**, **pushed to `origin/main`**
 (public repo `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks
-green (**151 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
+green (**153 tests**). Seed: **107 nodes / 158 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
 **both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
@@ -122,8 +122,8 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
 - `sdb/schema/` — `enums.py` (Domain=discipline, **Region**=macro-culture (ADR 0039),
   Predicate→Wikidata props, SourceType, **Archetype**),
   `models.py` (Pydantic; `Node.region`; `Node.active_start`/`active_end` — the floruit axis
-  `midpoint_year` prefers over the existence extent, ADR 0041; `DiscoveryResult` has `archetype`,
-  `score`, `endpoint_unexpectedness`).
+  `midpoint_year` prefers over the existence extent, ADR 0041; `Statement.headline` — the one-fact TIL
+  line, ADR 0042; `DiscoveryResult` has `archetype`, `score`, `endpoint_unexpectedness`).
 - `sdb/constants.py` — **the rubric**: every weight/threshold. `wow = surprise × trust`; default gate
   `trust ≥ 0.50`; UNLIKELY hop range `[1,2]`; JOURNEY `[3,3]` — a fixed-length 3-hop chain (cap cut
   6→4 ADR 0012, then 4→3 ADR 0021; still `--max-hops`-overridable). No length reward.
@@ -133,8 +133,9 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   latter is the one loader the CLI and `serve` share).
 - `sdb/engine/` — `traversal.py` (`find_paths`: exact `enumerate_paths` under budget, else bounded
   best-first `guided_paths` — ADR 0010), `surprise.py`, `confidence.py` (trust), `narrate.py`
-  (template TIL), `pipeline.py` (`discover(..., archetype=...)`, plus `discover_all` + `trust_gate`,
-  the shared dispatch the CLI and web both go through — ADR 0037).
+  (TIL = the payoff hop's curated `Statement.headline`, chain as fallback — ADR 0042), `pipeline.py`
+  (`discover(..., archetype=...)`, plus `discover_all` + `trust_gate`, the shared dispatch the CLI and
+  web both go through — ADR 0037; `ARCHETYPE_CHOICES["both"]` leads with the improbable pair, ADR 0042).
 - `sdb/harvest/` — `client.py` (SPARQL, live + fake), `mapping.py` (rank/ref→Source, P31→Domain,
   temporal extent, PID→Predicate + aliases), `harvester.py` (k-hop BFS→SeedData), `cooccurrence.py`
   (Wikipedia-link matrix; **chunks `pltitles` by 50 — MediaWiki caps it, ADR 0017**), `merge.py`,
@@ -187,7 +188,9 @@ South/SE Asia cluster** (Indo-European/Sanskrit + Hellenistic/Maurya + maritime 
 of the two schema-blocker terms), **0040 spread domain territories** (map-layout tidy, presentation
 only), **0041 active-period (floruit) temporal axis** (the `Node.active_start`/`active_end` axis;
 `midpoint_year` prefers it over the existence extent — closes the *second and last* schema-blocker
-term). Plus: CI for QID-validation
+term), **0042 curated `Statement.headline` as the TIL** (each card leads with one quantized fact — the
+payoff hop's headline; the mechanical chain is now the fallback; improbable pair is the default
+archetype — resolves the narrator half of the product steer). Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
 **Key finding (do not re-litigate):** cross-source *corroboration* is low-yield here (ADR 0014). Trust
@@ -213,17 +216,29 @@ midpoint dragged to 2025); every flagship intact (Copernicus→al-Tusi, Roman Em
 divine-descent lineages) and all three `eval/golden.json` cases unchanged. Interval separation was
 **not** rebuilt (ADR 0036 killed it; this task changed what the *midpoint means*, a different lever).
 
-### ▶ NEXT TASK IN LINE — the journey narrator decision (the owner's remaining product-steer half)
+### ✅ DONE (ADR 0042) — the journey narrator decision (the owner's product-steer half)
 
-With **both** schema-blocker terms closed, the top non-breadth item is the **narrator** half of the
-product steer (see §"Product direction" below). ADR 0037 surfaced the curated per-hop `evidence`, which
-makes the **journey**'s *generated* TIL visibly the weakest line on the card. The open decision: the
-journey should either become "a surprising lineage/origin stated as one quantized fact" (ideally curated
-prose, not a mechanical predicate chain) or be dropped in favour of the improbable-pair shape the owner
-prefers. That is a `narrate.py` change needing its own ADR; no measurement backs it yet, and a natural
-breadth target for that flavour is genealogy/derivation chains (royal descent,
-`claimed_descent_from` / `derived_from`). **Breadth** (§5.1) remains the main ongoing thread in
-parallel.
+**Resolved by curated prose, not an LLM.** Each card's TIL is now a **single quantized fact** — the
+curated `Statement.headline` of the discovered path's **payoff (last) hop** — replacing the mechanical
+predicate chain (which survives only as the harvest fallback). All **158** statements carry a
+`headline` (a tight, *evidence-faithful* one-liner, so it inherits the edge's provenance — "zero AI" +
+"every link provenanced" stay honest), guarded like `evidence`. The **improbable pair** is now the
+first / default archetype. Chosen **per-edge, not per-path** (per-path caching goes stale on every
+scoring/seed shift — 11 winners moved in ADR 0041 alone — and would break "zero AI"); the tradeoff is
+that a journey's TIL states the *destination fact* rather than the whole arc (the header + hop chain
+carry the arc), while the improbable pair — whose fact *is* the endpoint edge — maps to it perfectly.
+Narration only: scoring and `eval/golden.json` unchanged. If a true start→end *arc* sentence is ever
+wanted, that is the per-path / optional-local-LLM route (recorded, not built).
+
+### ▶ NEXT TASK IN LINE — breadth (the main ongoing thread)
+
+With both schema-blocker terms **and** the narrator decision closed, there is no outstanding non-breadth
+item. **Breadth** (§5.1) is the top thread: add a coherent, well-connected cluster (one commit each,
+process in §6), re-checking existing flagships after. A natural next target that also suits the new
+one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_from`).
+Candidate clusters that connect via existing hubs: **Byzantine–Ottoman** (via Constantinople), the
+**Enlightenment** proper (via Newton/Galileo/the press), or **Judaism/the Abrahamic web** (via Islam +
+Christianity). Avoid pre-Columbian Mesoamerica (it would be an island).
 
 ---
 
@@ -300,7 +315,8 @@ midpoint was `(-3300+2025)/2 = -638`, a number describing nothing. ADR 0041 adde
 falling back to the existence extent; India now reads its classical `300`. 11/107 journey winners
 shifted toward more honest trans-regional destinations, all flagships intact, no new weight —
 re-characterised from the engine, not tuned. **With both terms closed, the schema is no longer the
-constraint; the top non-breadth item is the narrator decision (see §"NEXT TASK IN LINE" above).**
+constraint; the narrator decision (ADR 0042) is likewise closed, so breadth is the top thread (see
+§"NEXT TASK IN LINE" above).**
 
 **A further rung if the endpoint term ever needs one: deterministic diffusion, not a GA.** Saturation
 is already solved (0029), so this is no longer motivated by it — but **personalized PageRank /
@@ -314,16 +330,15 @@ tuning is legitimate in principle but is blocked by the absence of a human-label
 for ~8 continuous knobs a plain grid/random sweep would beat a GA anyway. Stochastic epidemic
 simulation (SIR) is likewise out for scoring (nondeterministic) — fine only as a visualisation.
 
-**Product direction (owner's steer):** a TIL should read as **one quantized surprising fact**
-(e.g. "Japan's imperial line traces to the sun goddess", "Elizabeth II descends from Odin"), not a
-narrated walking tour. The **improbable pair** already has that shape and is the archetype to lean
-into. **Half of this shipped in ADR 0037:** the connecting path is now rendered as its curated
-per-hop *evidence* (not a bare predicate list), on every surface. The remaining, still-open half is
-the *narrator* decision — with the evidence surfaced, the journey's generated TIL is now visibly the
-weakest line on the card, so the **journey** should either become "a surprising lineage/origin stated
-as one fact" (ideally curated prose, not a mechanical chain) or be dropped. That is a `narrate.py`
-change needing its own ADR, and no measurement backs it yet. A natural breadth target for that
-flavour is genealogy/derivation chains (royal descent, `claimed_descent_from` / `derived_from`).
+**Product direction (owner's steer) — now fully shipped.** A TIL should read as **one quantized
+surprising fact** (e.g. "Japan's imperial line traces to the sun goddess", "Elizabeth II descends from
+Odin"), not a narrated walking tour, and the **improbable pair** (now the default archetype) has that
+shape. **Half shipped in ADR 0037** (the path rendered as curated per-hop *evidence*); **the other half
+shipped in ADR 0042** — the TIL itself is now the curated `Statement.headline` of the payoff hop (a
+single sourced fact), replacing the mechanical chain (kept only as the harvest fallback). Chosen
+per-edge (stable, provenanced, zero-LLM) over per-path synthesis. A natural breadth target that suits
+the one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent_from` /
+`derived_from`).
 
 1. **Breadth — the main ongoing thread.** Add coherent, well-connected clusters, **one commit each**,
    following the process in §6. Done this round: **East Asia** (ADR 0020), **Norse/Celtic myth**

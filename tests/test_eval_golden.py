@@ -48,9 +48,12 @@ def test_endpoint_surprise_demotes_obvious_destination(seed_graph: KnowledgeGrap
 
 
 def test_narrative_faithfulness(seed_graph: KnowledgeGraph) -> None:
-    # Every node label on a discovered path must appear in its TIL text.
+    # ADR 0042: the TIL is the curated `headline` of the path's payoff (last) hop, prefixed — not a
+    # mechanical predicate chain. Verify the narrator surfaces that exact curated line on real seed
+    # paths (and that it is non-empty; test_validate guards that every curated edge has one).
     results = discover(seed_graph, "Roman Empire", top=5)
     assert results
     for result in results:
-        for node_id in result.path.node_ids:
-            assert seed_graph.node(node_id).label in result.til
+        payoff = result.path.hops[-1].statement.headline.strip()
+        assert payoff  # a curated headline exists for the payoff edge
+        assert result.til == f"TIL: {payoff}"  # possibly=False at the default trust gate

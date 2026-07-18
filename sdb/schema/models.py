@@ -111,6 +111,15 @@ class Statement(BaseModel):
 
     ``subject`` and ``object`` are :class:`Node` ids. ``link_quality`` (0..1) records how
     confidently the endpoints were resolved to those canonical ids (1.0 for hand-curated data).
+
+    Two curated prose fields, both distinct in job (ADR 0042):
+
+    - ``evidence`` — the fuller one-sentence *justification* for this specific claim, rendered under
+      its hop so the chain reads as sourced evidence (ADR 0037).
+    - ``headline`` — a tighter, self-contained one-fact line, a faithful compression of ``evidence``
+      (so it inherits the same provenance). When this statement is a discovered path's *payoff*
+      (last) hop, :func:`sdb.engine.narrate.narrate` uses it as the card's single quantized "TIL";
+      the mechanical predicate chain remains the fallback for any statement without one.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -120,6 +129,7 @@ class Statement(BaseModel):
     object: str
     sources: tuple[Source, ...]
     evidence: str = ""
+    headline: str = ""
     link_quality: float = Field(default=1.0, ge=0.0, le=1.0)
 
 

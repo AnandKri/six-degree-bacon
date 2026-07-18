@@ -55,7 +55,12 @@ India's midpoint was a meaningless `−638`; new nullable `Node.active_start`/`a
 of peak influence and `midpoint_year` (hence the `temporal_gap` term) keys off it, so India reads its
 classical `300`, Rome-the-city its `−138`, Florence its Renaissance `1450` — 11/107 journey winners
 shifted toward more trans-regional destinations (Florence → Renaissance → printing press → Paper), all
-flagships intact, no new weight. All checks green (ruff, format, mypy, 151 tests).
+flagships intact, no new weight. Most recent change (ADR 0042): each card's **TIL is now a single
+curated fact** — a per-`Statement` `headline` (a faithful, sourced one-liner, one for all 158 edges),
+surfaced from the discovered path's payoff (last) hop, replacing the mechanically-chained predicate
+sentence; the mechanical chain survives only as the harvest fallback, and the **improbable pair** is
+now the default archetype. Narration only — scoring and `eval/golden.json` unchanged. All checks green
+(ruff, format, mypy, 153 tests).
 
 ## How to run
 
@@ -79,7 +84,7 @@ commands directly. The CLI degrades to ASCII glyphs automatically on a legacy co
 ## Architecture (all pure Python, deterministic)
 
 ```
-topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filter by trust -> template TIL
+topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filter by trust -> curated TIL
 ```
 
 - `sdb/schema/` — `enums.py` (Domain=discipline, **Region=macro-culture** (ADR 0039),
@@ -88,8 +93,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   axis — ADR 0041, which `midpoint_year` prefers over the existence extent), `Statement`, `Path`,
   `DiscoveryResult`).
   **Statement-reified**: every claim is a
-  `Statement{subject, predicate, object, sources[], evidence, link_quality}` so multiple
-  sources corroborate a fact.
+  `Statement{subject, predicate, object, sources[], evidence, headline, link_quality}` so multiple
+  sources corroborate a fact. `evidence` is the fuller per-hop justification (ADR 0037); `headline`
+  is the punchy one-fact TIL line (ADR 0042).
 - `sdb/constants.py` — **the scoring rubric**: the single source of truth for every weight/threshold.
 - `sdb/graph/` — `build.py` (`KnowledgeGraph`: networkx graph + cached degree/rarity/counts + topic
   lookup) and `loader.py` (`load_seed`/`load_cooccurrence`/`load_similarity`, plus `graph_from_seed`
@@ -100,8 +106,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   **region jumps** (ADR 0039) + temporal gap (between nodes' **active periods**, ADR 0041) +
   **endpoint-unexpectedness** from co-occurrence),
   `confidence.py` (source rubric → noisy-OR
-  corroboration → link quality → validators → weakest-link path trust), `narrate.py` (template TIL — a
-  single quantized claim, ADR 0028; + `Possibly:` flag), `pipeline.py` (`discover()`, and the shared
+  corroboration → link quality → validators → weakest-link path trust), `narrate.py` (TIL = the payoff
+  hop's curated `Statement.headline`, a single quantized fact — ADR 0042; mechanical predicate chain as
+  fallback; + `Possibly:` flag), `pipeline.py` (`discover()`, and the shared
   `discover_all`/`trust_gate` the CLI and web both dispatch through — ADR 0037).
 - `sdb/harvest/` — ingestion (all deterministic given a snapshot): `client.py`
   (`SparqlClient` protocol + live `WikidataClient` + offline `FakeSparqlClient`), `mapping.py`
@@ -151,11 +158,12 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   0034 domain-jump information weighting, 0035 closed temporal extents, 0036 interval separation
   measured & rejected — keep midpoint distance, 0037 surface the curated `Statement.evidence` prose
   on every hop, 0038 South/SE Asia cluster, 0039 cultural-region surprise term, 0040 spread domain
-  territories to reduce map overlap, 0041 active-period (floruit) temporal axis on `Node`).
+  territories to reduce map overlap, 0041 active-period (floruit) temporal axis on `Node`, 0042
+  curated per-`Statement` `headline` as the TIL + improbable pair as the default archetype).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 151 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
+- `tests/` — 153 tests incl. human-vs-code confidence (0.75), surprise (5.6), and endpoint (0.49 vs
   2.81) golden cases, plus harvester/mapping/co-occurrence/merge, wow-score ranking, both archetypes,
   the Hellenistic–India–Buddhism bridge, the Renaissance cluster's three bridges + its starved-start
   relief (ADR 0033), the South/SE Asia cluster's bridges (ADR 0038 — Indo-European/Sanskrit,
@@ -167,8 +175,10 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   round-trips), the static-site export, a deterministic-layout suite (`test_layout.py`: reproducibility
   + the domain-cohesion property + its negative control + a domain-separation negative control that
   fewer nodes intrude on a foreign territory (ADR 0040)), a guided-walk scaling/perf test, the seed
-  loaders (`test_loader.py`: single-parse + missing-sidecar tolerance), and the per-hop evidence
-  contract — shared across both surfaces + a guard that every curated statement carries it (ADR 0037);
+  loaders (`test_loader.py`: single-parse + missing-sidecar tolerance), the per-hop evidence
+  contract — shared across both surfaces + a guard that every curated statement carries it (ADR 0037),
+  and the payoff-`headline` TIL contract (ADR 0042 — the narrator surfaces the payoff hop's headline,
+  falls back to the chain, and a guard that every curated statement carries a headline);
   `eval/golden.json` — ranker regression (characterization values).
 
 ## Scoring in one paragraph
@@ -179,10 +189,12 @@ interesting?): `Σ −log2(count/total)` edge rarity + domain (discipline) jumps
 jumps** (ADR 0039, same weighting on an independent axis) + normalized temporal gap (between nodes'
 **active periods** / floruits, not their existence extents — ADR 0041) +
 **endpoint unexpectedness** (`−log2 P(endpoint | start)` from Wikipedia-link co-occurrence) − hub
-penalty (length is *not* rewarded). Results come in two **archetypes** (ADR 0007), surfaced together:
-a **journey** (a fixed 3-hop chain, ranked `surprise × trust`) and an **improbable pair** (1–2 hops,
-ranked `endpoint_unexpectedness × trust`). Both gate at `trust ≥ 0.50` by default
-(`--include-possibly` lowers the gate and flags `Possibly:`).
+penalty (length is *not* rewarded). Results come in two **archetypes** (ADR 0007), surfaced together
+with the **improbable pair** first / default (ADR 0042): a **journey** (a fixed 3-hop chain, ranked
+`surprise × trust`) and an **improbable pair** (1–2 hops, ranked `endpoint_unexpectedness × trust`).
+Both gate at `trust ≥ 0.50` by default (`--include-possibly` lowers the gate and flags `Possibly:`).
+Each card's **TIL** is the payoff (last) hop's curated `Statement.headline` — one quantized fact
+(ADR 0042).
 
 ## Conventions (strict — see git history)
 

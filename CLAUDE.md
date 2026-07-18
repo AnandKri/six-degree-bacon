@@ -68,11 +68,15 @@ already parameterised by both, so serving *several* graphs the user switches bet
 engine change**, only a brain registry (`sdb/brains.py`), a `?brain=` selector on `sdb serve`
 (`/api/brains`), a per-brain static bundle from `sdb build-site` (a `brains.json` manifest), and a
 switcher in the map UI. The first extra brain is a **detached 20th-century graph**
-(`data/brains/twentieth_century/`, 27 nodes / 27 statements — film/music/politics/tech, cross-culture
+(`data/brains/twentieth_century/`, **32 nodes / 33 statements** — film/music/politics/tech, cross-culture
 via Kurosawa↔Hollywood, Beatles↔Ravi Shankar, MLK↔Gandhi): its surprise comes from cross-domain +
-cross-region jumps *within* the century (the temporal-gap term goes quiet), so it is journey-led. The
-main brain is unchanged (**116 nodes / 175 statements**). All checks green (ruff, format, mypy,
-**169 tests**).
+cross-region jumps *within* the century (the temporal-gap term goes quiet), so it is journey-led. Most
+recent change (**ADR 0045**): a **modern region refinement** — `Region` gained `SOVIET` (the Cold War
+Eastern bloc; the US/UK/W-European pop continuum stays `WESTERN`, applying ADR 0039's anti-farming
+test), exercised by a Cold War space-race arc in the 20th-century brain (Sputnik/Gagarin/Tetris ↔
+Apollo 11): `Tetris → computer → Apollo 11 → Sputnik`, `Star Wars → … → Sputnik`. Per-brain scoring, so
+the main brain is untouched (**116 nodes / 175 statements**). All checks green (ruff, format, mypy,
+**170 tests**).
 
 ## How to run
 
@@ -99,8 +103,8 @@ commands directly. The CLI degrades to ASCII glyphs automatically on a legacy co
 topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filter by trust -> curated TIL
 ```
 
-- `sdb/schema/` — `enums.py` (Domain=discipline, **Region=macro-culture** (ADR 0039),
-  Predicate→Wikidata props, SourceType…) + `models.py`
+- `sdb/schema/` — `enums.py` (Domain=discipline, **Region=macro-culture** (ADR 0039; + the modern
+  `SOVIET` Cold War sphere, ADR 0045), Predicate→Wikidata props, SourceType…) + `models.py`
   (Pydantic: `Source`, `Node` (incl. `region` and the **active-period** `active_start`/`active_end`
   axis — ADR 0041, which `midpoint_year` prefers over the existence extent), `Statement`, `Path`,
   `DiscoveryResult`).
@@ -166,9 +170,10 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   Jimmu → Amaterasu → Shinto).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `data/brains/<name>/` — **additional detached brains** (ADR 0044), each its own `seed.json` +
-  `cooccurrence.json` (+ optional `meta.json` label). First: `twentieth_century/` — a 27-node /
-  27-statement 20th-century graph (film/music/politics/tech), self-contained with its own internal
-  cross-domain + cross-region density; journey-led (its one-century span mutes the temporal-gap term).
+  `cooccurrence.json` (+ optional `meta.json` label). First: `twentieth_century/` — a **32-node /
+  33-statement** 20th-century graph (film/music/politics/tech, incl. a Cold War space-race arc in the
+  `SOVIET` region — ADR 0045), self-contained with its own internal cross-domain + cross-region
+  density; journey-led (its one-century span mutes the temporal-gap term).
 - `docs/adr/` — decisions (0003 endpoint surprise, 0004 harvester, 0005 harvest merge/corroboration,
   0006 wow-score ranking, 0007 improbable-adjacency archetype, 0008 seed-QID repair, 0009 harvest
   node enrichment, 0010 guided-walk scaling, 0011 Hellenistic–India–Buddhism bridge, 0012 default
@@ -184,11 +189,12 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   on every hop, 0038 South/SE Asia cluster, 0039 cultural-region surprise term, 0040 spread domain
   territories to reduce map overlap, 0041 active-period (floruit) temporal axis on `Node`, 0042
   curated per-`Statement` `headline` as the TIL + improbable pair as the default archetype, 0043
-  Judaism/Abrahamic-web cluster, 0044 multi-brain platform + a detached 20th-century brain).
+  Judaism/Abrahamic-web cluster, 0044 multi-brain platform + a detached 20th-century brain,
+  0045 modern region refinement — the `SOVIET` Cold War sphere).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 169 tests incl. the multi-brain platform (`test_brains.py`: registry + a real
+- `tests/` — 170 tests incl. the multi-brain platform (`test_brains.py`: registry + a real
   two-brain HTTP round-trip + the `build_multi_site` manifest), the per-brain integrity guards now
   parametrised over **every** brain (`test_validate.py`), human-vs-code confidence (0.75), surprise
   (5.6), and endpoint (0.49 vs

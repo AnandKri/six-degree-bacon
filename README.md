@@ -93,11 +93,12 @@ A **brain** is a self-contained `(seed, cooccurrence)` pair (ADR 0044). The engi
 command were already parameterised by both, so serving several graphs the user switches between needs
 no engine change — the main graph stays at `data/seed.json`, and extra brains live under
 [`data/brains/<name>/`](data/brains/). The first is a **detached 20th-century brain**
-([`data/brains/twentieth_century/`](data/brains/twentieth_century/), 27 nodes / 27 statements —
+([`data/brains/twentieth_century/`](data/brains/twentieth_century/), 32 nodes / 33 statements —
 film, music, politics, technology) whose surprise comes from cross-domain and cross-culture jumps
-*within* the century: **Gandhi → MLK → civil rights → jazz**, **Alan Turing → computer → Star Wars →
-The Hidden Fortress**, **blues → rock and roll → The Beatles → Ravi Shankar**. `sdb serve` shows a
-switcher; `sdb build-site` bundles every brain behind one page.
+*within* the century — the region axis gained a modern `SOVIET` (Cold War) sphere for exactly this
+(ADR 0045): **Gandhi → MLK → civil rights → jazz**, **Tetris → computer → Apollo 11 → Sputnik**
+(a Soviet game to the Moon race), **blues → rock and roll → The Beatles → Ravi Shankar**. `sdb serve`
+shows a switcher; `sdb build-site` bundles every brain behind one page.
 
 ## Deployment
 
@@ -129,7 +130,7 @@ data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-
 data/brains/<name>/     additional detached brains (e.g. twentieth_century/) — each its own graph
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        169 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
+tests/        170 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
               per-brain integrity guards), human-vs-code confidence, surprise & endpoint checks (incl.
               region jumps), harvester, both archetypes, the clusters, the web round-trip, the seed
               loaders, the per-hop evidence contract, and a guided-walk scaling/perf test

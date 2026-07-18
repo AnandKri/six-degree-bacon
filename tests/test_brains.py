@@ -10,7 +10,8 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from sdb.brains import BrainSpec, available_brains
-from sdb.graph.loader import load_graph
+from sdb.graph.loader import load_graph, load_seed
+from sdb.schema.enums import Region
 from sdb.site import build_multi_site
 from sdb.web import _AppServer
 
@@ -126,3 +127,24 @@ def test_build_multi_site_with_one_brain_is_the_plain_single_bundle(tmp_path: Pa
     build_multi_site(brains, out)
     assert (out / "data.json").exists()
     assert not (out / "brains.json").exists()  # a single brain needs no manifest / switcher
+
+
+# --------------------------------------------------------------------- 20th-century brain content
+
+
+def test_twentieth_century_has_a_cold_war_cross_sphere_edge() -> None:
+    """ADR 0045: the SOVIET region earns its keep only if some edge crosses the Western/Soviet Cold
+    War fault line — a genuine cultural crossing the coarse WESTERN sphere could not express.
+
+    Asserted structurally (a WESTERN <-> SOVIET edge exists, e.g. Apollo 11 inspired_by Sputnik, or
+    Tetris influenced_by the computer), not by pinning a favoured discovered result.
+    """
+    seed = load_seed(_TC / "seed.json")
+    by_id = {n.id: n for n in seed.nodes}
+    assert any(n.region is Region.SOVIET for n in seed.nodes)  # the new sphere is populated
+    cold_war = [
+        s
+        for s in seed.statements
+        if {by_id[s.subject].region, by_id[s.object].region} == {Region.WESTERN, Region.SOVIET}
+    ]
+    assert cold_war  # at least one Western<->Soviet crossing the coarse WESTERN sphere can't score

@@ -55,9 +55,18 @@ class Region(StrEnum):
     not everywhere it later spread; a trans-cultural route takes its heartland (the Silk Road is
     ``CENTRAL_ASIAN``). Unlike :class:`Domain` this enum feeds no layout, so members may be added in
     any order.
+
+    The **modern** additions (ADR 0045) apply the *same* macro-sphere test to the 20th century:
+    only split off a sphere when the split reflects real cultural distance rather than farming a
+    crossing. ``SOVIET`` (the USSR / Eastern bloc) is a genuine fault line — the Cold War is *about*
+    two opposed worlds — so a Sputnik -> Apollo hop rightly crosses cultures. The US / UK /
+    Western-European pop continuum is deliberately **not** split (it stays ``WESTERN``): the
+    transatlantic exchange is one intertwined liberal-capitalist tradition (the British Invasion was
+    Britons playing American
+    music), so an American -> British hop would be the ADR 0039 walking-tour trap in modern clothes.
     """
 
-    WESTERN = "western"  # Greco-Roman-Byzantine-European continuum
+    WESTERN = "western"  # Greco-Roman-Byzantine-European + the modern US/UK/W-European continuum
     NORSE_GERMANIC = "norse_germanic"
     NEAR_EASTERN = "near_eastern"  # Persia, Mesopotamia, the Islamic Middle East, the Levant
     EGYPTIAN = "egyptian"
@@ -67,6 +76,7 @@ class Region(StrEnum):
     JAPANESE = "japanese"
     WEST_AFRICAN = "west_african"
     CENTRAL_ASIAN = "central_asian"  # the Eurasian steppe / Silk Road heartland
+    SOVIET = "soviet"  # the USSR / Eastern bloc — the Cold War counter-sphere (ADR 0045)
 
 
 class Predicate(StrEnum):

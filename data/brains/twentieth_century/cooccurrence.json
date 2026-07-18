@@ -17,6 +17,7 @@
     ],
     "star_wars": [
       "akira_kurosawa",
+      "apollo_11",
       "george_lucas",
       "joseph_campbell",
       "seven_samurai",
@@ -35,6 +36,7 @@
     ],
     "the_beatles": [
       "bob_dylan",
+      "elvis_presley",
       "indian_classical_music",
       "jazz",
       "ravi_shankar",
@@ -42,6 +44,7 @@
     ],
     "ravi_shankar": [
       "bob_dylan",
+      "elvis_presley",
       "indian_classical_music",
       "the_beatles"
     ],
@@ -51,6 +54,7 @@
     "blues": [
       "bob_dylan",
       "civil_rights_movement",
+      "elvis_presley",
       "funk",
       "gospel_music",
       "hip_hop",
@@ -70,6 +74,7 @@
     "rock_and_roll": [
       "blues",
       "civil_rights_movement",
+      "elvis_presley",
       "funk",
       "gospel_music",
       "hip_hop",
@@ -128,6 +133,7 @@
       "seven_samurai"
     ],
     "gospel_music": [
+      "elvis_presley",
       "rock_and_roll",
       "soul_music"
     ],
@@ -150,6 +156,7 @@
     ],
     "hip_hop": [
       "blues",
+      "elvis_presley",
       "funk",
       "gospel_music",
       "jazz",
@@ -160,6 +167,7 @@
     "bob_dylan": [
       "blues",
       "civil_rights_movement",
+      "elvis_presley",
       "gospel_music",
       "hip_hop",
       "jazz",
@@ -174,15 +182,40 @@
       "computer",
       "the_internet",
       "transistor"
+    ],
+    "sputnik": [
+      "yuri_gagarin"
+    ],
+    "yuri_gagarin": [
+      "apollo_11",
+      "sputnik"
+    ],
+    "apollo_11": [
+      "sputnik",
+      "television",
+      "yuri_gagarin"
+    ],
+    "elvis_presley": [
+      "blues",
+      "bob_dylan",
+      "civil_rights_movement",
+      "funk",
+      "gospel_music",
+      "ravi_shankar",
+      "rock_and_roll",
+      "soul_music",
+      "the_beatles"
     ]
   },
   "similarity": {
     "akira_kurosawa": {
       "alan_turing": 0.003014,
+      "apollo_11": 0.002797,
       "blues": 0.004121,
       "bob_dylan": 0.00855,
       "civil_rights_movement": 0.002933,
       "computer": 0.002944,
+      "elvis_presley": 0.005356,
       "funk": 0.003121,
       "george_lucas": 0.061813,
       "gospel_music": 0.003234,
@@ -197,19 +230,24 @@
       "rock_and_roll": 0.004222,
       "seven_samurai": 0.08365,
       "soul_music": 0.002049,
+      "sputnik": 0.002946,
       "star_wars": 0.02226,
       "television": 0.003666,
+      "tetris": 0.006237,
       "the_beatles": 0.004323,
       "the_hidden_fortress": 0.06223,
       "the_internet": 0.004302,
       "the_magnificent_seven": 0.011111,
-      "transistor": 0.001848
+      "transistor": 0.001848,
+      "yuri_gagarin": 0.002743
     },
     "alan_turing": {
+      "apollo_11": 0.007446,
       "blues": 0.005022,
       "bob_dylan": 0.003101,
       "civil_rights_movement": 0.003315,
       "computer": 0.036386,
+      "elvis_presley": 0.004414,
       "funk": 0.004963,
       "george_lucas": 0.003123,
       "gospel_music": 0.009512,
@@ -224,18 +262,53 @@
       "rock_and_roll": 0.005529,
       "seven_samurai": 0.006823,
       "soul_music": 0.005613,
+      "sputnik": 0.007269,
       "star_wars": 0.002947,
       "television": 0.009466,
+      "tetris": 0.01145,
       "the_beatles": 0.003925,
       "the_hidden_fortress": 0.002395,
       "the_internet": 0.011243,
       "the_magnificent_seven": 0.001135,
-      "transistor": 0.012305
+      "transistor": 0.012305,
+      "yuri_gagarin": 0.007533
+    },
+    "apollo_11": {
+      "blues": 0.003949,
+      "bob_dylan": 0.005325,
+      "civil_rights_movement": 0.012097,
+      "computer": 0.008011,
+      "elvis_presley": 0.006352,
+      "funk": 0.00591,
+      "george_lucas": 0.004578,
+      "gospel_music": 0.006782,
+      "hip_hop": 0.006587,
+      "indian_classical_music": 0.004733,
+      "jazz": 0.005685,
+      "joseph_campbell": 0.007097,
+      "mahatma_gandhi": 0.008326,
+      "martin_luther_king": 0.010259,
+      "rashomon": 0.003161,
+      "ravi_shankar": 0.005159,
+      "rock_and_roll": 0.006865,
+      "seven_samurai": 0.005956,
+      "soul_music": 0.005795,
+      "sputnik": 0.035537,
+      "star_wars": 0.005567,
+      "television": 0.006752,
+      "tetris": 0.007818,
+      "the_beatles": 0.004744,
+      "the_hidden_fortress": 0.003791,
+      "the_internet": 0.006878,
+      "the_magnificent_seven": 0.005878,
+      "transistor": 0.007022,
+      "yuri_gagarin": 0.027045
     },
     "blues": {
       "bob_dylan": 0.02381,
       "civil_rights_movement": 0.065947,
       "computer": 0.004144,
+      "elvis_presley": 0.031625,
       "funk": 0.05314,
       "george_lucas": 0.00491,
       "gospel_music": 0.023014,
@@ -250,17 +323,21 @@
       "rock_and_roll": 0.088164,
       "seven_samurai": 0.006443,
       "soul_music": 0.055958,
+      "sputnik": 0.00604,
       "star_wars": 0.003513,
       "television": 0.00279,
+      "tetris": 0.00379,
       "the_beatles": 0.019847,
       "the_hidden_fortress": 0.002937,
       "the_internet": 0.003587,
       "the_magnificent_seven": 0.003556,
-      "transistor": 0.003986
+      "transistor": 0.003986,
+      "yuri_gagarin": 0.004397
     },
     "bob_dylan": {
       "civil_rights_movement": 0.012807,
       "computer": 0.001826,
+      "elvis_presley": 0.094065,
       "funk": 0.017106,
       "george_lucas": 0.022069,
       "gospel_music": 0.00688,
@@ -275,16 +352,20 @@
       "rock_and_roll": 0.020322,
       "seven_samurai": 0.004889,
       "soul_music": 0.024151,
+      "sputnik": 0.002305,
       "star_wars": 0.007665,
       "television": 0.002768,
+      "tetris": 0.003346,
       "the_beatles": 0.126645,
       "the_hidden_fortress": 0.002023,
       "the_internet": 0.002695,
       "the_magnificent_seven": 0.003982,
-      "transistor": 0.002792
+      "transistor": 0.002792,
+      "yuri_gagarin": 0.002962
     },
     "civil_rights_movement": {
       "computer": 0.00383,
+      "elvis_presley": 0.010898,
       "funk": 0.017472,
       "george_lucas": 0.004091,
       "gospel_music": 0.008521,
@@ -299,15 +380,19 @@
       "rock_and_roll": 0.016107,
       "seven_samurai": 0.0036,
       "soul_music": 0.016888,
+      "sputnik": 0.004053,
       "star_wars": 0.002376,
       "television": 0.003425,
+      "tetris": 0.003207,
       "the_beatles": 0.008937,
       "the_hidden_fortress": 0.001159,
       "the_internet": 0.003767,
       "the_magnificent_seven": 0.002281,
-      "transistor": 0.00302
+      "transistor": 0.00302,
+      "yuri_gagarin": 0.003552
     },
     "computer": {
+      "elvis_presley": 0.003306,
       "funk": 0.004408,
       "george_lucas": 0.002172,
       "gospel_music": 0.005728,
@@ -322,13 +407,42 @@
       "rock_and_roll": 0.006086,
       "seven_samurai": 0.00641,
       "soul_music": 0.003448,
+      "sputnik": 0.011236,
       "star_wars": 0.002899,
       "television": 0.045646,
+      "tetris": 0.011236,
       "the_beatles": 0.003249,
       "the_hidden_fortress": 0.002471,
       "the_internet": 0.025528,
       "the_magnificent_seven": 0.001587,
-      "transistor": 0.087601
+      "transistor": 0.087601,
+      "yuri_gagarin": 0.006246
+    },
+    "elvis_presley": {
+      "funk": 0.024704,
+      "george_lucas": 0.01464,
+      "gospel_music": 0.014357,
+      "hip_hop": 0.020149,
+      "indian_classical_music": 0.003392,
+      "jazz": 0.025074,
+      "joseph_campbell": 0.003525,
+      "mahatma_gandhi": 0.003383,
+      "martin_luther_king": 0.012937,
+      "rashomon": 0.005502,
+      "ravi_shankar": 0.106667,
+      "rock_and_roll": 0.036419,
+      "seven_samurai": 0.007238,
+      "soul_music": 0.038138,
+      "sputnik": 0.004025,
+      "star_wars": 0.007508,
+      "television": 0.004828,
+      "tetris": 0.007684,
+      "the_beatles": 0.148418,
+      "the_hidden_fortress": 0.003734,
+      "the_internet": 0.00404,
+      "the_magnificent_seven": 0.005458,
+      "transistor": 0.003495,
+      "yuri_gagarin": 0.003261
     },
     "funk": {
       "george_lucas": 0.003757,
@@ -344,13 +458,16 @@
       "rock_and_roll": 0.078971,
       "seven_samurai": 0.007224,
       "soul_music": 0.150282,
+      "sputnik": 0.006615,
       "star_wars": 0.004047,
       "television": 0.002189,
+      "tetris": 0.006018,
       "the_beatles": 0.015853,
       "the_hidden_fortress": 0.005155,
       "the_internet": 0.005478,
       "the_magnificent_seven": 0.00365,
-      "transistor": 0.005983
+      "transistor": 0.005983,
+      "yuri_gagarin": 0.00496
     },
     "george_lucas": {
       "gospel_music": 0.001999,
@@ -365,13 +482,16 @@
       "rock_and_roll": 0.003122,
       "seven_samurai": 0.019324,
       "soul_music": 0.00348,
+      "sputnik": 0.00185,
       "star_wars": 0.13367,
       "television": 0.004015,
+      "tetris": 0.004687,
       "the_beatles": 0.014271,
       "the_hidden_fortress": 0.01084,
       "the_internet": 0.00212,
       "the_magnificent_seven": 0.012516,
-      "transistor": 0.002654
+      "transistor": 0.002654,
+      "yuri_gagarin": 0.00349
     },
     "gospel_music": {
       "hip_hop": 0.011199,
@@ -385,13 +505,16 @@
       "rock_and_roll": 0.029056,
       "seven_samurai": 0.009934,
       "soul_music": 0.068852,
+      "sputnik": 0.011091,
       "star_wars": 0.002477,
       "television": 0.003653,
+      "tetris": 0.006319,
       "the_beatles": 0.00659,
       "the_hidden_fortress": 0.004854,
       "the_internet": 0.004687,
       "the_magnificent_seven": 0.002183,
-      "transistor": 0.009963
+      "transistor": 0.009963,
+      "yuri_gagarin": 0.00936
     },
     "hip_hop": {
       "indian_classical_music": 0.004172,
@@ -404,13 +527,16 @@
       "rock_and_roll": 0.045916,
       "seven_samurai": 0.008803,
       "soul_music": 0.049464,
+      "sputnik": 0.002421,
       "star_wars": 0.0059,
       "television": 0.004639,
+      "tetris": 0.00692,
       "the_beatles": 0.019314,
       "the_hidden_fortress": 0.003955,
       "the_internet": 0.008421,
       "the_magnificent_seven": 0.005128,
-      "transistor": 0.003135
+      "transistor": 0.003135,
+      "yuri_gagarin": 0.004577
     },
     "indian_classical_music": {
       "jazz": 0.011128,
@@ -422,13 +548,16 @@
       "rock_and_roll": 0.009082,
       "seven_samurai": 0.007958,
       "soul_music": 0.007538,
+      "sputnik": 0.008683,
       "star_wars": 0.001699,
       "television": 0.002903,
+      "tetris": 0.006394,
       "the_beatles": 0.003947,
       "the_hidden_fortress": 0.003559,
       "the_internet": 0.004899,
       "the_magnificent_seven": 0.001645,
-      "transistor": 0.006283
+      "transistor": 0.006283,
+      "yuri_gagarin": 0.006313
     },
     "jazz": {
       "joseph_campbell": 0.005431,
@@ -439,13 +568,16 @@
       "rock_and_roll": 0.058862,
       "seven_samurai": 0.005036,
       "soul_music": 0.058867,
+      "sputnik": 0.005275,
       "star_wars": 0.003755,
       "television": 0.002961,
+      "tetris": 0.00636,
       "the_beatles": 0.018779,
       "the_hidden_fortress": 0.003342,
       "the_internet": 0.004847,
       "the_magnificent_seven": 0.004029,
-      "transistor": 0.005664
+      "transistor": 0.005664,
+      "yuri_gagarin": 0.004905
     },
     "joseph_campbell": {
       "mahatma_gandhi": 0.010757,
@@ -455,13 +587,16 @@
       "rock_and_roll": 0.007559,
       "seven_samurai": 0.013158,
       "soul_music": 0.005472,
+      "sputnik": 0.012862,
       "star_wars": 0.008294,
       "television": 0.004004,
+      "tetris": 0.005587,
       "the_beatles": 0.002351,
       "the_hidden_fortress": 0.010163,
       "the_internet": 0.003666,
       "the_magnificent_seven": 0.005566,
-      "transistor": 0.007892
+      "transistor": 0.007892,
+      "yuri_gagarin": 0.008287
     },
     "mahatma_gandhi": {
       "martin_luther_king": 0.084572,
@@ -470,13 +605,16 @@
       "rock_and_roll": 0.003605,
       "seven_samurai": 0.005534,
       "soul_music": 0.001937,
+      "sputnik": 0.003235,
       "star_wars": 0.002257,
       "television": 0.004427,
+      "tetris": 0.003905,
       "the_beatles": 0.004779,
       "the_hidden_fortress": 0.001706,
       "the_internet": 0.005936,
       "the_magnificent_seven": 0.000836,
-      "transistor": 0.003289
+      "transistor": 0.003289,
+      "yuri_gagarin": 0.004671
     },
     "martin_luther_king": {
       "rashomon": 0.003627,
@@ -484,101 +622,149 @@
       "rock_and_roll": 0.013204,
       "seven_samurai": 0.003749,
       "soul_music": 0.011184,
+      "sputnik": 0.004785,
       "star_wars": 0.005238,
       "television": 0.00377,
+      "tetris": 0.00434,
       "the_beatles": 0.009536,
       "the_hidden_fortress": 0.001328,
       "the_internet": 0.003613,
       "the_magnificent_seven": 0.001636,
-      "transistor": 0.003232
+      "transistor": 0.003232,
+      "yuri_gagarin": 0.004637
     },
     "rashomon": {
       "ravi_shankar": 0.00782,
       "rock_and_roll": 0.002829,
       "seven_samurai": 0.099907,
       "soul_music": 0.004942,
+      "sputnik": 0.0036,
       "star_wars": 0.026761,
       "television": 0.003222,
+      "tetris": 0.007525,
       "the_beatles": 0.004051,
       "the_hidden_fortress": 0.088692,
       "the_internet": 0.002162,
       "the_magnificent_seven": 0.012821,
-      "transistor": 0.00218
+      "transistor": 0.00218,
+      "yuri_gagarin": 0.004132
     },
     "ravi_shankar": {
       "rock_and_roll": 0.014371,
       "seven_samurai": 0.003331,
       "soul_music": 0.023243,
+      "sputnik": 0.003452,
       "star_wars": 0.005714,
       "television": 0.002893,
+      "tetris": 0.004381,
       "the_beatles": 0.106343,
       "the_hidden_fortress": 0.001866,
       "the_internet": 0.002827,
       "the_magnificent_seven": 0.004245,
-      "transistor": 0.002997
+      "transistor": 0.002997,
+      "yuri_gagarin": 0.005453
     },
     "rock_and_roll": {
       "seven_samurai": 0.006816,
       "soul_music": 0.085772,
+      "sputnik": 0.006218,
       "star_wars": 0.003931,
       "television": 0.002563,
+      "tetris": 0.006641,
       "the_beatles": 0.01962,
       "the_hidden_fortress": 0.002392,
       "the_internet": 0.005291,
       "the_magnificent_seven": 0.005695,
-      "transistor": 0.007341
+      "transistor": 0.007341,
+      "yuri_gagarin": 0.008475
     },
     "seven_samurai": {
       "soul_music": 0.008444,
+      "sputnik": 0.006887,
       "star_wars": 0.028523,
       "television": 0.005728,
+      "tetris": 0.017348,
       "the_beatles": 0.00423,
       "the_hidden_fortress": 0.141221,
       "the_internet": 0.002729,
       "the_magnificent_seven": 0.040453,
-      "transistor": 0.006067
+      "transistor": 0.006067,
+      "yuri_gagarin": 0.006053
     },
     "soul_music": {
+      "sputnik": 0.007823,
       "star_wars": 0.003808,
       "television": 0.0028,
+      "tetris": 0.003488,
       "the_beatles": 0.02356,
       "the_hidden_fortress": 0.00471,
       "the_internet": 0.004651,
       "the_magnificent_seven": 0.004399,
-      "transistor": 0.004845
+      "transistor": 0.004845,
+      "yuri_gagarin": 0.004603
+    },
+    "sputnik": {
+      "star_wars": 0.002304,
+      "television": 0.006401,
+      "tetris": 0.00664,
+      "the_beatles": 0.002321,
+      "the_hidden_fortress": 0.003752,
+      "the_internet": 0.005,
+      "the_magnificent_seven": 0.00346,
+      "transistor": 0.010846,
+      "yuri_gagarin": 0.078652
     },
     "star_wars": {
       "television": 0.004513,
+      "tetris": 0.012168,
       "the_beatles": 0.006885,
       "the_hidden_fortress": 0.01388,
       "the_internet": 0.002021,
       "the_magnificent_seven": 0.016615,
-      "transistor": 0.001499
+      "transistor": 0.001499,
+      "yuri_gagarin": 0.003819
     },
     "television": {
+      "tetris": 0.006604,
       "the_beatles": 0.004109,
       "the_hidden_fortress": 0.002098,
       "the_internet": 0.114091,
       "the_magnificent_seven": 0.001536,
-      "transistor": 0.025322
+      "transistor": 0.025322,
+      "yuri_gagarin": 0.005629
+    },
+    "tetris": {
+      "the_beatles": 0.005166,
+      "the_hidden_fortress": 0.008065,
+      "the_internet": 0.00876,
+      "the_magnificent_seven": 0.010558,
+      "transistor": 0.008885,
+      "yuri_gagarin": 0.007042
     },
     "the_beatles": {
       "the_hidden_fortress": 0.00208,
       "the_internet": 0.0032,
       "the_magnificent_seven": 0.004793,
-      "transistor": 0.002746
+      "transistor": 0.002746,
+      "yuri_gagarin": 0.00289
     },
     "the_hidden_fortress": {
       "the_internet": 0.001572,
       "the_magnificent_seven": 0.020548,
-      "transistor": 0.002509
+      "transistor": 0.002509,
+      "yuri_gagarin": 0.004747
     },
     "the_internet": {
       "the_magnificent_seven": 0.001519,
-      "transistor": 0.014572
+      "transistor": 0.014572,
+      "yuri_gagarin": 0.003997
     },
     "the_magnificent_seven": {
-      "transistor": 0.002375
+      "transistor": 0.002375,
+      "yuri_gagarin": 0.004431
+    },
+    "transistor": {
+      "yuri_gagarin": 0.006829
     }
   }
 }

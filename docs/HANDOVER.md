@@ -4,7 +4,7 @@ A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 done, Phase 3 (the multi-brain
 platform) kicked off**, **pushed to `origin/main`** (public repo
 `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks green
-(**171 tests**). Main seed: **116 nodes / 175 statements**, 10 curated domains — **all now
+(**172 tests**). Main seed: **116 nodes / 175 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
 **both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
@@ -29,7 +29,7 @@ pair; the engine and every CLI command were **already** parameterised by both, s
 **no engine change** — only `sdb/brains.py` (the registry: main + `data/brains/*`), a `?brain=`
 selector on `sdb serve` (`/api/brains`) and the map UI's switcher, and `build_multi_site` (a
 `brains.json` manifest + one `data.json`/`data-<name>.json` per brain). First extra brain:
-`data/brains/twentieth_century/` (now **100 nodes / 109 statements**, film/music/politics/tech/
+`data/brains/twentieth_century/` (now **100 nodes / 116 statements**, film/music/politics/tech/
 architecture/science), journey-led because its one-century span mutes the temporal-gap term, its
 surprise carried by cross-domain + cross-region jumps (`Gandhi → MLK → civil rights → jazz`,
 `Turing → computer → Star Wars → Hidden Fortress`). Per-brain integrity guards (`test_validate.py`)
@@ -236,7 +236,11 @@ per the starved-start evidence, soft-cap main ~150–200 / auditable-by-hand cei
 two connectivity metrics and stop when they plateau; outgrow → a new brain, not a bigger one) and
 **0048 LLM boundary policy** (an LLM may **draft / narrate / route / suggest**, never **score / rank /
 gate / attest** — first legitimate use is an offline, human-ratified curation copilot; the engine
-stays zero-LLM).
+stays zero-LLM). Then **0049 20th-century pendant-bridging** — the *first ADR 0047 measurement in
+action*: the connectivity sweep found the 20c brain under-tissued (median journey `domain_jumps`
+**0.000**, 21% starved), so 7 sourced escape edges between existing nodes (no new QIDs, four of them
+art↔history bridges) lifted median `domain_jumps` to **0.469** and cut starved to 16 — brain
+**109 → 116 statements**, main brain untouched, co-occurrence not rebuilt (it keys on nodes).
 Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
@@ -288,6 +292,18 @@ starts with a good gated pair; median region+domain jumps of top journeys) plate
 **[0048](adr/0048-llm-boundary-policy.md)** — an LLM may draft/narrate/route/suggest but never
 score/rank/gate/attest (first sanctioned use: an offline, human-ratified curation copilot). The open
 Phase-3 increments, one commit each:
+
+0. **▶ IMMEDIATE NEXT — a 20c *node* pass for the 10 remaining degree-1 pendants (ADR 0049 found
+   them).** The 0047 sweep was run and acted on: ADR 0049's edges-only tissue pass bridged the
+   pendants it could reach *between existing nodes* (median journey `domain_jumps` 0.000 → 0.469,
+   starved 21 → 16). The residue — **Mandela, Satyajit Ray, Castro, Che, Joseph Campbell, anime,
+   Gagarin, Jobim, Berners-Lee, Mies van der Rohe** — is still degree-1 and can only be bridged
+   *truthfully* by adding a **new node** in another cluster (e.g. an apartheid node for Mandela; a
+   Bengali-cinema / Jean-Renoir hook for Ray). Do it the §6 way (verify QIDs, source evidence +
+   headline, one connected component), then **re-run the sweep** (`scratchpad` sweep, or the procedure
+   in §5) and stop when the two metrics plateau. Forcing a same-region neighbour edge to drop the
+   count is the ADR 0034 mistake — don't. Co-occurrence *does* need a rebuild for a node pass (it keys
+   on nodes), unlike ADR 0049's edges-only pass.
 
 1. **The 20th-century-brain backlog is now largely BUILT (ADR 0046 — 100 nodes).** The five backlog
    threads — architecture (Art Deco / Bauhaus↔Constructivism / Le Corbusier→Chandigarh / Brutalism /

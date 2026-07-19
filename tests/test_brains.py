@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 import threading
 import urllib.request
+from collections import Counter
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
 from sdb.brains import BrainSpec, available_brains
 from sdb.graph.loader import load_graph, load_seed
-from sdb.schema.enums import Region
+from sdb.schema.enums import Domain, Region
 from sdb.site import build_multi_site
 from sdb.web import _AppServer
 
@@ -168,3 +169,28 @@ def test_twentieth_century_modern_regions_are_populated_and_cross_a_culture() ->
             and by_id[s.subject].region != by_id[s.object].region
         ]
         assert crossing, f"region never crosses a culture: {region}"
+
+
+def test_twentieth_century_pendant_bridging_tissue() -> None:
+    """ADR 0049: the escape-edge pass (driven by the ADR 0047 connectivity sweep) gave previously
+    degree-1 pendants a second edge that crosses into another discipline, so journeys through them
+    can score a domain jump — median journey ``domain_jumps`` was 0.000 before this pass.
+
+    Structural, per the truth hierarchy: assert the pendants now carry a second statement and that
+    an art<->history escape edge wires the arts into the politics cluster — never a pinned result.
+    """
+    seed = load_seed(_TC / "seed.json")
+    by_id = {n.id: n for n in seed.nodes}
+    degree: Counter[str] = Counter()
+    for s in seed.statements:
+        degree[s.subject] += 1
+        degree[s.object] += 1
+    bridged = ("soviet_constructivism", "indian_classical_music", "jawaharlal_nehru", "mao_zedong")
+    for nid in bridged:
+        assert degree[nid] >= 2, f"pendant not bridged: {nid}"
+    art_history = [
+        s
+        for s in seed.statements
+        if {by_id[s.subject].domain, by_id[s.object].domain} == {Domain.ART, Domain.HISTORY}
+    ]
+    assert art_history  # at least one art<->history escape edge feeds the domain-jump term

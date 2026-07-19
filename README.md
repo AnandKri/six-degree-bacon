@@ -93,7 +93,7 @@ A **brain** is a self-contained `(seed, cooccurrence)` pair (ADR 0044). The engi
 command were already parameterised by both, so serving several graphs the user switches between needs
 no engine change — the main graph stays at `data/seed.json`, and extra brains live under
 [`data/brains/<name>/`](data/brains/). The first is a **detached 20th-century brain**
-([`data/brains/twentieth_century/`](data/brains/twentieth_century/), **100 nodes / 109 statements** —
+([`data/brains/twentieth_century/`](data/brains/twentieth_century/), **100 nodes / 116 statements** —
 film, music, politics, technology, architecture, science) whose surprise comes from cross-domain and
 cross-culture jumps *within* the century. The region axis grew modern spheres for exactly this —
 `SOVIET`, `LATIN_AMERICAN`, `SUB_SAHARAN`, `CARIBBEAN` (ADR 0045/0046) — so it yields
@@ -132,7 +132,7 @@ data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-
 data/brains/<name>/     additional detached brains (e.g. twentieth_century/) — each its own graph
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        171 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
+tests/        172 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
               per-brain integrity guards), human-vs-code confidence, surprise & endpoint checks (incl.
               region jumps), harvester, both archetypes, the clusters, the web round-trip, the seed
               loaders, the per-hop evidence contract, and a guided-walk scaling/perf test

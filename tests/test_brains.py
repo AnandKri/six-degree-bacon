@@ -194,3 +194,26 @@ def test_twentieth_century_pendant_bridging_tissue() -> None:
         if {by_id[s.subject].domain, by_id[s.object].domain} == {Domain.ART, Domain.HISTORY}
     ]
     assert art_history  # at least one art<->history escape edge feeds the domain-jump term
+
+
+def test_twentieth_century_node_pass_bridges() -> None:
+    """ADR 0050: the node pass added a three-region Cold War hub (the Cuban Missile Crisis, touching
+    LATIN_AMERICAN + WESTERN + SOVIET) and a South-Asian<->Western cinema bridge (Jean Renoir), each
+    opening a marquee pendant onto a distant cluster.
+
+    Structural — the hub's regional reach and the Renoir<->Ray crossing exist — not a pinned result.
+    """
+    seed = load_seed(_TC / "seed.json")
+    by_id = {n.id: n for n in seed.nodes}
+    assert "cuban_missile_crisis" in by_id and "jean_renoir" in by_id
+    crisis_regions = {by_id["cuban_missile_crisis"].region}
+    for s in seed.statements:
+        if s.subject == "cuban_missile_crisis":
+            crisis_regions.add(by_id[s.object].region)
+        elif s.object == "cuban_missile_crisis":
+            crisis_regions.add(by_id[s.subject].region)
+    assert {Region.LATIN_AMERICAN, Region.WESTERN, Region.SOVIET} <= crisis_regions
+    renoir_ray = any(
+        {s.subject, s.object} == {"satyajit_ray", "jean_renoir"} for s in seed.statements
+    )
+    assert renoir_ray  # the Renoir node fixes the Satyajit Ray pendant across a culture boundary

@@ -68,7 +68,7 @@ already parameterised by both, so serving *several* graphs the user switches bet
 engine change**, only a brain registry (`sdb/brains.py`), a `?brain=` selector on `sdb serve`
 (`/api/brains`), a per-brain static bundle from `sdb build-site` (a `brains.json` manifest), and a
 switcher in the map UI. The first extra brain is a **detached 20th-century graph**
-(`data/brains/twentieth_century/`, now **100 nodes / 116 statements** — film/music/politics/tech/
+(`data/brains/twentieth_century/`, now **102 nodes / 123 statements** — film/music/politics/tech/
 architecture/science, cross-culture via Kurosawa↔Hollywood, Beatles↔Ravi Shankar, MLK↔Gandhi): its
 surprise comes from cross-domain + cross-region jumps *within* the century (the temporal-gap term goes
 quiet), so it is journey-led. ADR 0045 gave `Region` a modern **`SOVIET`** sphere (the Cold War Eastern
@@ -80,7 +80,7 @@ global cinema, deeper music/science, Cold War politics), earning three more popu
 **`CARIBBEAN`** — so journeys like `Mao → Chinese Revolution → Russian Revolution → Cuban Revolution`
 (a three-region arc) and `Mandela → Gandhi → MLK → civil rights` now score their cross-cultural
 surprise. Per-brain scoring, so the main brain is untouched (**116 nodes / 175 statements**). All
-checks green (ruff, format, mypy, **172 tests**).
+checks green (ruff, format, mypy, **173 tests**).
 
 ## How to run
 
@@ -175,8 +175,8 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   Jimmu → Amaterasu → Shinto).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `data/brains/<name>/` — **additional detached brains** (ADR 0044), each its own `seed.json` +
-  `cooccurrence.json` (+ optional `meta.json` label). First: `twentieth_century/` — a **100-node /
-  116-statement** 20th-century graph (film/music/politics/tech/architecture/science, built out across
+  `cooccurrence.json` (+ optional `meta.json` label). First: `twentieth_century/` — a **102-node /
+  123-statement** 20th-century graph (film/music/politics/tech/architecture/science, built out across
   the whole backlog with a Cold War arc in `SOVIET` and clusters in `LATIN_AMERICAN`/`SUB_SAHARAN`/
   `CARIBBEAN` — ADR 0045/0046), self-contained with its own internal cross-domain + cross-region
   density; journey-led (its one-century span mutes the temporal-gap term).
@@ -201,11 +201,14 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   stopping rule — grow connective tissue, not node count; stop when the connectivity metrics plateau,
   0048 LLM boundary policy — an LLM may draft/narrate/route/suggest, never score/rank/gate/attest,
   0049 20th-century pendant-bridging — 7 escape edges (0047's sweep in action; median journey
-  domain_jumps 0.000→0.469, brain 109→116 statements)).
+  domain_jumps 0.000→0.469, brain 109→116 statements),
+  0050 20th-century node pass — Cuban Missile Crisis + Jean Renoir bridge the marquee pendants; the
+  brain reaches main-brain parity (median domain+region 1.151 vs 1.165), so 0047 says stop growing it
+  (100→102 nodes / 116→123 statements)).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 172 tests incl. the multi-brain platform (`test_brains.py`: registry + a real
+- `tests/` — 173 tests incl. the multi-brain platform (`test_brains.py`: registry + a real
   two-brain HTTP round-trip + the `build_multi_site` manifest), the per-brain integrity guards now
   parametrised over **every** brain (`test_validate.py`), human-vs-code confidence (0.75), surprise
   (5.6), and endpoint (0.49 vs

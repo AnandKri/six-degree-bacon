@@ -148,3 +148,23 @@ def test_twentieth_century_has_a_cold_war_cross_sphere_edge() -> None:
         if {by_id[s.subject].region, by_id[s.object].region} == {Region.WESTERN, Region.SOVIET}
     ]
     assert cold_war  # at least one Western<->Soviet crossing the coarse WESTERN sphere can't score
+
+
+def test_twentieth_century_modern_regions_are_populated_and_cross_a_culture() -> None:
+    """ADR 0046: each modern region the 100-node expansion added must be **populated** and actually
+    **cross a culture boundary** somewhere — a sphere with no nodes, or one that never crosses into
+    another culture, is dead weight. Structural (region present + a cross-region edge exists), not a
+    pinned discovered result.
+    """
+    seed = load_seed(_TC / "seed.json")
+    by_id = {n.id: n for n in seed.nodes}
+    present = {n.region for n in seed.nodes}
+    for region in (Region.LATIN_AMERICAN, Region.SUB_SAHARAN, Region.CARIBBEAN):
+        assert region in present, f"region unpopulated: {region}"
+        crossing = [
+            s
+            for s in seed.statements
+            if region in {by_id[s.subject].region, by_id[s.object].region}
+            and by_id[s.subject].region != by_id[s.object].region
+        ]
+        assert crossing, f"region never crosses a culture: {region}"

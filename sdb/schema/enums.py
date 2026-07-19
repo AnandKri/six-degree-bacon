@@ -64,6 +64,11 @@ class Region(StrEnum):
     transatlantic exchange is one intertwined liberal-capitalist tradition (the British Invasion was
     Britons playing American
     music), so an American -> British hop would be the ADR 0039 walking-tour trap in modern clothes.
+    The 100-node 20th-century expansion (ADR 0046) then earned three more, each populated by a real
+    cluster and each a distinct sphere: ``LATIN_AMERICAN`` (the Cuban Revolution, bossa nova),
+    ``SUB_SAHARAN`` (African independence, Afrobeat — the *modern* sphere, distinct from the
+    medieval ``WEST_AFRICAN`` trade cluster), and ``CARIBBEAN`` (Jamaican reggae). Same rule as
+    always: added only when nodes fill them, only where the crossing is real (Fela Kuti ← funk).
     """
 
     WESTERN = "western"  # Greco-Roman-Byzantine-European + the modern US/UK/W-European continuum
@@ -77,6 +82,9 @@ class Region(StrEnum):
     WEST_AFRICAN = "west_african"
     CENTRAL_ASIAN = "central_asian"  # the Eurasian steppe / Silk Road heartland
     SOVIET = "soviet"  # the USSR / Eastern bloc — the Cold War counter-sphere (ADR 0045)
+    LATIN_AMERICAN = "latin_american"  # 20th-c. Latin America (ADR 0046)
+    SUB_SAHARAN = "sub_saharan"  # modern sub-Saharan Africa, distinct from WEST_AFRICAN (ADR 0046)
+    CARIBBEAN = "caribbean"  # the Anglophone / Afro-Caribbean sphere (ADR 0046)
 
 
 class Predicate(StrEnum):

@@ -4,7 +4,7 @@ A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 done, Phase 3 (the multi-brain
 platform) kicked off**, **pushed to `origin/main`** (public repo
 `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks green
-(**170 tests**). Main seed: **116 nodes / 175 statements**, 10 curated domains — **all now
+(**171 tests**). Main seed: **116 nodes / 175 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
 **both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
@@ -29,9 +29,9 @@ pair; the engine and every CLI command were **already** parameterised by both, s
 **no engine change** — only `sdb/brains.py` (the registry: main + `data/brains/*`), a `?brain=`
 selector on `sdb serve` (`/api/brains`) and the map UI's switcher, and `build_multi_site` (a
 `brains.json` manifest + one `data.json`/`data-<name>.json` per brain). First extra brain:
-`data/brains/twentieth_century/` (**32 nodes / 33 statements**, film/music/politics/tech), journey-led
-because its one-century span mutes the temporal-gap term, its surprise carried by cross-domain +
-cross-region jumps (`Gandhi → MLK → civil rights → jazz`, `transistor → rock and roll → blues → jazz`,
+`data/brains/twentieth_century/` (now **100 nodes / 109 statements**, film/music/politics/tech/
+architecture/science), journey-led because its one-century span mutes the temporal-gap term, its
+surprise carried by cross-domain + cross-region jumps (`Gandhi → MLK → civil rights → jazz`,
 `Turing → computer → Star Wars → Hidden Fortress`). Per-brain integrity guards (`test_validate.py`)
 now run over **every** brain, so a new brain inherits the whole curation contract for free. Main brain
 untouched. **Then (ADR 0045) the first modern region refinement:** `Region` gained `SOVIET` (the Cold
@@ -39,7 +39,14 @@ War Eastern bloc — the US/UK/W-European pop continuum stays `WESTERN`, applyin
 test), exercised by a Cold War space-race arc (Sputnik/Gagarin/Tetris ↔ Apollo 11): the term fires on
 merit (`Tetris → computer → Apollo 11 → Sputnik`, `Star Wars → … → Sputnik`; Cold War journeys score
 ~30–33 vs ~25) with no farming (within-Western music still scores 0 region jumps) and per-brain scoring
-leaves the main brain untouched.
+leaves the main brain untouched. **Newest (ADR 0046): the 20th-century brain was built out to 100
+nodes** (32 → 100 / 33 → 109) across the whole growth backlog — architecture, global cinema, deeper
+music/science, Cold War politics — earning three more populated regions (`LATIN_AMERICAN`,
+`SUB_SAHARAN` — modern, distinct from the medieval `WEST_AFRICAN` — and `CARIBBEAN`). One connected
+component, no islands; new journeys like `Mao → Chinese Revolution → Russian Revolution → Cuban
+Revolution` (a `SINITIC → SOVIET → LATIN_AMERICAN` arc) and `Nelson Mandela → Gandhi → MLK → civil
+rights`. The `validate-qids` guard caught the ADR 0043 hazard again (label "Constructivism" resolves
+to a different QID than the art movement → relabelled "Constructivism (art)").
 
 **Read this first — the rule the project nearly broke (ADR 0034/0035).** Data and the rubric are the
 truth; **a test may only verify what the rubric claims, never that a favourite wins**. This was
@@ -220,9 +227,10 @@ archetype — resolves the narrator half of the product steer), **0043 Judaism/A
 Islam, Christianity ← Judaism, Jerusalem under Rome; Christianity's flagship re-characterised Zhang Qian
 → Roman Republic), **0044 multi-brain platform + a detached 20th-century brain** (Phase 3 kickoff — a
 brain is a `(seed, cooccurrence)` pair; `sdb/brains.py` registry, `?brain=` on serve, `build_multi_site`
-manifest, UI switcher; first extra brain `data/brains/twentieth_century/`), and **0045 modern region
-refinement** (the `SOVIET` Cold War sphere + a space-race arc in the 20th-century brain, now 32 nodes /
-33 statements).
+manifest, UI switcher; first extra brain `data/brains/twentieth_century/`), **0045 modern region
+refinement** (the `SOVIET` Cold War sphere + a space-race arc in the 20th-century brain), and **0046
+20th-century brain to 100 nodes** (32 → 100 / 33 → 109 across the whole backlog + three modern regions
+`LATIN_AMERICAN`/`SUB_SAHARAN`/`CARIBBEAN`).
 Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
@@ -268,63 +276,29 @@ wanted, that is the per-path / optional-local-LLM route (recorded, not built).
 Phase 2 is done, the multi-brain platform is kicked off (ADR 0044), and the first modern region
 refinement (`SOVIET`, ADR 0045) has landed. The open Phase-3 increments, one commit each:
 
-1. **Grow the 20th-century brain further.** It is now a **32-node** graph (a Cold War space-race arc
-   added with ADR 0045). Add more film/music, and — reusing `SOVIET` or adding the next region (below)
-   — more Cold War / decolonisation. Same recipe as a main-brain cluster (§6): verify QIDs, source
-   `evidence` + `headline`, rebuild that brain's co-occurrence (`sdb build-cooccurrence --seed
-   data/brains/twentieth_century/seed.json --out data/brains/twentieth_century/cooccurrence.json`),
-   re-check its own results. **It is journey-led** (its one-century span mutes the temporal-gap term;
-   the improbable pair often returns a documented adjacency, still a good TIL), so grow its
-   *cross-domain* and *cross-region* connective tissue, not time depth.
-2. **The *next* modern `Region`, when a brain populates it (ADR 0045 started this; do not over-add).**
-   `SOVIET` is in and measured. The next real fault lines — `LATIN_AMERICAN`, a modern `SUB_SAHARAN`
-   sphere (distinct from the medieval `WEST_AFRICAN` cluster), a modern Middle East — should each be
-   added the ADR 0039/0045 way: **only when a brain actually has nodes to fill it** (a region with no
-   nodes is untestable), and only when the split reflects real cultural distance, not a farmable
-   crossing. Note the deliberate non-split recorded in 0045: the US/UK/W-European pop continuum stays
-   `WESTERN` (an `AMERICAN → BRITISH` hop would be the walking-tour trap).
+1. **The 20th-century-brain backlog is now largely BUILT (ADR 0046 — 100 nodes).** The five backlog
+   threads — architecture (Art Deco / Bauhaus↔Constructivism / Le Corbusier→Chandigarh / Brutalism /
+   the International Style), global cinema (Hollywood hub, Disney→Tezuka→anime, neorealism→Ray,
+   Bollywood, the New Wave, Leone←Kurosawa), deeper music (Armstrong/Miles/Gershwin, James Brown→MJ,
+   punk/disco, reggae/bossa/salsa/Fela), deeper science (Einstein→relativity/quantum→transistor/bomb,
+   von Braun's V-2→Apollo, von Neumann→computer, IC→Silicon-Valley→PC→WWW), and Cold War politics
+   (Lenin→Stalin→Khrushchev, Mao's China, the Cuban Revolution, Mandela/Nkrumah←Gandhi) — are all in.
+   **Deeper fill is still open** (more artists/films/genres inside each thread; the still-unbuilt
+   **Gothic Revival** node — e.g. the Woolworth Building, the only in-era way "Gothic" enters — never
+   medieval Gothic here). Same recipe as a main-brain cluster (§6): batch-verify QIDs with
+   `LiveTitleResolver`, source `evidence` + `headline`, rebuild **this brain's** co-occurrence
+   (`sdb build-cooccurrence --seed data/brains/twentieth_century/seed.json --out
+   data/brains/twentieth_century/cooccurrence.json`), re-check its own results, connect every node to a
+   hub (no islands). Journey-led: grow *cross-domain* and *cross-region* tissue, not time depth.
+2. **Modern `Region`s: `SOVIET`+`LATIN_AMERICAN`+`SUB_SAHARAN`+`CARIBBEAN` are in (ADR 0045/0046).**
+   The next real fault line is a **modern Middle East** (distinct from the medieval `NEAR_EASTERN`) —
+   add it the ADR 0039/0045/0046 way: **only when a cluster populates it**, only where the crossing is
+   real, never pre-adding an empty region. The deliberate non-split stands: the US/UK/W-European pop
+   continuum stays `WESTERN` (an `AMERICAN → BRITISH` hop would be the walking-tour trap).
 3. **Stay at two brains for now (owner's steer).** A third brain is cheap when wanted (a directory
    under `data/brains/` + its co-occurrence; registry/serve/build-site/guards pick it up
-   automatically — Mesoamerica would be a clean island-as-a-feature candidate) — but **parked**; put
-   the effort into the 20th-century brain (backlog below).
-
-### 20th-century brain — growth backlog (ideas, not yet built)
-
-Journey-led brain: grow *connective tissue that crosses a discipline or a culture*, not time depth.
-Each thread is one commit (recipe in §6: batch-verify QIDs with `LiveTitleResolver`, source
-`evidence` + `headline`, rebuild **this brain's** co-occurrence with the `--seed …/twentieth_century/
-seed.json --out …/twentieth_century/cooccurrence.json` command, re-check its own results). Connect
-every new node to an existing hub — no islands.
-
-- **A. Architecture (owner's pick).** A whole new cross-region thread; architecture (domain `art`,
-  like the brain's other art forms) has unusually rich cross-culture reach:
-  - `art_deco` (WESTERN, 1920s–30s) → hooks into the film cluster (Hollywood/Chrysler-Building glamour).
-  - `bauhaus` (WESTERN, 1919–33) ↔ **`soviet_constructivism` (SOVIET)** — a real historical exchange,
-    so a *second* WESTERN↔SOVIET Cold-War-era crossing that isn't the space race (reuses ADR 0045's
-    region on a fresh axis). Bauhaus → the International Style → American skyscrapers.
-  - `frank_lloyd_wright` (WESTERN) ↔ Japanese architecture — Wright was openly influenced by Japan: a
-    WESTERN↔JAPANESE jump echoing Kurosawa↔Hollywood on a new domain.
-  - `le_corbusier` (WESTERN) → `chandigarh` (SOUTH_ASIAN) — Corbusier designed Chandigarh in India: a
-    WESTERN↔SOUTH_ASIAN crossing that plugs architecture into the existing Indian cluster.
-  - `brutalism` (WESTERN, postwar concrete) — off Corbusier; the era's concrete monuments.
-  - **Gothic is out of era** for a *20th-century* brain (12th–16th c.). It enters only as **Gothic
-    Revival / neo-Gothic** — e.g. the Woolworth Building, the 1913 "Cathedral of Commerce" (WESTERN) —
-    or belongs to a *different* brain. Add the revival node if wanted; never medieval Gothic here.
-- **B. Global cinema.** `bollywood` (SOUTH_ASIAN, ← Hollywood), `italian_neorealism` → `satyajit_ray`
-  (WESTERN↔SOUTH_ASIAN — neorealism shaped Indian parallel cinema; Ray cited *Bicycle Thieves*),
-  `french_new_wave` (← Hollywood B-movies → New Hollywood), `anime`/`osamu_tezuka` (JAPANESE ← Disney).
-  All cross-region, all hook to the existing film cluster.
-- **C. Deeper tech/science.** `world_wide_web`/`tim_berners_lee` (→ the internet), the
-  `manhattan_project`/`nuclear_weapon` (WESTERN — the Cold War pillar beside the space race),
-  `dna`/the double helix, `v2_rocket` → `apollo_11` (the German-rocket lineage behind the US space
-  programme — a WESTERN←German wartime link).
-- **D. More music.** jazz → 20th-c. classical (Gershwin/Stravinsky borrowing jazz), disco, punk,
-  and reggae/`bob_marley` (which would *earn* a Caribbean sphere — see regions).
-
-**Regions these would earn (add only when a thread populates them, per ADR 0045):** `LATIN_AMERICAN`
-(bossa nova, the Cuban Revolution, magical realism), a modern `SUB_SAHARAN` (African independence, Fela
-Kuti, `picasso ← African masks` — the famous WESTERN←African moment), a Caribbean sphere (reggae). Do
-**not** pre-add a region with no nodes; the US/UK/W-European continuum stays `WESTERN` (ADR 0045).
+   automatically — Mesoamerica would be a clean island-as-a-feature candidate) — but **parked**; the
+   effort goes into the 20th-century brain.
 
 **Main-brain breadth** is still available but lower-value (§5.1; the graph already spans most Old-World
 civilisations, the starved count is plateauing). Candidates if wanted: **Byzantine–Ottoman** (via

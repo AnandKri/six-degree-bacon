@@ -228,9 +228,15 @@ Islam, Christianity ← Judaism, Jerusalem under Rome; Christianity's flagship r
 → Roman Republic), **0044 multi-brain platform + a detached 20th-century brain** (Phase 3 kickoff — a
 brain is a `(seed, cooccurrence)` pair; `sdb/brains.py` registry, `?brain=` on serve, `build_multi_site`
 manifest, UI switcher; first extra brain `data/brains/twentieth_century/`), **0045 modern region
-refinement** (the `SOVIET` Cold War sphere + a space-race arc in the 20th-century brain), and **0046
+refinement** (the `SOVIET` Cold War sphere + a space-race arc in the 20th-century brain), **0046
 20th-century brain to 100 nodes** (32 → 100 / 33 → 109 across the whole backlog + three modern regions
-`LATIN_AMERICAN`/`SUB_SAHARAN`/`CARIBBEAN`).
+`LATIN_AMERICAN`/`SUB_SAHARAN`/`CARIBBEAN`), and two **governing-policy ADRs** (records, no code/data
+change): **0047 brain-growth stopping rule** (node count is the wrong axis — grow connective *tissue*
+per the starved-start evidence, soft-cap main ~150–200 / auditable-by-hand ceiling ~300, drive by the
+two connectivity metrics and stop when they plateau; outgrow → a new brain, not a bigger one) and
+**0048 LLM boundary policy** (an LLM may **draft / narrate / route / suggest**, never **score / rank /
+gate / attest** — first legitimate use is an offline, human-ratified curation copilot; the engine
+stays zero-LLM).
 Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
@@ -274,7 +280,14 @@ wanted, that is the per-path / optional-local-LLM route (recorded, not built).
 ### ▶ NEXT TASK IN LINE — grow / polish the multi-brain platform (Phase 3)
 
 Phase 2 is done, the multi-brain platform is kicked off (ADR 0044), and the first modern region
-refinement (`SOVIET`, ADR 0045) has landed. The open Phase-3 increments, one commit each:
+refinement (`SOVIET`, ADR 0045) has landed. **This whole thread is now governed by two policy ADRs:**
+**[0047](adr/0047-brain-growth-stopping-rule.md)** — don't chase a node count; every addition must be
+connective tissue (an escape edge for a starved/low-degree start or a real cross-region bridge), soft
+ceilings ~150–200 (main) / auditable-by-hand ~300, and *stop* when the two connectivity metrics (% of
+starts with a good gated pair; median region+domain jumps of top journeys) plateau — and
+**[0048](adr/0048-llm-boundary-policy.md)** — an LLM may draft/narrate/route/suggest but never
+score/rank/gate/attest (first sanctioned use: an offline, human-ratified curation copilot). The open
+Phase-3 increments, one commit each:
 
 1. **The 20th-century-brain backlog is now largely BUILT (ADR 0046 — 100 nodes).** The five backlog
    threads — architecture (Art Deco / Bauhaus↔Constructivism / Le Corbusier→Chandigarh / Brutalism /

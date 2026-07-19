@@ -197,7 +197,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   curated per-`Statement` `headline` as the TIL + improbable pair as the default archetype, 0043
   Judaism/Abrahamic-web cluster, 0044 multi-brain platform + a detached 20th-century brain,
   0045 modern region refinement — the `SOVIET` Cold War sphere, 0046 20th-century brain built to 100
-  nodes + three modern regions — `LATIN_AMERICAN`/`SUB_SAHARAN`/`CARIBBEAN`).
+  nodes + three modern regions — `LATIN_AMERICAN`/`SUB_SAHARAN`/`CARIBBEAN`, 0047 brain-growth
+  stopping rule — grow connective tissue, not node count; stop when the connectivity metrics plateau,
+  0048 LLM boundary policy — an LLM may draft/narrate/route/suggest, never score/rank/gate/attest).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).

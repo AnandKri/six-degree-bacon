@@ -4,7 +4,7 @@ A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 done, Phase 3 (the multi-brain
 platform) kicked off**, **pushed to `origin/main`** (public repo
 `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks green
-(**173 tests**). Main seed: **116 nodes / 175 statements**, 10 curated domains — **all now
+(**176 tests**). Main seed: **116 nodes / 175 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
 **both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
@@ -247,7 +247,11 @@ Q128160, a three-region Cold War hub bridging LATIN_AMERICAN↔WESTERN↔SOVIET 
 statements. **The brain reached main-brain parity** (median domain+region **1.151** vs 1.165, median
 `domain_jumps` **0.625** > main's 0.537), so per ADR 0047 the recommendation is **stop growing it**.
 Brain **100 → 102 nodes / 116 → 123 statements**; co-occurrence *was* rebuilt (node set changed);
-whole brain re-validated (0 QID mismatches); main brain untouched.
+whole brain re-validated (0 QID mismatches); main brain untouched. Then **0051 connectivity sweep as a
+committed tool** — the ADR 0047 instrument that drove 0049/0050 lived only in a scratchpad script; it
+is now `sdb/sweep.py` + the **`sdb sweep`** CLI diagnostic (defaults to all brains), with the two
+metric definitions pinned in the ADR and a property-based invariant test (`test_sweep.py`). Pure
+diagnostic — no scoring/data/behaviour change; reproduces the scratchpad numbers byte-for-byte.
 Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
@@ -377,10 +381,10 @@ neighbours. The fix is **breadth — specifically edges that *escape* a cluster*
 (e.g. `troy → Heinrich Schliemann → 19th-c. archaeology` jumps domain and two millennia in one hop).
 This independently re-confirms ADR 0014's "breadth is the higher-leverage investment", and **ADR 0033
 demonstrated it**: adding the Renaissance cluster relieved `plato` and `constantinople` (both now
-reach genuinely unlinked destinations) without touching a single scoring weight. Reproduce with the
-sweep: for each node, `discover(archetype=UNLIKELY, top=25)` and compare the winner against
-`load_cooccurrence()` link sets. Most starts are unaffected (Naruhito ⇢ Amaterasu, Roman Empire ⇢
-Paper). If a fix is ever built, it needs an honest "no worlds-apart pair exists here" path for the
+reach genuinely unlinked destinations) without touching a single scoring weight. Reproduce with
+**`sdb sweep`** (ADR 0051; `sdb/sweep.py`'s `connectivity_sweep` — for each node it runs
+`discover(archetype=UNLIKELY, top=25)` and compares the winner against `load_cooccurrence()` link
+sets). Most starts are unaffected (Naruhito ⇢ Amaterasu, Roman Empire ⇢ Paper). If a fix is ever built, it needs an honest "no worlds-apart pair exists here" path for the
 starved 11, not a silent empty.
 
 **Watch for cluster hijack (found in ADR 0033; the fix corrected in 0034/0035).** A dense new

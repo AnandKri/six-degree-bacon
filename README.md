@@ -62,6 +62,7 @@ uv run sdb discover "Silk Road" --top 3 --json
 uv run sdb serve                         # interactive zero-dependency web UI at http://127.0.0.1:8000
 uv run sdb build-site                    # pre-render a static site/ for free GitHub Pages hosting
 uv run sdb validate-qids                 # check every node's wikidata_qid resolves (guard, ADR 0008)
+uv run sdb sweep                         # per-brain connectivity metrics (ADR 0047 grow-vs-stop instrument)
 uv run sdb harvest Q2277 --hops 2        # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
 uv run sdb discover "Roman Empire" --harvest data/harvest/q2277.json   # overlay a harvest, merged
 uv run sdb build-cooccurrence            # refresh data/cooccurrence.json from Wikipedia links
@@ -132,7 +133,7 @@ data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-
 data/brains/<name>/     additional detached brains (e.g. twentieth_century/) — each its own graph
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        173 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
+tests/        176 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
               per-brain integrity guards), human-vs-code confidence, surprise & endpoint checks (incl.
               region jumps), harvester, both archetypes, the clusters, the web round-trip, the seed
               loaders, the per-hop evidence contract, and a guided-walk scaling/perf test

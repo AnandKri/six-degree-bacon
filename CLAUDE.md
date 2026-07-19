@@ -80,7 +80,7 @@ global cinema, deeper music/science, Cold War politics), earning three more popu
 **`CARIBBEAN`** — so journeys like `Mao → Chinese Revolution → Russian Revolution → Cuban Revolution`
 (a three-region arc) and `Mandela → Gandhi → MLK → civil rights` now score their cross-cultural
 surprise. Per-brain scoring, so the main brain is untouched (**116 nodes / 175 statements**). All
-checks green (ruff, format, mypy, **173 tests**).
+checks green (ruff, format, mypy, **176 tests**).
 
 ## How to run
 
@@ -90,6 +90,7 @@ uv run sdb discover "Roman Empire"      # two archetypes: a journey + an improba
 uv run sdb serve                        # map-first web UI at http://127.0.0.1:8000 (zero-dep)
 uv run sdb build-site                    # pre-render a static site/ for free GitHub Pages hosting
 uv run sdb validate-qids                # check every node's wikidata_qid resolves (guard, ADR 0008)
+uv run sdb sweep                        # connectivity metrics per brain (ADR 0047 grow-vs-stop, ADR 0051)
 uv run sdb discover "Trojan War" --include-possibly   # speculative paths when none clear the gate
 uv run sdb discover "Silk Road" --top 3 --json
 uv run sdb harvest Q2277 --hops 2       # pin a Wikidata neighbourhood -> data/harvest/ (git-ignored)
@@ -149,8 +150,11 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
 - `sdb/brains.py` — the **brain registry** (ADR 0044): a "brain" is a `(seed, cooccurrence)` pair;
   `available_brains()` lists the main graph (`data/seed.json`) plus every `data/brains/*` (label from
   an optional per-brain `meta.json`), main first / default.
+- `sdb/sweep.py` — the **connectivity sweep** (ADR 0051): `connectivity_sweep(graph, cooccurrence)
+  → SweepReport`, the deterministic ADR 0047 grow-vs-stop instrument (per-start good/obvious/starved
+  improbable-pair classification + the median domain+region journey jumps), surfaced as `sdb sweep`.
 - `sdb/cli.py` — the CLI (`discover` [+ `--archetype`, `--harvest`], `harvest`, `build-cooccurrence`,
-  `validate-qids`, `serve`, `build-site`). `sdb/web.py` + `sdb/static/index.html` — a zero-dependency
+  `validate-qids`, `serve`, `build-site`, `sweep`). `sdb/web.py` + `sdb/static/index.html` — a zero-dependency
   stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change: a **map-first**
   page (ADR 0031) drawing the whole graph from `graph_payload()`/`/api/graph`, themed "minimal
   terminal" (dark slate + single teal accent). **Multi-brain (ADR 0044):** `serve` loads every brain
@@ -204,11 +208,15 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   domain_jumps 0.000→0.469, brain 109→116 statements),
   0050 20th-century node pass — Cuban Missile Crisis + Jean Renoir bridge the marquee pendants; the
   brain reaches main-brain parity (median domain+region 1.151 vs 1.165), so 0047 says stop growing it
-  (100→102 nodes / 116→123 statements)).
+  (100→102 nodes / 116→123 statements),
+  0051 connectivity sweep as a committed tool — `sdb sweep`, the reproducible ADR 0047 grow-vs-stop
+  instrument that drove 0049/0050, with the two metric definitions pinned).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 173 tests incl. the multi-brain platform (`test_brains.py`: registry + a real
+- `tests/` — 176 tests incl. the connectivity sweep (`test_sweep.py`: the report's derived fields +
+  the partition invariants on a real brain, ADR 0051), the multi-brain platform (`test_brains.py`:
+  registry + a real
   two-brain HTTP round-trip + the `build_multi_site` manifest), the per-brain integrity guards now
   parametrised over **every** brain (`test_validate.py`), human-vs-code confidence (0.75), surprise
   (5.6), and endpoint (0.49 vs

@@ -20,10 +20,11 @@ from sdb.brains import BrainSpec, available_brains
 from sdb.constants import TOP_DEFAULT
 from sdb.engine.pipeline import TopicNotFoundError, discover_all, trust_gate
 from sdb.graph.build import KnowledgeGraph
-from sdb.graph.loader import graph_from_seed, load_seed
+from sdb.graph.loader import graph_from_seed, load_cooccurrence, load_graph, load_seed
 from sdb.schema.enums import Archetype
 from sdb.schema.models import DiscoveryResult
 from sdb.serialize import hop_dicts, result_core, source_dicts, unique_sources
+from sdb.sweep import connectivity_sweep, format_report
 
 _DEFAULT_SEED = Path("data/seed.json")
 _DEFAULT_COOCCURRENCE = Path("data/cooccurrence.json")
@@ -191,6 +192,17 @@ def main(argv: list[str] | None = None) -> int:
         "--cooccurrence", type=Path, default=_DEFAULT_COOCCURRENCE, help="Co-occurrence JSON."
     )
 
+    sweep_parser = subparsers.add_parser(
+        "sweep",
+        help="Report a brain's connectivity metrics (the ADR 0047 grow-vs-stop instrument).",
+    )
+    sweep_parser.add_argument(
+        "--seed", type=Path, default=_DEFAULT_SEED, help="Seed graph JSON (default: all brains)."
+    )
+    sweep_parser.add_argument(
+        "--cooccurrence", type=Path, default=_DEFAULT_COOCCURRENCE, help="Co-occurrence JSON."
+    )
+
     args = parser.parse_args(argv)
     dispatch = {
         "discover": _run_discover,
@@ -199,6 +211,7 @@ def main(argv: list[str] | None = None) -> int:
         "validate-qids": _run_validate_qids,
         "serve": _run_serve,
         "build-site": _run_build_site,
+        "sweep": _run_sweep,
     }
     return dispatch[args.command](args)
 
@@ -240,6 +253,23 @@ def _run_build_site(args: argparse.Namespace) -> int:
         f"Wrote static site for {len(brains)} brain(s) to {index_path.parent}"
         f" — serve with any static host (e.g. GitHub Pages)."
     )
+    return 0
+
+
+def _run_sweep(args: argparse.Namespace) -> int:
+    """Run the ADR 0047 connectivity sweep over the selected brain(s) and print the metrics."""
+    brains = _selected_brains(args)
+    if not brains[0].seed_path.exists():
+        print(f"seed file not found: {brains[0].seed_path}", file=sys.stderr)
+        return 2
+    blocks: list[str] = []
+    for brain in brains:
+        graph = load_graph(brain.seed_path, brain.cooccurrence_path)
+        links = (
+            load_cooccurrence(brain.cooccurrence_path) if brain.cooccurrence_path.exists() else {}
+        )
+        blocks.append(format_report(brain.label, connectivity_sweep(graph, links)))
+    _emit("\n\n".join(blocks))
     return 0
 
 

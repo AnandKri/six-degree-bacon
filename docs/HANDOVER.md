@@ -252,6 +252,15 @@ committed tool** — the ADR 0047 instrument that drove 0049/0050 lived only in 
 is now `sdb/sweep.py` + the **`sdb sweep`** CLI diagnostic (defaults to all brains), with the two
 metric definitions pinned in the ADR and a property-based invariant test (`test_sweep.py`). Pure
 diagnostic — no scoring/data/behaviour change; reproduces the scratchpad numbers byte-for-byte.
+Then **0052 random TIL card** — the first *product* feature in a while: a **random** button draws a
+start node and renders the ordinary card. **Selection-only randomness** (the engine, scores, gate and
+provenance are untouched — it is the search box with a different input method), so the north star
+holds. Scope = this brain (default) or **all brains weighted by node count** (main 116 vs 20c 102 →
+53.2/46.8, so every *card* is equally likely; a cross-brain draw switches the map via `switchBrain`
+first). Seeded `mulberry32` draw with the seed in the URL (`?random=<seed>[&scope=all]`), so a card is
+**shareable and the draw replays**. Free on the static deploy because `site.py::_bundle` already
+precomputes every node's card; the only backend change is an additive `count` per brain in
+`brains.json` + `/api/brains` (locked by `test_brains.py`).
 Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 

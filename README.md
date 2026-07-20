@@ -103,6 +103,13 @@ cross-culture jumps *within* the century. The region axis grew modern spheres fo
 Tetris**, **Fela Kuti → funk → soul → gospel**, or **anime → Osamu Tezuka → Walt Disney → Hollywood**.
 `sdb serve` shows a switcher; `sdb build-site` bundles every brain behind one page.
 
+**Feeling lucky?** The map's **random** button deals you a card you didn't know to ask for — it draws
+a random *start node* and shows the ordinary journey / improbable-pair card (ADR 0052). Scope it to
+the current brain or to **all brains** (weighted by size, so every card is equally likely). The draw
+is seeded and the seed lands in the URL (`?random=<seed>`), so a card you like is a shareable link
+and the randomness itself is reproducible. Randomness only picks the *starting point* — every score,
+hop and source is the same deterministic, provenanced result you get by searching that topic.
+
 ## Deployment
 
 - **GitHub Pages** (free, live) — a workflow builds `sdb build-site` and deploys on every push to

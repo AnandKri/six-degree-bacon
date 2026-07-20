@@ -158,7 +158,11 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   stdlib web UI (`sdb serve`; ADR 0013) that wraps `discover()` with no engine change: a **map-first**
   page (ADR 0031) drawing the whole graph from `graph_payload()`/`/api/graph`, themed "minimal
   terminal" (dark slate + single teal accent). **Multi-brain (ADR 0044):** `serve` loads every brain
-  and selects with `?brain=` (`/api/brains` lists them); the page shows a switcher. The page is
+  and selects with `?brain=` (`/api/brains` lists them); the page shows a switcher. **Random TIL
+  (ADR 0052):** a `random` button draws a *start node* and renders the ordinary card — selection-only
+  randomness, so scoring is untouched; a seeded `?random=<seed>[&scope=all]` URL replays the draw
+  (shareable), and the scope control picks this brain or all brains weighted by each brain's `count`
+  (now carried in `brains.json` / `/api/brains`). The page is
   dual-mode, so `sdb/site.py` (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page;
   `build_multi_site` writes one `data.json`/`data-<name>.json` per brain plus a `brains.json` manifest
   for free GitHub Pages hosting.
@@ -210,7 +214,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   brain reaches main-brain parity (median domain+region 1.151 vs 1.165), so 0047 says stop growing it
   (100→102 nodes / 116→123 statements),
   0051 connectivity sweep as a committed tool — `sdb sweep`, the reproducible ADR 0047 grow-vs-stop
-  instrument that drove 0049/0050, with the two metric definitions pinned).
+  instrument that drove 0049/0050, with the two metric definitions pinned,
+  0052 random TIL card — selection-only randomness (a seeded, shareable `?random=` draw of a *start
+  node*; scope: this brain or all brains weighted by node count), scoring untouched).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).

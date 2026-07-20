@@ -182,9 +182,15 @@ class _Handler(BaseHTTPRequestHandler):
 
     def _brains(self) -> dict[str, object]:
         server = cast(_AppServer, self.server)
+        # `count` (node count) lets the page weight an "all brains" random pick by size (ADR 0052).
         return {
             "brains": [
-                {"name": name, "label": server.brain_labels[name]} for name in server.brain_order
+                {
+                    "name": name,
+                    "label": server.brain_labels[name],
+                    "count": len(server.graphs[name].nodes()),
+                }
+                for name in server.brain_order
             ]
         }
 

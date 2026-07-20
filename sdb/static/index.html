@@ -135,6 +135,17 @@
   .pill:hover { border-color: var(--accent); color: var(--accent); }
   .pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent);
     background: rgba(94,234,212,.08); }
+  .pill .dice { width: 13px; height: 13px; stroke: currentColor; fill: none; vertical-align: -2px;
+    margin-right: .28rem; }
+  /* Random-scope segmented control (ADR 0052): "this brain" vs "all brains", shown only when there
+     is more than one brain. Mirrors the pill palette so it reads as the same minimal-terminal system. */
+  .rscope { display: none; align-items: center; border: 1px solid var(--border-2); border-radius: 999px;
+    overflow: hidden; font-family: var(--font-mono); font-size: .68rem; }
+  .rscope.show { display: inline-flex; }
+  .rscope button { border: 0; background: transparent; color: var(--muted); cursor: pointer;
+    padding: .4rem .62rem; font: inherit; white-space: nowrap; transition: color .15s, background .15s; }
+  .rscope button:hover { color: var(--accent); }
+  .rscope button.sel { background: rgba(94,234,212,.1); color: var(--accent); }
   /* Brain switcher (ADR 0044): a custom dropdown, not a native <select> — a browser renders a
      <select>'s option list itself (light panel, OS radio buttons), which can't be themed. This
      mirrors the search-suggest styling so it reads as the same minimal-terminal system. Hidden
@@ -284,7 +295,7 @@
     .controls.open .search { position: fixed; top: .8rem; left: 1.15rem; right: 1.15rem; z-index: 22; }
     .controls.open .search input { display: block; width: 100%; min-width: 0; opacity: 1;
       padding: .5rem .7rem .5rem 2.1rem; }
-    .controls.open #spec { display: none; }
+    .controls.open #spec, .controls.open #rnd, .controls.open #rndscope { display: none; }
     .legend { display: none; }
     .card { top: auto; bottom: 0; right: 0; left: 0; width: 100%; max-height: 64vh; border-radius: 0;
       border-left: 0; border-right: 0; border-bottom: 0; transform: translateY(112%); }
@@ -338,6 +349,12 @@
       <div class="suggest" id="suggest"></div>
     </div>
     <button class="pill" id="spec" aria-pressed="false" title="Include speculative, low-confidence routes">+ speculative</button>
+    <button class="pill" id="rnd" title="Show a random surprising card">
+      <svg class="dice" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.35" fill="currentColor" stroke="none"></circle><circle cx="12" cy="12" r="1.35" fill="currentColor" stroke="none"></circle><circle cx="15.5" cy="15.5" r="1.35" fill="currentColor" stroke="none"></circle></svg>random</button>
+    <div class="rscope" id="rndscope" role="group" aria-label="Random scope">
+      <button type="button" data-s="brain" class="sel">this brain</button>
+      <button type="button" data-s="all">all brains</button>
+    </div>
   </div>
 </div>
 
@@ -866,6 +883,70 @@ $("#spec").onclick = () => {
   if (selected) select(byId.get(selected), kind);
 };
 
+// ================= random ("surprise me") =================
+// Randomness is selection-only: it picks a *start node* and shows the same deterministic card the
+// map already renders — the engine, scores and provenance are untouched (ADR 0052). A 32-bit seed
+// drives a tiny deterministic PRNG, and the seed goes in the URL (?random=<seed>[&scope=all]) so a
+// drawn card is reproducible and shareable given the same data.
+const rndBtn = $("#rnd"), rndScope = $("#rndscope");
+let randomScope = "brain";  // "brain" | "all" (all = weighted across brains by node count)
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+async function randomPool() {
+  // Ids that have a gated result in the current mode, sorted for a stable (reproducible) draw order.
+  const d = await brainData();
+  const mode = possibly ? "loose" : "strict";
+  if (d) return Object.keys(d.results).filter((id) => {
+    const r = d.results[id] && d.results[id][mode];
+    return r && ((r.journey && r.journey.length) || (r.unlikely && r.unlikely.length));
+  }).sort();
+  return NODES.map((n) => n.id).sort();  // live server: every node has a card
+}
+function weightedBrainPick(u) {  // u in [0,1) -> a brain index, weighted by node count
+  const w = BRAINS.map((b) => Math.max(1, b.count || 1));
+  const total = w.reduce((s, x) => s + x, 0);
+  let t = u * total;
+  for (let i = 0; i < w.length; i++) if ((t -= w[i]) < 0) return i;
+  return w.length - 1;
+}
+async function goRandom(seed) {
+  const rng = mulberry32(seed);
+  if (randomScope === "all" && BRAINS.length > 1) {
+    const i = weightedBrainPick(rng());
+    if (i !== currentBrain) await switchBrain(i);
+  }
+  const pool = await randomPool();
+  if (!pool.length) return;
+  const id = pool[Math.floor(rng() * pool.length)];
+  const params = new URLSearchParams();
+  params.set("random", String(seed >>> 0));
+  if (randomScope === "all") params.set("scope", "all");
+  history.replaceState(null, "", "?" + params.toString());
+  const n = byId.get(id);
+  if (n) { q.value = n.label; select(n); }
+}
+function renderRandomScope() {
+  if (BRAINS.length <= 1) { rndScope.classList.remove("show"); return; }
+  rndScope.classList.add("show");
+  rndScope.querySelectorAll("button").forEach((b) => b.classList.toggle("sel", b.dataset.s === randomScope));
+}
+rndScope.querySelectorAll("button").forEach((b) =>
+  b.onclick = () => { randomScope = b.dataset.s; renderRandomScope(); });
+rndBtn.onclick = () => goRandom((Math.random() * 2 ** 32) >>> 0);
+function bootRandom() {
+  const usp = new URLSearchParams(location.search);
+  if (!usp.has("random")) return;
+  randomScope = usp.get("scope") === "all" && BRAINS.length > 1 ? "all" : "brain";
+  renderRandomScope();
+  goRandom((parseInt(usp.get("random"), 10) || 0) >>> 0);
+}
+
 // ================= brain switcher (a themed dropdown, not a native <select>) =================
 const brainPick = $("#brainpick"), brainBtn = $("#brainpick-btn"),
   brainMenu = $("#brainpick-menu"), brainLabel = $("#brainpick-label");
@@ -900,8 +981,9 @@ async function switchBrain(i) {
 
 // ================= boot =================
 initBrains()
-  .then(() => { renderBrainSwitcher(); return getGraph(); })
+  .then(() => { renderBrainSwitcher(); renderRandomScope(); return getGraph(); })
   .then(renderMap)
+  .then(bootRandom)
   .catch(() => { $("#hint").innerHTML = '<span class="lbl">could not load the map</span>'; });
 window.addEventListener("resize", () => {
   // Keep the viewBox aspect equal to the container's (about its centre), so it never letterboxes.

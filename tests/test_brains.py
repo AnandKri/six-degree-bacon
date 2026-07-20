@@ -79,6 +79,9 @@ def test_api_brains_lists_every_brain_in_order() -> None:
         brains = payload["brains"]
         assert [b["name"] for b in brains] == ["main", "twentieth_century"]  # order preserved
         assert brains[1]["label"] == "20th Century"
+        # `count` (node count) powers the page's weighted "all brains" random pick (ADR 0052).
+        assert all(isinstance(b["count"], int) and b["count"] > 0 for b in brains)
+        assert brains[0]["count"] != brains[1]["count"]  # main and 20c are different sizes
 
 
 def test_brain_query_selects_the_right_graph() -> None:
@@ -120,6 +123,9 @@ def test_build_multi_site_writes_a_manifest_and_per_brain_bundles(tmp_path: Path
     manifest = json.loads((out / "brains.json").read_text(encoding="utf-8"))["brains"]
     assert [b["name"] for b in manifest] == ["alpha", "beta"]
     assert [b["file"] for b in manifest] == ["data.json", "data-beta.json"]
+    # Each manifest entry carries its node count for the weighted all-brains random pick (ADR 0052).
+    tc_count = len(load_seed(_TC / "seed.json").nodes)
+    assert [b["count"] for b in manifest] == [tc_count, tc_count]
 
 
 def test_build_multi_site_with_one_brain_is_the_plain_single_bundle(tmp_path: Path) -> None:

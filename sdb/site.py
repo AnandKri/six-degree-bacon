@@ -93,14 +93,18 @@ def build_multi_site(brains: Sequence[BrainSpec], out_dir: Path, *, top: int = 3
         )
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    manifest: list[dict[str, str]] = []
+    manifest: list[dict[str, str | int]] = []
     for position, brain in enumerate(brains):
         graph = load_graph(brain.seed_path, brain.cooccurrence_path)
         file = "data.json" if position == 0 else f"data-{brain.name}.json"
         (out_dir / file).write_text(
             json.dumps(_bundle(graph, top=top), ensure_ascii=False), encoding="utf-8"
         )
-        manifest.append({"name": brain.name, "label": brain.label, "file": file})
+        # `count` (node count) lets the page weight an "all brains" random pick so every card is
+        # equally likely, without eagerly loading every bundle (ADR 0052).
+        manifest.append(
+            {"name": brain.name, "label": brain.label, "file": file, "count": len(graph.nodes())}
+        )
     (out_dir / "brains.json").write_text(
         json.dumps({"brains": manifest}, ensure_ascii=False), encoding="utf-8"
     )

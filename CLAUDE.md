@@ -277,6 +277,19 @@ README is the one that rots — it is the public face of a public repo and nobod
 it silently sat at 88 nodes / 123 statements / 99 tests while this file was current. A stale doc is a
 defect here, not a cosmetic issue: the project's claim is that its record is trustworthy.
 
+**Every web-UI change ships only after BOTH desktop and mobile are checked — no exceptions.** The
+top bar is the standing casualty: `.controls` is a flex row and each new control pushes it toward
+overflow. ADR 0052's `random` + scope controls shipped looking perfect on desktop and **broke the
+phone layout** (the row overflowed sideways and dragged the centred title off-screen) — caught by the
+owner, not by me. The check is two numbers, not an opinion: at **≤720px** (the media-query
+breakpoint) `document.documentElement.scrollWidth` must equal `window.innerWidth` (no horizontal
+overflow) and the controls must **wrap**, not clip; at desktop the row must still be one line.
+**Gotcha that makes this easy to get wrong:** headless Chrome clamps `--window-size` to a ~500px
+minimum, so a phone viewport *cannot* be reproduced that way — it renders wide and crops the
+screenshot, which looks like a bug when there is none and hides one when there is. Use an **iframe
+harness** (a 390px `<iframe src="./index.html">`) served over http; the iframe gets a true 390px
+viewport and the media queries evaluate against it. Full recipe in `docs/HANDOVER.md` §6.
+
 ## Phase 1 — done (see ADR 0003, 0004)
 
 1. ✅ **Wikidata SPARQL harvester** (`sdb/harvest/`): k-hop neighbourhood → `Statement` model,

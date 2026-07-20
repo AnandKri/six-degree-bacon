@@ -146,6 +146,7 @@
     padding: .4rem .62rem; font: inherit; white-space: nowrap; transition: color .15s, background .15s; }
   .rscope button:hover { color: var(--accent); }
   .rscope button.sel { background: rgba(94,234,212,.1); color: var(--accent); }
+  .rscope .short { display: none; }  /* the abbreviated label; swapped in on narrow screens */
   /* Brain switcher (ADR 0044): a custom dropdown, not a native <select> — a browser renders a
      <select>'s option list itself (light panel, OS radio buttons), which can't be themed. This
      mirrors the search-suggest styling so it reads as the same minimal-terminal system. Hidden
@@ -281,8 +282,16 @@
     .topbar { flex-direction: column; align-items: center; gap: .55rem; }
     .brand { text-align: center; }
     .brand p { display: none; }
-    .controls { margin: 0; align-items: center; }
-    #spec { height: 34px; }
+    /* The control row must WRAP on a phone: brain-picker + speculative + random + scope is wider
+       than a 390px viewport, and an unwrapped flex row overflows the whole page sideways (it drags
+       the centred title off-screen with it). Wrapping keeps everything reachable; the header grows a
+       line and `topInset()` measures the real height, so the map still fits itself correctly. */
+    .controls { margin: 0; align-items: center; flex-wrap: wrap; justify-content: center;
+      max-width: 100%; }
+    #spec, #rnd { height: 34px; }
+    .rscope { height: 34px; }
+    .rscope .full { display: none; }      /* "this brain" / "all brains" -> */
+    .rscope .short { display: inline; }   /* "this" / "all", to save a wrapped line */
     #zin, #zout { display: none; }                 /* redundant on mobile — keep only fit-to-screen */
     /* Search magnifier + fit button share the bottom-right. The search expands to a bar at the *top*
        on tap, so the on-screen keyboard never covers it. */
@@ -352,8 +361,8 @@
     <button class="pill" id="rnd" title="Show a random surprising card">
       <svg class="dice" viewBox="0 0 24 24" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"></rect><circle cx="8.5" cy="8.5" r="1.35" fill="currentColor" stroke="none"></circle><circle cx="12" cy="12" r="1.35" fill="currentColor" stroke="none"></circle><circle cx="15.5" cy="15.5" r="1.35" fill="currentColor" stroke="none"></circle></svg>random</button>
     <div class="rscope" id="rndscope" role="group" aria-label="Random scope">
-      <button type="button" data-s="brain" class="sel">this brain</button>
-      <button type="button" data-s="all">all brains</button>
+      <button type="button" data-s="brain" class="sel"><span class="full">this brain</span><span class="short">this</span></button>
+      <button type="button" data-s="all"><span class="full">all brains</span><span class="short">all</span></button>
     </div>
   </div>
 </div>

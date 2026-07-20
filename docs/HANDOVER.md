@@ -478,6 +478,31 @@ the one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent
 
 ## 6. Conventions / gotchas
 
+- **SOP — every web-UI change is verified at BOTH desktop and mobile before committing.** Added after
+  ADR 0052's `random` + scope controls shipped perfect on desktop and **broke the phone header**: the
+  `.controls` flex row overflowed sideways and dragged the centred title off-screen. The top bar is
+  the standing casualty — it is a flex row, and every new control pushes it closer to overflow.
+  **Pass/fail is two numbers, not an opinion:**
+  1. at **≤720px** (the media-query breakpoint) `document.documentElement.scrollWidth ===
+     window.innerWidth` (no horizontal overflow) **and** the controls **wrap** onto another line
+     rather than clip;
+  2. at desktop (≥1280px) the control row is still a single line with the full labels.
+
+  **The trap:** headless Chrome **clamps `--window-size` to a ~500px minimum**, so you cannot get a
+  phone viewport that way — it lays out at ~500px and *crops* the screenshot to the size you asked
+  for. That crop looks exactly like an overflow bug when there is none, and hides one when there is.
+  (This cost a full debugging cycle: the "fix didn't work" screenshots were the harness lying.)
+  **Use an iframe harness** — an iframe gets a true viewport and media queries evaluate against it:
+
+  ```sh
+  uv run sdb build-site --out /tmp/site                 # the page needs a real bundle
+  python -m http.server 8901 --directory /tmp/site      # fetch() needs http, not file://
+  # /tmp/site/harness.html:  <iframe src="./index.html" style="width:390px;height:820px;border:0">
+  # then measure inside the iframe (same-origin) and assert the two numbers above:
+  chrome --headless=new --virtual-time-budget=9000 --dump-dom http://127.0.0.1:8901/harness.html
+  ```
+
+  A screenshot alone is not sufficient evidence — take the measurement, then look at the picture.
 - **Commit only when asked; push only when asked.** Conventional Commits; identity `AnandKri
   <anand.krishna0802@gmail.com>`; end messages with the `Co-Authored-By: Claude …` trailer. `main`,
   now tracking `origin/main` (public).

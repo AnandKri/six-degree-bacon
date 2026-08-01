@@ -489,6 +489,50 @@ def test_abrahamic_cluster_bridges_the_three_faiths(seed_graph: KnowledgeGraph) 
     assert {"christianity", "islam", "roman_empire", "zoroastrianism"} & reached
 
 
+def test_main_brain_escape_edges_relieve_the_starved_pendants(
+    seed_graph: KnowledgeGraph,
+) -> None:
+    """ADR 0053: the main brain's ADR 0047 tissue pass — six sourced escape edges between existing
+    nodes, each giving a *starved* start (its whole 1-2 hop reach was its own cluster) a route out.
+
+    Structural + the measured payoff, per ADR 0049's template: the edges exist and cross a
+    discipline or a culture, and the starts they were added for now surface a genuinely non-obvious
+    improbable pair. Never a pinned endpoint — the winners move as the seed grows.
+    """
+    by_id = {node.id: node for node in seed_graph.nodes()}
+    edges = {(s.subject, s.predicate.value, s.object) for s in seed_graph.statements}
+    escapes = (
+        ("nile", "mentioned_in", "hebrew_bible"),
+        ("romance_languages", "influenced_by", "christianity"),
+        ("florence", "connected_via_trade", "trans_saharan_trade"),
+        ("julio_claudian_dynasty", "claimed_descent_from", "aeneas"),
+        ("aeneas", "located_in", "troy"),
+        ("mona_lisa", "part_of", "renaissance"),
+    )
+    for edge in escapes:
+        assert edge in edges, edge
+        subject, _, obj = edge
+        crossing = {
+            by_id[subject].domain != by_id[obj].domain,
+            by_id[subject].region != by_id[obj].region,
+        }
+        assert True in crossing, f"escape edge crosses nothing: {edge}"
+
+    # The payoff the pass was measured on: each start's whole 1-2 hop neighbourhood used to be
+    # nodes its own Wikipedia article already links, so its top pair was a foregone conclusion.
+    for topic, node_id in (
+        ("Nile", "nile"),
+        ("Hebrew Bible", "hebrew_bible"),
+        ("Romance languages", "romance_languages"),
+        ("Mali Empire", "mali_empire"),
+        ("Troy", "troy"),
+        ("Aeneas", "aeneas"),
+        ("Mona Lisa", "mona_lisa"),
+    ):
+        pairs = discover(seed_graph, topic, archetype=Archetype.UNLIKELY, top=5)
+        _assert_worlds_apart(seed_graph, node_id, pairs)
+
+
 def test_culture_domain_is_populated_and_holds_no_harvest_fallout(
     seed_graph: KnowledgeGraph,
 ) -> None:

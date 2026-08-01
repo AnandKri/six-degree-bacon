@@ -4,7 +4,7 @@ A working note to continue the project. Pair it with [`CLAUDE.md`](../CLAUDE.md)
 and the ADRs in [`docs/adr/`](adr/). As of this note: **Phase 2 done, Phase 3 (the multi-brain
 platform) kicked off**, **pushed to `origin/main`** (public repo
 `github.com/AnandKri/six-degree-bacon`), **CI green**, **GitHub Pages live**, all checks green
-(**176 tests**). Main seed: **116 nodes / 175 statements**, 10 curated domains — **all now
+(**177 tests**). Main seed: **116 nodes / 181 statements**, 10 curated domains — **all now
 populated**: the harvest fallback moved out of `culture` into a dedicated `other` bucket (ADR 0032),
 then a Renaissance cluster filled `culture` (0→2) and `art` (1→4) (ADR 0033). `Node` now carries
 **both** the axes the surprise rubric was missing: a **`Region`** cultural axis (ADR 0039) and an
@@ -47,6 +47,24 @@ component, no islands; new journeys like `Mao → Chinese Revolution → Russian
 Revolution` (a `SINITIC → SOVIET → LATIN_AMERICAN` arc) and `Nelson Mandela → Gandhi → MLK → civil
 rights`. The `validate-qids` guard caught the ADR 0043 hazard again (label "Constructivism" resolves
 to a different QID than the art movement → relabelled "Constructivism (art)").
+
+**Newest work (ADR 0053): the ADR 0047 grow-vs-stop cycle, run on the *main* brain at last.** 0049
+and 0050 ran it twice on the 20th-century brain; the main brain had never had it, and its starved
+starts had sat in §5 as prose since ADR 0033. `sdb sweep` put numbers on them — **12/116 starved,
+86.2% good pairs** — and named the shape: four starts (`troy`, `nile`, `romance_languages`,
+`mona_lisa`) hung off a **single** edge into their own cluster. Six sourced escape edges between
+*existing* nodes (no new nodes, no new QIDs, co-occurrence untouched — it keys on nodes) took good
+pairs to **92.2%** and starved to **5**: `nile → hebrew_bible` (Exodus opens on the Nile),
+`romance_languages → christianity` (the Council of Tours, 813), `florence → trans_saharan_trade` (the
+florin's West African gold), `julio_claudian_dynasty → aeneas`, `aeneas → troy`, `mona_lisa →
+renaissance`. Leave-one-out shows every edge pays for itself. **The 5 that remain cannot be fixed by
+edges** — `china`/`augustus`/`julius_caesar` are *hub articles* (co-occur with 20–29% of the graph vs
+a 13.0% median, so everything within 2 hops is something they already link) and `trojan_war`/`jimmu`
+are closed mythic lineages — so per 0047 **both brains have now run the cycle and both say stop**.
+Two side-findings worth carrying forward: metric 2 *dilutes* when you add crossings (ADR 0034 prices
+a jump at `1 − P(jump|predicate)`, so it read 1.165 → 1.115 while reach improved — do not read that
+dip as damage), and **a verified node can still carry an unverified claim** (two of the six were
+drafted citing an article that does not actually make the claim; caught by reading the source).
 
 **Read this first — the rule the project nearly broke (ADR 0034/0035).** Data and the rubric are the
 truth; **a test may only verify what the rubric claims, never that a favourite wins**. This was
@@ -182,7 +200,7 @@ Unicode labels (the `sdb` CLI already degrades to ASCII safely).
   (ADR 0015).
 - `.github/workflows/` — `ci.yaml` (offline lint/type/test on every push), `pages.yaml` (build+deploy
   Pages), `qid-validation.yaml` (network QID guard on `data/seed.json` changes + weekly + manual).
-- `data/seed.json` (116 nodes / 175 statements, verified QIDs) + `data/cooccurrence.json` (committed).
+- `data/seed.json` (116 nodes / 181 statements, verified QIDs) + `data/cooccurrence.json` (committed).
   `eval/golden.json` — ranker regression (characterization values, not hand-picked).
 
 ## 4. Done so far (see the ADRs)
@@ -261,6 +279,13 @@ first). Seeded `mulberry32` draw with the seed in the URL (`?random=<seed>[&scop
 **shareable and the draw replays**. Free on the static deploy because `site.py::_bundle` already
 precomputes every node's card; the only backend change is an additive `count` per brain in
 `brains.json` + `/api/brains` (locked by `test_brains.py`).
+Then **0053 main-brain escape-edge pass** — the 0047 cycle on the main brain: six sourced edges
+between existing nodes (**175 → 181 statements**, 116 nodes unchanged), good pairs **86.2% → 92.2%**,
+starved **12 → 5**, the remainder structural. One golden case re-characterised from the engine
+(Christianity: Roman Republic → Proto-Indo-European, via the new Church-Latin hop) and one site test
+corrected: `loose ⊇ strict` was never a rubric promise — both lists are the top-N of the *same*
+ranking key, so a higher-scoring speculative path may take a slot; it now asserts the invariant that
+*is* claimed (a confident card is only ever **outranked**, never dropped).
 Plus: CI for QID-validation
 + Pages, and the push to a public GitHub repo with Pages live.
 
@@ -310,8 +335,16 @@ connective tissue (an escape edge for a starved/low-degree start or a real cross
 ceilings ~150–200 (main) / auditable-by-hand ~300, and *stop* when the two connectivity metrics (% of
 starts with a good gated pair; median region+domain jumps of top journeys) plateau — and
 **[0048](adr/0048-llm-boundary-policy.md)** — an LLM may draft/narrate/route/suggest but never
-score/rank/gate/attest (first sanctioned use: an offline, human-ratified curation copilot). The open
-Phase-3 increments, one commit each:
+score/rank/gate/attest (first sanctioned use: an offline, human-ratified curation copilot).
+
+**Status after ADR 0053: the connectivity thread is finished on BOTH brains.** The 20c brain reached
+main-brain parity (0050) and the main brain's escape-edge lever is exhausted (0053, starved 12 → 5
+with the remaining 5 structural). Per 0047 that is the stop signal for *growth driven by the
+metrics*. What remains is deliberately not more graph: a **new brain** if another world is wanted
+(§3 below — cheap, and islanding is a feature there), the **ADR 0048 curation copilot** (offline,
+human-ratified drafting — the one sanctioned LLM use), or **product** work on the surfaces. Ask the
+owner which; do not default to "add more nodes", which is exactly what 0047 was written to stop.
+The Phase-3 increments, one commit each:
 
 0. **✅ DONE (ADR 0049 then 0050) — the 20c brain reached main-brain parity; STOP growing it.** The
    full 0047 cycle ran end to end: sweep → ADR 0049 edges-only pass (`domain_jumps` 0.000 → 0.469,
@@ -350,11 +383,17 @@ Phase-3 increments, one commit each:
    automatically — Mesoamerica would be a clean island-as-a-feature candidate) — but **parked**; the
    effort goes into the 20th-century brain.
 
-**Main-brain breadth** is still available but lower-value (§5.1; the graph already spans most Old-World
-civilisations, the starved count is plateauing). Candidates if wanted: **Byzantine–Ottoman** (via
-Constantinople + the Fall of Constantinople); the **Enlightenment** is almost entirely `WESTERN`, so
-low cross-cultural surprise (the ADR 0039 walking-tour lesson). Avoid pre-Columbian Mesoamerica (an
-island) — **or** make it a *new brain*, where islanding is a feature, not a bug.
+**Main-brain connectivity work is DONE and says stop (ADR 0053).** The escape-edge lever is
+exhausted: the starts it could fix are fixed (starved 12 → 5, good pairs 92.2%), and the five left are
+structural — hub articles whose own Wikipedia page links everything within reach (`china`,
+`augustus`, `julius_caesar`) and closed mythic lineages (`trojan_war`, `jimmu`). Neither is a defect
+and neither yields to another edge. **Main-brain breadth is therefore now a *product* choice, not a
+connectivity need** — add a cluster because someone wants to read it, not to move a metric, and keep
+the 0047 soft ceiling (~150–200 nodes) and the walking-tour caution. Candidates if wanted:
+**Byzantine–Ottoman** (via Constantinople + the Fall of Constantinople); the **Enlightenment** is
+almost entirely `WESTERN`, so low cross-cultural surprise (the ADR 0039 walking-tour lesson). Avoid
+pre-Columbian Mesoamerica (an island) — **or** make it a *new brain*, where islanding is a feature,
+not a bug. With both brains plateaued, **the next graph is a new brain, not a bigger one.**
 
 ---
 
@@ -367,12 +406,15 @@ distinct**, and `test_endpoint_term_does_not_saturate` is a canary that bounds t
 future sparse cluster can't silently reintroduce it. Re-run `sdb build-cooccurrence` after any seed
 change (it now also fetches each article's full link set — slower, ~a minute for the seed).
 
-**Open follow-up (a *different* issue, not saturation) — MEASURED, and the obvious fix is wrong.**
+**Open follow-up — CLOSED by breadth (ADR 0053), exactly as this section predicted.**
 With the pair capped at 1–2 hops (ADR 0027), some starts surface a directly co-occurring neighbour as
 their *top* improbable pair (Confucius ⇢ China), because a high-trust 1-hop beats a more-unexpected
 lower-trust 2-hop on `eu × trust`. An earlier draft of this note proposed: *exclude destinations the
 start directly links (link_strength ≥ 1) from the pair set, or floor the pair's endpoint-unexpectedness*.
-**Do not build that without reading this.** Measured across every start (2026-07-17; re-measured
+**Do not build that** — the section below measured it and the fix is wrong; the *right* fix is the one
+it named (escape edges), and **ADR 0053 built it**: obvious-winner starts **16 → 9**, starved
+**12 → 5**, no scoring weight touched. What is left is structural and is documented as such in 0053.
+The original measurement, kept as the record (2026-07-17; re-measured
 after ADR 0033 — the shape held, the count improved **16/88 → 15/98**):
 
 - **15 starts** surface a directly-co-occurring winner.
@@ -386,7 +428,9 @@ after ADR 0033 — the shape held, the count improved **16/88 → 15/98**):
 
 Root cause is **not scoring**: every starved start has graph-degree 1–4, so its 2-hop reach is its own
 cluster and no distant destination exists to rank. `troy` (degree 1) can only reach Trojan War's
-neighbours. The fix is **breadth — specifically edges that *escape* a cluster**, not nodes beside it
+neighbours — which is precisely the hole ADR 0053's `aeneas → troy` + `julio_claudian_dynasty →
+aeneas` pair closed, giving Troy a route into the Roman genealogy cluster and its first *confident*
+journey. The fix is **breadth — specifically edges that *escape* a cluster**, not nodes beside it
 (e.g. `troy → Heinrich Schliemann → 19th-c. archaeology` jumps domain and two millennia in one hop).
 This independently re-confirms ADR 0014's "breadth is the higher-leverage investment", and **ADR 0033
 demonstrated it**: adding the Renaissance cluster relieved `plato` and `constantinople` (both now
@@ -508,7 +552,7 @@ the one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent
   now tracking `origin/main` (public).
 - **Update the docs in the same commit as the change — `README.md` included.** The live-truth docs
   are `README.md`, `CLAUDE.md` and this note. If a commit moves a user-visible fact, fix it in all
-  three: **seed size** (116 nodes / 175 statements), **test count**, the **rubric's worked-example
+  three: **seed size** (116 nodes / 181 statements), **test count**, the **rubric's worked-example
   figures**, the module list, the ADR list, domain counts. **Grep the old number** — prose lies, and
   a figure can be quoted in a file you didn't touch. **ADRs are records: never back-edit them.** Mark
   a superseded one with a status line + a pointer to its successor (see ADR 0033's header) and leave

@@ -79,8 +79,17 @@ global cinema, deeper music/science, Cold War politics), earning three more popu
 **`LATIN_AMERICAN`**, **`SUB_SAHARAN`** (modern, distinct from medieval `WEST_AFRICAN`),
 **`CARIBBEAN`** — so journeys like `Mao → Chinese Revolution → Russian Revolution → Cuban Revolution`
 (a three-region arc) and `Mandela → Gandhi → MLK → civil rights` now score their cross-cultural
-surprise. Per-brain scoring, so the main brain is untouched (**116 nodes / 175 statements**). All
-checks green (ruff, format, mypy, **176 tests**).
+surprise. Per-brain scoring, so the main brain was untouched by all of that. Most recent change
+(**ADR 0053**): the ADR 0047 grow-vs-stop cycle finally ran on the **main** brain — `sdb sweep`
+found 12/116 starved starts (86.2% good pairs), so **six sourced escape edges between existing
+nodes** (no new nodes/QIDs, co-occurrence untouched) gave each flagged pendant a route out of its
+own cluster: `nile → hebrew_bible` (the Exodus Nile), `romance_languages → christianity` (the
+Council of Tours, 813), `florence → trans_saharan_trade` (the florin's West African gold),
+`julio_claudian_dynasty → aeneas`, `aeneas → troy`, `mona_lisa → renaissance`. Good pairs
+**86.2% → 92.2%**, starved **12 → 5**; the five that remain are structural (hub articles — `china`
+co-occurs with 28.7% of the graph vs a 13.0% median — and closed mythic lineages), so **both brains
+have now run the cycle and both say stop**. Main brain **116 nodes / 175 → 181 statements**. All
+checks green (ruff, format, mypy, **177 tests**).
 
 ## How to run
 
@@ -166,7 +175,7 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   dual-mode, so `sdb/site.py` (`build-site`; ADR 0015) pre-renders a static bundle of the *same* page;
   `build_multi_site` writes one `data.json`/`data-<name>.json` per brain plus a `brains.json` manifest
   for free GitHub Pages hosting.
-- `data/seed.json` — curated 116-node / 175-statement graph across 10 curated domains, all now
+- `data/seed.json` — curated 116-node / 181-statement graph across 10 curated domains, all now
   populated (an 11th, `other`, is the harvest-only "unclassified" bucket and is never curated —
   ADR 0032), full provenance (incl. a Judaism/Abrahamic-web cluster — Judaism/Hebrew Bible/Jerusalem/
   Abraham/Moses/Second Temple/David/Talmud, ADR 0043 — tying the three Abrahamic faiths together via
@@ -180,7 +189,9 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   Scientific Revolution / East Asia / Norse–Celtic myth / Chinese-tech / West-Africa / divine-descent
   clusters — e.g. Newton → Euclid → al-Tusi → Copernicus, Thor → Rigveda → India, Mansa Musa → Islam
   → Zoroastrianism → Mithra, Elizabeth II → Alfred the Great → House of Wessex → Odin, and Naruhito →
-  Jimmu → Amaterasu → Shinto).
+  Jimmu → Amaterasu → Shinto; plus six **escape edges** between existing nodes — ADR 0053 — that gave
+  the starved pendants a way out of their own clusters, e.g. Florence → Trans-Saharan trade →
+  Timbuktu → Mansa Musa).
   `data/cooccurrence.json` — committed Wikipedia-link co-occurrence for the endpoint-surprise term.
 - `data/brains/<name>/` — **additional detached brains** (ADR 0044), each its own `seed.json` +
   `cooccurrence.json` (+ optional `meta.json` label). First: `twentieth_century/` — a **102-node /
@@ -216,12 +227,18 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   0051 connectivity sweep as a committed tool — `sdb sweep`, the reproducible ADR 0047 grow-vs-stop
   instrument that drove 0049/0050, with the two metric definitions pinned,
   0052 random TIL card — selection-only randomness (a seeded, shareable `?random=` draw of a *start
-  node*; scope: this brain or all brains weighted by node count), scoring untouched).
+  node*; scope: this brain or all brains weighted by node count), scoring untouched,
+  0053 main-brain escape-edge pass — the ADR 0047 cycle run on the *main* brain at last: 6 sourced
+  edges between existing nodes, good pairs 86.2%→92.2% / starved 12→5 (175→181 statements), the
+  remaining 5 structural, so both brains now say stop; also records that metric 2 *dilutes* as
+  crossings are added, and that a verified node can still carry an unverified claim).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
-- `tests/` — 176 tests incl. the connectivity sweep (`test_sweep.py`: the report's derived fields +
-  the partition invariants on a real brain, ADR 0051), the multi-brain platform (`test_brains.py`:
+- `tests/` — 177 tests incl. the connectivity sweep (`test_sweep.py`: the report's derived fields +
+  the partition invariants on a real brain, ADR 0051), the main brain's escape-edge pass (ADR 0053 —
+  the six edges exist, each crosses a domain or a region, and the seven relieved starts now surface a
+  worlds-apart pair), the multi-brain platform (`test_brains.py`:
   registry + a real
   two-brain HTTP round-trip + the `build_multi_site` manifest), the per-brain integrity guards now
   parametrised over **every** brain (`test_validate.py`), human-vs-code confidence (0.75), surprise
@@ -268,7 +285,7 @@ constants, `test_<module>.py`, ADRs `NNNN-kebab.md`. Type hints + docstrings on 
 mypy + pytest must stay green (CI enforces it).
 
 **Docs move with the code, in the same commit — `README.md` included.** If a commit changes a
-user-visible fact, update it everywhere in that commit: seed size (116 nodes / 175 statements), test
+user-visible fact, update it everywhere in that commit: seed size (116 nodes / 181 statements), test
 count, the rubric's worked-example figures, the module list, the ADR list, domain counts. **Grep the
 old number; don't trust the prose.** The live-truth docs are `README.md`, this file, and
 `docs/HANDOVER.md`. **ADRs are records — never back-edit them**; mark a superseded one with a status

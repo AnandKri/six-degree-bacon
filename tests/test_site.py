@@ -38,27 +38,37 @@ def test_bundle_includes_the_laid_out_graph(seed_graph: KnowledgeGraph, tmp_path
     assert {"id", "label", "domain", "x", "y", "degree"} <= graph["nodes"][0].keys()
 
 
-def test_strict_is_confident_and_loose_is_a_superset(
+def test_strict_is_confident_and_loose_only_ever_outranks(
     seed_graph: KnowledgeGraph, tmp_path: Path
 ) -> None:
-    """Lowering the gate is *strictly additive*, as a property over every topic in the seed.
+    """Lowering the gate only ever *adds candidates*, as a property over every topic in the seed.
 
     This was pinned to `trojan_war` until ADR 0033, whose `Ancient Greece -> Renaissance humanism`
     edge gave Troy's war a confident journey — so the one hand-picked "speculative" topic stopped
     being speculative and the test broke on a seed improvement rather than a regression. Asserting
     over all topics keeps the same two claims without betting on any one topic's evidence level.
+
+    It then asserted `strict_endpoints <= loose_endpoints` ("loosening never displaces a confident
+    result"), which is **not** something the rubric promises and which ADR 0053 falsified the same
+    way: `troy` gained its first confident journeys (via the new `aeneas -> troy` edge), and one of
+    its speculative paths outscores them, so a fixed top-N legitimately drops the weakest confident
+    card. Both lists are the top-N of the *same* ranking key over a widening candidate set, so the
+    honest invariant is the one asserted here: a confident card leaves the top-N only when every
+    card that replaced it scores at least as high — never because loosening the gate removed it.
     """
     data = _build(seed_graph, tmp_path)
     additive = []
     for topic in data["results"].values():
         strict, loose = topic["strict"]["journey"], topic["loose"]["journey"]
         assert all(not card["possibly"] for card in strict)  # strict = confident only
-        strict_endpoints = {card["endpoint"] for card in strict}
+        strict_scores = {card["endpoint"]: card["score"] for card in strict}
         loose_endpoints = {card["endpoint"] for card in loose}
-        # Loosening never *displaces* a confident result, even though it competes for the same
-        # top-N slots (a `possibly` path can outrank on surprise while losing on trust).
-        assert strict_endpoints <= loose_endpoints
-        additive.append(strict_endpoints < loose_endpoints)
+        assert len(loose) >= len(strict)  # the candidate set only ever widens
+        cutoff = min((card["score"] for card in loose), default=0.0)
+        for endpoint in strict_scores.keys() - loose_endpoints:
+            # Displaced, not dropped: whatever took the slot outranks it on the shared key.
+            assert strict_scores[endpoint] <= cutoff, endpoint
+        additive.append(bool(loose_endpoints - strict_scores.keys()))
     # ...and on at least one topic it genuinely adds something, so the gate is not a no-op (which
     # "not fewer" alone would satisfy). Currently the mythic starts: troy, aeneas.
     assert any(additive)

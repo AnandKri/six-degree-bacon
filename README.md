@@ -75,7 +75,7 @@ legacy console).
 
 ## The seed graph
 
-[`data/seed.json`](data/seed.json) is a curated **116-node / 175-statement** graph spanning all 10
+[`data/seed.json`](data/seed.json) is a curated **116-node / 181-statement** graph spanning all 10
 domains, each statement fully provenanced. It spans a Roman–Silk Road–China web plus a Hellenistic–
 India–Buddhism bridge and clusters for Ancient Greece, Ancient Egypt, the Islamic Golden Age, the
 Scientific Revolution, East Asia, Norse/Celtic myth, Chinese technology, West Africa, royal divine
@@ -84,7 +84,10 @@ connections like Newton → Euclid →
 al-Tusi → Copernicus, Mansa Musa → Islam → Zoroastrianism → Mithra, **Elizabeth II → Alfred the Great
 → House of Wessex → Odin**, **Gutenberg → Printing press → Paper → Silk Road** (Europe's printing
 revolution ran on a Chinese invention), or **Sanskrit → Proto-Indo-European → Norse mythology → Loki**
-(India's classical language and the Norse pantheon share one prehistoric root).
+(India's classical language and the Norse pantheon share one prehistoric root). Six later **escape
+edges** (ADR 0053) gave the graph's isolated pendants a way out of their own clusters — hence
+**Florence → Trans-Saharan trade → Timbuktu → Mansa Musa** (the gold in Florence's florin came up the
+Saharan caravan routes).
 [`data/cooccurrence.json`](data/cooccurrence.json) holds the committed Wikipedia-link co-occurrence
 backing the endpoint-surprise term.
 
@@ -140,7 +143,7 @@ data/cooccurrence.json  committed Wikipedia-link co-occurrence for the endpoint-
 data/brains/<name>/     additional detached brains (e.g. twentieth_century/) — each its own graph
 docs/         ADRs and the confidence rubric (with worked examples the tests reproduce)
 eval/         golden expectations (ranker regression / characterization)
-tests/        176 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
+tests/        177 tests: the multi-brain platform (registry, a real 2-brain HTTP round-trip, the
               per-brain integrity guards), human-vs-code confidence, surprise & endpoint checks (incl.
               region jumps), harvester, both archetypes, the clusters, the web round-trip, the seed
               loaders, the per-hop evidence contract, and a guided-walk scaling/perf test

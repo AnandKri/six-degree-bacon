@@ -593,8 +593,14 @@ the one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent
   count, then grep every `.md` for the old figures. And **verify before flagging a contradiction** —
   two "conflicts" found in review dissolved on measurement (README's "9 domains" vs CLAUDE's "10"
   were populated-vs-declared, both right at the time; "11 starved" vs "12" were post- vs pre-cluster).
-- **After ANY `data/seed.json` edit:** `sdb validate-qids` → `sdb build-cooccurrence` → run tests →
-  re-characterise `eval/golden.json` if a winner shifted (adding edges shifts predicate rarity).
+- **After ANY `data/seed.json` edit:** `sdb validate-qids` → **`sdb build-cooccurrence` *only if the
+  node set changed*** → run tests → re-characterise `eval/golden.json` if a winner shifted (adding
+  edges shifts predicate rarity globally, so a winner can move even when no node did). The
+  co-occurrence sidecar is keyed on **nodes** — it stores each node's article's outbound Wikipedia
+  links — so an edges-only change (ADR 0049, ADR 0053) leaves it byte-identical, and rebuilding is a
+  wasted network minute that risks churning a committed file for nothing. ADR 0050, which *did* add
+  nodes, rebuilt it. This line used to say "always"; both edge-only passes skipped it deliberately and
+  documented why.
   Pushing to `main` also triggers the `qid-validation` CI job and the Pages rebuild — no personal-site
   regeneration needed (it redirects to Pages).
 - **Every new curated statement needs a one-sentence `evidence` (ADR 0037).** It now renders under

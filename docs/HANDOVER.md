@@ -516,17 +516,21 @@ per-edge (stable, provenanced, zero-LLM) over per-path synthesis. A natural brea
 the one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent_from` /
 `derived_from`).
 
-1. **Breadth — the main ongoing thread.** Add coherent, well-connected clusters, **one commit each**,
-   following the process in §6. Done this round: **East Asia** (ADR 0020), **Norse/Celtic myth**
-   (0022), **Chinese tech** (0023) and **West Africa/Islam** (0024); then the **Renaissance** (0033 —
-   which filled the last two empty realms, `culture` and `art`, and relieved `plato`/`constantinople`);
-   then **South/Southeast Asia** (0038 — Hinduism/Sanskrit/Maurya/Chola/Srivijaya/Khmer/Angkor,
-   adding the Indo-European language bridge and the maritime Silk Road). The graph now spans most major
-   Old-World civilisations. Possible future clusters that still connect via existing hubs:
-   **Byzantine–Ottoman** (via Constantinople/Byzantine Empire/Fall of Constantinople — now doubly
-   hooked), the **Enlightenment** proper (via Newton/Galileo/the printing press), or **Judaism/the
-   Abrahamic web** (via the Islam node + Christianity). **Avoid Mesoamerica** — pre-Columbian, it would
-   be an island. Reusable recipe in memory `sdb-breadth-paused`.
+1. **Breadth — no longer "the ongoing thread"; a product choice with the connectivity case closed.**
+   It *was* the main thread, and it delivered: **East Asia** (ADR 0020), **Norse/Celtic myth** (0022),
+   **Chinese tech** (0023), **West Africa/Islam** (0024), the **Renaissance** (0033 — filled the last
+   two empty realms, `culture` and `art`, and relieved `plato`/`constantinople`), **South/Southeast
+   Asia** (0038 — the Indo-European language bridge and the maritime Silk Road) and the
+   **Judaism/Abrahamic web** (0043 — this list carried it as a *future* candidate for three ADRs after
+   it shipped). The graph now spans most major Old-World civilisations, and **ADR 0053 closed the
+   connectivity argument for adding more**: the starved starts that edges could fix are fixed, and the
+   rest are structural. So a new cluster now needs a *reader-facing* reason, not a metric. Candidates
+   that would still connect via existing hubs: **Byzantine–Ottoman** (via Constantinople / Byzantine
+   Empire / Fall of Constantinople — doubly hooked); the **Enlightenment** proper (via Newton /
+   Galileo / the printing press) is almost entirely `WESTERN`, so it buys little surprise (the ADR
+   0039 walking-tour lesson). **Avoid Mesoamerica in the main brain** — pre-Columbian, it would be an
+   island — but it is the standout *new-brain* candidate (§5 item 3). Reusable recipe in memory
+   `sdb-breadth-paused`.
 2. **Deploy polish — both parts DECIDED, neither is queued work.**
    (a) *Custom domain / nav link for the Pages site* — an **owner action**, not a code change: it
    needs a domain and a DNS record, and the repo side is a one-line `CNAME` file. Nothing to build

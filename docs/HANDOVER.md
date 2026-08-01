@@ -18,8 +18,10 @@ Renaissance `1450`. Measured: 11/107 journey winners shifted toward more trans-r
 force + cohesion bump), hull overlap ~33%→~16%, no score touched.
 
 **Newest work (Phase 3 kickoff, ADR 0044): the multi-brain platform + a detached 20th-century brain.**
-Phase 2 is **done** (both schema-blocker terms + the narrator closed; a coverage sweep found 104/116
-starts return a good improbable pair, the 12 starved all degree ≤ 4 — the plateau). A **probe** first
+Phase 2 is **done** (both schema-blocker terms + the narrator closed; a coverage sweep found the
+starved starts all sat at degree ≤ 4 — the plateau). *Figures in this paragraph predate `sdb sweep`
+(ADR 0051), which pinned the metric definitions; run the command for current numbers — as of ADR
+0053 the main brain is 107/116 good pairs with 5 starved.* A **probe** first
 added 20th-century nodes to the *shared* brain and measured two things: the material is excellent
 (`Alan Turing ⇢ al-Khwarizmi`, `Gandhi → Hinduism → Rigveda → Thor`), **but** modern nodes contaminate
 the ancient results — being maximally distant from everything ancient, they win as surprise
@@ -366,22 +368,36 @@ The Phase-3 increments, one commit each:
    punk/disco, reggae/bossa/salsa/Fela), deeper science (Einstein→relativity/quantum→transistor/bomb,
    von Braun's V-2→Apollo, von Neumann→computer, IC→Silicon-Valley→PC→WWW), and Cold War politics
    (Lenin→Stalin→Khrushchev, Mao's China, the Cuban Revolution, Mandela/Nkrumah←Gandhi) — are all in.
-   **Deeper fill is still open** (more artists/films/genres inside each thread; the still-unbuilt
-   **Gothic Revival** node — e.g. the Woolworth Building, the only in-era way "Gothic" enters — never
-   medieval Gothic here). Same recipe as a main-brain cluster (§6): batch-verify QIDs with
+   **"Deeper fill" is CLOSED, not open — ADR 0050 superseded it.** This item used to say more
+   artists/films/genres inside each thread were still wanted; the sweep then showed the brain at
+   parity, and 0047 says stop at the plateau. Deeper fill is *within-cluster* fill, which is exactly
+   what 0047 declines ("a node that only deepens a cluster it is already inside is declined"). The
+   one named leftover — a **Gothic Revival** node (e.g. the Woolworth Building, the only in-era way
+   "Gothic" enters; never medieval Gothic here) — is a *nice-to-have product* node, not tissue: build
+   it only if someone wants that card, and only with a real cross-domain hook. Recipe if a future
+   cluster is ever justified (§6): batch-verify QIDs with
    `LiveTitleResolver`, source `evidence` + `headline`, rebuild **this brain's** co-occurrence
    (`sdb build-cooccurrence --seed data/brains/twentieth_century/seed.json --out
    data/brains/twentieth_century/cooccurrence.json`), re-check its own results, connect every node to a
    hub (no islands). Journey-led: grow *cross-domain* and *cross-region* tissue, not time depth.
-2. **Modern `Region`s: `SOVIET`+`LATIN_AMERICAN`+`SUB_SAHARAN`+`CARIBBEAN` are in (ADR 0045/0046).**
-   The next real fault line is a **modern Middle East** (distinct from the medieval `NEAR_EASTERN`) —
-   add it the ADR 0039/0045/0046 way: **only when a cluster populates it**, only where the crossing is
-   real, never pre-adding an empty region. The deliberate non-split stands: the US/UK/W-European pop
-   continuum stays `WESTERN` (an `AMERICAN → BRITISH` hop would be the walking-tour trap).
-3. **Stay at two brains for now (owner's steer).** A third brain is cheap when wanted (a directory
-   under `data/brains/` + its co-occurrence; registry/serve/build-site/guards pick it up
-   automatically — Mesoamerica would be a clean island-as-a-feature candidate) — but **parked**; the
-   effort goes into the 20th-century brain.
+2. **Modern `Region`s: PARKED with an explicit trigger — not an open task.**
+   `SOVIET`+`LATIN_AMERICAN`+`SUB_SAHARAN`+`CARIBBEAN` are in (ADR 0045/0046). The next real fault
+   line would be a **modern Middle East** (distinct from the medieval `NEAR_EASTERN`), and the ADR
+   0039/0045/0046 rule is **only when a cluster populates it** — never pre-add an empty region. Since
+   both brains are now at their plateau (0050, 0053), *no cluster is being added*, so this cannot
+   fire. **Trigger: a new brain, or a product-motivated cluster that genuinely lands there.** Until
+   then it is a decision already made, not work in the queue. The deliberate non-split stands: the
+   US/UK/W-European pop continuum stays `WESTERN` (an `AMERICAN → BRITISH` hop would be the
+   walking-tour trap).
+3. **A third brain is now THE live growth lever — and it needs the owner's word, not a default.**
+   The old steer ("stay at two; the effort goes into the 20th-century brain") is spent: that brain
+   plateaued at 0050 and the main brain at 0053, so there is no longer anywhere for graph effort to
+   go *inside* the existing brains. A third is cheap and needs no engine change — a directory under
+   `data/brains/` + its own co-occurrence, and the registry / `serve` / `build-site` / per-brain
+   guards pick it up automatically (ADR 0044). **Mesoamerica is the standout candidate**: it is
+   rejected for the main brain precisely because it would be an island, and in its own brain
+   islanding is the feature. **This is a product decision, so ask before building it** — the
+   alternative uses of the same effort are the ADR 0048 curation copilot and work on the surfaces.
 
 **Main-brain connectivity work is DONE and says stop (ADR 0053).** The escape-edge lever is
 exhausted: the starts it could fix are fixed (starved 12 → 5, good pairs 92.2%), and the five left are
@@ -511,10 +527,17 @@ the one-fact TIL is genealogy/derivation chains (royal descent, `claimed_descent
    hooked), the **Enlightenment** proper (via Newton/Galileo/the printing press), or **Judaism/the
    Abrahamic web** (via the Islam node + Christianity). **Avoid Mesoamerica** — pre-Columbian, it would
    be an island. Reusable recipe in memory `sdb-breadth-paused`.
-2. **Deploy polish (small, optional).** (a) A custom domain / nav link for the Pages site.
-   (b) **CORS headers on `sdb/web.py`'s `_Handler`** — only needed if someone builds a native React UI
-   that calls a *live* `sdb serve` API cross-origin. (The old personal-site static embed is gone — it
-   now redirects to Pages — so the SPA-rewrite / `<personal-site>/CLAUDE.md` pointer items are dropped.)
+2. **Deploy polish — both parts DECIDED, neither is queued work.**
+   (a) *Custom domain / nav link for the Pages site* — an **owner action**, not a code change: it
+   needs a domain and a DNS record, and the repo side is a one-line `CNAME` file. Nothing to build
+   until the owner names a domain.
+   (b) *CORS headers on `sdb/web.py`'s `_Handler`* — **declined until it has a consumer.** It is only
+   needed if someone builds a native front-end calling a *live* `sdb serve` API cross-origin, and
+   nothing does: the shipped surfaces are the served page itself (same-origin) and the static Pages
+   bundle (no API at all). Adding permissive headers speculatively widens a local server's exposure
+   for a caller that does not exist. **Trigger: an actual cross-origin consumer** — then add it with
+   an explicit allow-list, not `*`. (The old personal-site static embed is gone — it now redirects to
+   Pages — so the SPA-rewrite / `<personal-site>/CLAUDE.md` pointer items are dropped.)
 3. **Corroboration** — deferred (ADR 0014); only if both prerequisites in §4 are genuinely met.
 4. **Documented graduations (adopt only when earned):** Neo4j (scale / NL→Cypher for ~10k+ nodes), an
    optional free/local LLM narrator behind the existing template seam. The guided walk (0010) already

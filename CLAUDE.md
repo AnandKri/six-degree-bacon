@@ -317,7 +317,7 @@ viewport and the media queries evaluate against it. Full recipe in `docs/HANDOVE
    Chang'an, not Latin; regression-locked in `eval/golden.json` + `tests/test_eval_golden.py`.
 3. ✅ Stayed **zero-LLM and deterministic**; every score still reproducible by hand.
 
-## Phase 2 — in progress
+## Phase 2 — done (kept as the record of what each increment bought)
 
 - ✅ **Harvest node enrichment** (ADR 0009): grew `INSTANCE_OF_DOMAIN` (P31→Domain) by ~44 verified
   classes — first-class `SCIENCE`/`ART` coverage (both previously had *zero* mappings) plus common
@@ -369,6 +369,12 @@ viewport and the media queries evaluate against it. Full recipe in `docs/HANDOVE
   jumps + endpoint-unexpectedness − hub penalty, same weights), deterministic, and bounded by
   candidate/expansion budgets. Guidance orders discovery only; scoring is unchanged. A perf test
   proves it: a dense 1500-node graph overflows exhaustive `[3,6]` while `find_paths` stays ≤ budget.
-- Still open: higher-fidelity endpoint co-occurrence; neighbourhood pre-pruning + a tuned promise
-  heuristic if guided-only recall needs it on real harvests. Neo4j (NL→Cypher for ~10k+ nodes), a
-  web UI, an optional free/local LLM narrator remain graduations — adopt only when earned.
+- **Nothing here is still open** — the three items this bullet used to list are each closed or
+  conditional: endpoint co-occurrence got its fidelity fix in **ADR 0029** (full-link Jaccard; max
+  tie-fraction 94%→1.1%), and the next rung (deterministic diffusion / personalized PageRank) is
+  recorded in `docs/HANDOVER.md` as *unmotivated until a concrete need appears*; neighbourhood
+  pre-pruning + a tuned promise heuristic fire only **if** guided-only recall proves short on a real
+  harvest (no such evidence yet). The **web UI shipped in ADR 0013** — this bullet listed it as an
+  unbuilt graduation long after `sdb serve` existed, the exact doc rot §Conventions warns about.
+  Neo4j (NL→Cypher for ~10k+ nodes) and an optional free/local LLM narrator behind the template seam
+  remain graduations — adopt only when earned (the narrator is bounded by ADR 0048).

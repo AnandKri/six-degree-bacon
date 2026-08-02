@@ -68,6 +68,26 @@ a jump at `1 − P(jump|predicate)`, so it read 1.165 → 1.115 while reach impr
 dip as damage), and **a verified node can still carry an unverified claim** (two of the six were
 drafted citing an article that does not actually make the claim; caught by reading the source).
 
+**Newest work (ADR 0054): the north-star spike — harvest-first measured and REJECTED.** The owner
+judged that the only worthy TILs the system produces are the ones they had already found by hand and
+we then curated in. Measuring that: **5 of 6 gold TILs are already the top results** (Elizabeth II →
+Odin, Naruhito → Shinto, Gutenberg → Silk Road, Sanskrit → Loki, Angkor Wat → Thor), so scoring is
+not burying them — **the engine has never returned a fact nobody put there**, and ADR 0047 makes that
+a design goal (a graph one person can audit cannot surprise that person). Two scoring fixes were
+prototyped and measured as *ineffective* (hub-mediation `log2(degree)`; per-predicate transmission
+weighting) — gold kept 5/6 → 4/6 as the weight rose, because **the endpoint term is 57–80% of every
+score**. Harvest-first was then the only remaining path to an uncurated fact, and the spike killed
+it: 2-hop harvests of `Lord of the Rings` / `Song of Roland` / `Olifant` yielded **7 / 7 / 1 nodes
+with no connecting path**; our harvester understands **10 Wikidata properties** where those items
+carry **56–86**; **11 of 14** harvested nodes fell to the `other` bucket and both that got a domain
+got a *wrong* one; harvested edges median **0.510** → 3-hop **0.133** against a 0.50 gate (only 10%
+of harvested statements are referenced); and the oliphaunt↔olifant link is *etymological*, which
+Wikidata does not model. Closed **with triggers** (a source that models derivation — Wiktionary or
+Wikipedia prose; a widened vocabulary + re-measure; a genuinely independent second source).
+**Consequence the owner accepted explicitly:** this closes the only avenue to uncurated discovery, so
+**the product claim in README/CLAUDE.md is now the open question** — what ships is a rigorous,
+fully-provenanced *presentation* of connections a human found. That rewrite is NOT taken in 0054.
+
 **Read this first — the rule the project nearly broke (ADR 0034/0035).** Data and the rubric are the
 truth; **a test may only verify what the rubric claims, never that a favourite wins**. This was
 violated in the same session it was written: ADR 0033 added a *true* edge, a test asserting

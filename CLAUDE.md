@@ -231,7 +231,14 @@ topic -> graph (networkx MultiGraph) -> traverse -> score surprise -> rank/filte
   0053 main-brain escape-edge pass — the ADR 0047 cycle run on the *main* brain at last: 6 sourced
   edges between existing nodes, good pairs 86.2%→92.2% / starved 12→5 (175→181 statements), the
   remaining 5 structural, so both brains now say stop; also records that metric 2 *dilutes* as
-  crossings are added, and that a verified node can still carry an unverified claim).
+  crossings are added, and that a verified node can still carry an unverified claim,
+  0054 harvest-first measured & rejected — the north-star spike: 5 of 6 gold TILs are *already* the
+  top results, so the engine only ever returns what we curated; harvest-first was the one path to an
+  uncurated fact and a 2-hop Wikidata harvest of the owner's own example yielded 7/7/1 nodes with no
+  connecting path (vocabulary is 10 properties vs the items' 56–86; 11/14 nodes fell to `other`;
+  harvested 3-hop trust 0.133 vs the 0.50 gate; the etymology simply is not in Wikidata). Closed with
+  triggers; also records the two scoring terms measured as ineffective, and that the endpoint term is
+  57–80% of every score).
   `docs/confidence-rubric.md` — the rubric, with worked examples the tests reproduce.
   `docs/reference/`
   — the original idea sketch (git-ignored, local only).
